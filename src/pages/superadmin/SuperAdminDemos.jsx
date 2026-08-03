@@ -66,7 +66,6 @@ const fmt = (iso) =>
   iso
     ? new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
     : '—';
-
 const emptyCounts = { total: 0, requested: 0, invited: 0, scheduled: 0, completed: 0, cancelled: 0 };
 
 const pageAnimation = {
@@ -488,7 +487,7 @@ export default function SuperAdminDemos() {
                           )}
                         </td>
 
-                        {/* ─── Hamburger / Three-Dot Dropdown Menu ─── */}
+                        {/* ─── Hamburger / Dropdown Menu ─── */}
                         <td className="py-4 px-5 text-right relative">
                           <div className="inline-block action-menu-container">
                             <button

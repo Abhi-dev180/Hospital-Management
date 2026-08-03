@@ -203,7 +203,7 @@ export default function SuperAdminManageHospitals() {
     }
   };
 
-  // 🔒 Client‑side duplicate check before submitting
+  // Client‑side duplicate check before submitting
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.location) return toast.error('Name and location are required');

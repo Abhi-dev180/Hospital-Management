@@ -41,8 +41,6 @@ const RenewPage = lazy(() => import('./pages/stripe/RenewPage'));
 // Separate components for admin:
 const AdminAppointments = lazy(() => import('./pages/admin/AdminAppointments')); 
 const AdminAppointmentFeedback = lazy(() => import('./pages/admin/AdminAppointmentFeedback'));
-
-
 function App() {
   return (
     <Router>
@@ -61,27 +59,7 @@ function App() {
             wordBreak: 'break-word'
           }
         }}
-      >
-        {(t) => (
-          <div
-            className={`inline-flex items-center justify-between gap-3 max-w-[260px] bg-white text-gray-800 p-3 rounded-xl shadow-lg border border-gray-100 ${
-              t.visible ? 'animate-enter' : 'animate-leave'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              {t.icon}
-              <span className="text-sm font-medium">{t.message}</span>
-            </div>
-            <button
-              onClick={() => toast.dismiss(t.id)}
-              className="w-5 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition cursor-pointer shrink-0"
-              title="Close notification"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-      </Toaster>
+      />
 
       <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
         <Navbar />

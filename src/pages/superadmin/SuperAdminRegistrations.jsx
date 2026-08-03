@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   RefreshCw, Search, Trash2, CheckCircle2, XCircle, Building2, Power,
-  ClipboardList, Clock, UserCheck, Ban, Link2, X
+  ClipboardList, Clock, UserCheck, Ban, Link2, MoreVertical, X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
@@ -35,6 +35,7 @@ export default function SuperAdminRegistrations() {
   const [hospitals, setHospitals] = useState([]);
   const [assignFor, setAssignFor] = useState(null); // registration being assigned
   const [assignChoice, setAssignChoice] = useState('');
+  const [activeMenuId, setActiveMenuId] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -46,6 +47,16 @@ export default function SuperAdminRegistrations() {
     fetchRows();
     fetchHospitals();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.action-menu-container')) {
+        setActiveMenuId(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
   const authHeaders = () => ({
@@ -233,29 +244,79 @@ export default function SuperAdminRegistrations() {
                     <td className="py-4 px-4">
                       <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold capitalize ${STATUS_STYLES[r.status] || 'bg-gray-100 text-gray-600'}`}>{r.status}</span>
                     </td>
-                    <td className="py-4 px-4">
-                      <div className="flex flex-wrap justify-end gap-2">
-                        {/* Assign a hospital — available at any status */}
-                        <ActionBtn onClick={() => openAssign(r)} className="text-medical-blue hover:bg-blue-50">
-                          <Link2 size={14} /> {r.hospitalId ? 'Reassign' : 'Assign'}
-                        </ActionBtn>
+                    <td className="py-4 px-4 text-right relative">
+                      <div className="inline-block action-menu-container">
+                        <button
+                          onClick={() => setActiveMenuId(activeMenuId === r.id ? null : r.id)}
+                          className={`p-2 rounded-xl border transition shadow-sm ${activeMenuId === r.id
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200'
+                          }`}
+                          title="Actions"
+                        >
+                          <MoreVertical size={16} />
+                        </button>
 
-                        {/* Approve → creates the admin login (pending or previously denied) */}
-                        {(r.status === 'pending' || r.status === 'denied') && (
-                          <ActionBtn onClick={() => setStatus(r, 'approved')} className="text-green-600 hover:bg-green-50"><CheckCircle2 size={14} /> Approve</ActionBtn>
-                        )}
-                        {/* Activate / Deactivate */}
-                        {r.status === 'inactive' && (
-                          <ActionBtn onClick={() => setStatus(r, 'active')} className="text-green-600 hover:bg-green-50"><Power size={14} /> Activate</ActionBtn>
-                        )}
-                        {r.status === 'active' && (
-                          <ActionBtn onClick={() => setStatus(r, 'inactive')} className="text-gray-600 hover:bg-gray-100"><Power size={14} /> Deactivate</ActionBtn>
-                        )}
-                        {/* Deny — available unless already denied */}
-                        {r.status !== 'denied' && (
-                          <ActionBtn onClick={() => setStatus(r, 'denied')} className="text-red-600 hover:bg-red-50"><XCircle size={14} /> Deny</ActionBtn>
-                        )}
-                        <ActionBtn onClick={() => remove(r)} className="text-red-600 hover:bg-red-50"><Trash2 size={14} /> Delete</ActionBtn>
+                        <AnimatePresence>
+                          {activeMenuId === r.id && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                              transition={{ duration: 0.15 }}
+                              className="absolute right-0 top-12 w-56 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-50 text-left overflow-hidden"
+                            >
+                              <div className="px-3 py-1.5 border-b border-slate-100 mb-1">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Manage Registration</p>
+                              </div>
+
+                              <button
+                                onClick={() => { openAssign(r); setActiveMenuId(null); }}
+                                className="w-full flex items-center gap-2 px-4 py-2 text-xs font-bold text-medical-blue hover:bg-medical-blue/10 transition"
+                              >
+                                <Link2 size={14} /> {r.hospitalId ? 'Reassign' : 'Assign'}
+                              </button>
+                              {(r.status === 'pending' || r.status === 'denied') && (
+                                <button
+                                  onClick={() => { setStatus(r, 'approved'); setActiveMenuId(null); }}
+                                  className="w-full flex items-center gap-2 px-4 py-2 text-xs font-bold text-green-600 hover:bg-green-50 transition"
+                                >
+                                  <CheckCircle2 size={14} /> Approve
+                                </button>
+                              )}
+                              {r.status === 'inactive' && (
+                                <button
+                                  onClick={() => { setStatus(r, 'active'); setActiveMenuId(null); }}
+                                  className="w-full flex items-center gap-2 px-4 py-2 text-xs font-bold text-green-600 hover:bg-green-50 transition"
+                                >
+                                  <Power size={14} /> Activate
+                                </button>
+                              )}
+                              {r.status === 'active' && (
+                                <button
+                                  onClick={() => { setStatus(r, 'inactive'); setActiveMenuId(null); }}
+                                  className="w-full flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                                >
+                                  <Power size={14} /> Deactivate
+                                </button>
+                              )}
+                              {r.status !== 'denied' && (
+                                <button
+                                  onClick={() => { setStatus(r, 'denied'); setActiveMenuId(null); }}
+                                  className="w-full flex items-center gap-2 px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 transition"
+                                >
+                                  <XCircle size={14} /> Deny
+                                </button>
+                              )}
+                              <button
+                                onClick={() => { remove(r); setActiveMenuId(null); }}
+                                className="w-full flex items-center gap-2 px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 transition"
+                              >
+                                <Trash2 size={14} /> Delete
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </td>
                   </motion.tr>
@@ -296,13 +357,5 @@ export default function SuperAdminRegistrations() {
         )}
       </AnimatePresence>
     </DashboardLayout>
-  );
-}
-
-function ActionBtn({ onClick, className = '', children }) {
-  return (
-    <button onClick={onClick} className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition ${className}`}>
-      {children}
-    </button>
   );
 }

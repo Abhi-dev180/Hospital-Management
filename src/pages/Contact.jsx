@@ -16,11 +16,8 @@ import {
   CheckCircle2,
   Headphones
 } from 'lucide-react';
-
 import hospitalVideo from '../../assets/hospital.mp4';
-
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 export default function Contact() {
   const heroVideoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -179,7 +176,7 @@ export default function Contact() {
       <div className="max-w-7xl mx-auto py-12 md:py-16 px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-          {/* Left Column: Contact Cards & Info (Mobile Friendly 12 cols, Desktop 5 cols) */}
+          {/* Left Column: Contact Cards & Info */}
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -258,7 +255,7 @@ export default function Contact() {
             </div>
           </motion.div>
 
-          {/* Right Column: Interactive Form (Mobile Friendly 12 cols, Desktop 7 cols) */}
+          {/* Right Column: Interactive Form  */}
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -370,7 +367,6 @@ export default function Contact() {
               </button>
             </form>
           </motion.div>
-
         </div>
       </div>
     </div>

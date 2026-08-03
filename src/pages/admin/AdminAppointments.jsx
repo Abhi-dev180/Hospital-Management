@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, RefreshCw, Edit3, X, CheckCircle2, Loader2,
-  CalendarClock, User, PawPrint, Stethoscope, Clock, Hospital
+  CalendarClock, User, PawPrint, Stethoscope, Clock, Hospital, CalendarPlus
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
 import DashboardLayout from '../../components/DashboardLayout';
 import Pagination from '../../components/Pagination';
+import SlotSelector from '../../components/SlotSelector';
 import { TableSkeleton } from '../../components/Loader';
 
 const PER_PAGE = 6;
@@ -54,6 +55,7 @@ export default function AdminAppointments() {
   const [page, setPage] = useState(1);
 
   const [showModal, setShowModal] = useState(false);
+  const [showBookModal, setShowBookModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({
     patientName: '',
@@ -64,7 +66,21 @@ export default function AdminAppointments() {
     doctorName: '',
     status: 'Pending'
   });
+  const [bookForm, setBookForm] = useState({
+    patientName: '',
+    patientPhone: '',
+    email: '',
+    hospitalId: '',
+    date: '',
+    time: '',
+    petName: '',
+    species: '',
+    description: '',
+    appointmentType: 'Consult'
+  });
+  const [bookErrors, setBookErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [hospitals, setHospitals] = useState([]);
 
   const authHeaders = () => ({
     'Content-Type': 'application/json',
@@ -78,6 +94,7 @@ export default function AdminAppointments() {
     if (parsed.role !== 'admin' && parsed.role !== 'superadmin') return;
     setUser(parsed);
     fetchAppointments();
+    fetchHospitals();
   }, []);
 
   const fetchAppointments = async () => {
@@ -94,6 +111,16 @@ export default function AdminAppointments() {
     }
   };
 
+  const fetchHospitals = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/hospitals`);
+      const data = await res.json();
+      setHospitals(Array.isArray(data) ? data : data.hospitals || []);
+    } catch {
+      setHospitals([]);
+    }
+  };
+
   const openEdit = (appt) => {
     setEditing(appt);
     setForm({
@@ -106,6 +133,61 @@ export default function AdminAppointments() {
       status: appt.status || 'Pending'
     });
     setShowModal(true);
+  };
+
+  const openBookModal = () => {
+    setBookForm({
+      patientName: '',
+      patientPhone: '',
+      email: '',
+      hospitalId: user?.hospitalId || '',
+      date: '',
+      time: '',
+      petName: '',
+      species: '',
+      description: '',
+      appointmentType: 'Consult'
+    });
+    setBookErrors({});
+    setShowBookModal(true);
+  };
+
+  const validateBookForm = () => {
+    const errors = {};
+    if (!bookForm.patientName.trim()) errors.patientName = 'Patient name is required';
+    if (!bookForm.patientPhone.trim()) errors.patientPhone = 'Mobile number is required';
+    else if (!/^\d{10}$/.test(bookForm.patientPhone.trim())) errors.patientPhone = 'Enter a valid 10-digit mobile number';
+    if (!bookForm.hospitalId) errors.hospitalId = 'Please select a hospital';
+    if (!bookForm.date) errors.date = 'Date is required';
+    if (!bookForm.time) errors.time = 'Time is required';
+    setBookErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const submitBook = async (e) => {
+    e.preventDefault();
+    if (!validateBookForm()) return toast.error('Please fix the booking fields');
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/api/appointments/public`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bookForm)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.message || 'Could not book appointment');
+        return;
+      }
+      toast.success('Appointment booked successfully');
+      setShowBookModal(false);
+      fetchAppointments();
+    } catch (err) {
+      console.error('Admin book appointment failed:', err);
+      toast.error('Network error while booking');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const submit = async (e) => {
@@ -173,6 +255,13 @@ export default function AdminAppointments() {
             </div>
 
             <div className="flex flex-wrap gap-3 items-center">
+              <button
+                onClick={openBookModal}
+                className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-full font-semibold shadow-lg shadow-blue-500/10 hover:bg-blue-700 transition"
+              >
+                <CalendarPlus size={16} /> Book Appointment
+              </button>
+
               <div className="relative w-full sm:w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
@@ -206,7 +295,7 @@ export default function AdminAppointments() {
             <TableSkeleton rows={6} cols={7} />
           ) : (
             <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-              <table className="w-full text-left border-collapse min-w-[1000px]">
+              <table className="w-full text-left border-collapse min-w-full">
                 <thead>
                   <tr className="bg-gradient-to-r from-slate-50 to-blue-50 text-slate-700 text-sm">
                     <th className="py-4 px-4 font-semibold">Patient</th>
@@ -398,6 +487,180 @@ export default function AdminAppointments() {
                   >
                     {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
                     {saving ? 'Updating…' : 'Update Appointment'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showBookModal && (
+          <motion.div
+            className="fixed inset-0 z-50 bg-slate-950/55 backdrop-blur-sm flex items-center justify-center p-4"
+            variants={modalBackdrop}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            onClick={() => setShowBookModal(false)}
+          >
+            <motion.div
+              variants={modalPanel}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              onClick={e => e.stopPropagation()}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 border border-white/70"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-900">Book Appointment</h3>
+                  <p className="text-sm text-slate-500 mt-1">Book an appointment for any user with the same hospital booking flow.</p>
+                </div>
+                <button
+                  onClick={() => setShowBookModal(false)}
+                  className="h-10 w-10 rounded-full hover:bg-slate-100 flex items-center justify-center transition"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={submitBook} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium mb-1.5 text-slate-700">Select Hospital *</label>
+                    <select
+                      value={bookForm.hospitalId}
+                      onChange={e => setBookForm(f => ({ ...f, hospitalId: e.target.value }))}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition"
+                    >
+                      <option value="">Choose hospital</option>
+                      {hospitals.map(h => (
+                        <option key={h.id} value={String(h.id)}>{h.name}</option>
+                      ))}
+                    </select>
+                    {bookErrors.hospitalId && <p className="mt-2 text-xs text-red-600">{bookErrors.hospitalId}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5 text-slate-700">Patient Name *</label>
+                    <input
+                      type="text"
+                      value={bookForm.patientName}
+                      onChange={e => setBookForm(f => ({ ...f, patientName: e.target.value }))}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition"
+                    />
+                    {bookErrors.patientName && <p className="mt-2 text-xs text-red-600">{bookErrors.patientName}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5 text-slate-700">Mobile Number *</label>
+                    <input
+                      type="tel"
+                      value={bookForm.patientPhone}
+                      onChange={e => setBookForm(f => ({ ...f, patientPhone: e.target.value }))}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition"
+                      placeholder="10-digit number"
+                    />
+                    {bookErrors.patientPhone && <p className="mt-2 text-xs text-red-600">{bookErrors.patientPhone}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5 text-slate-700">Email</label>
+                    <input
+                      type="email"
+                      value={bookForm.email}
+                      onChange={e => setBookForm(f => ({ ...f, email: e.target.value }))}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition"
+                      placeholder="Optional"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5 text-slate-700">Date *</label>
+                    <input
+                      type="date"
+                      value={bookForm.date}
+                      onChange={e => setBookForm(f => ({ ...f, date: e.target.value }))}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition"
+                    />
+                    {bookErrors.date && <p className="mt-2 text-xs text-red-600">{bookErrors.date}</p>}
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium mb-1.5 text-slate-700">Time *</label>
+                    <input
+                      type="time"
+                      value={bookForm.time}
+                      onChange={e => setBookForm(f => ({ ...f, time: e.target.value }))}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition"
+                    />
+                    {bookErrors.time && <p className="mt-2 text-xs text-red-600">{bookErrors.time}</p>}
+                    {bookForm.date && bookForm.hospitalId && (
+                      <div className="mt-4 rounded-2xl bg-slate-50 p-4 border border-slate-200">
+                        <SlotSelector
+                          date={bookForm.date}
+                          hospitalId={bookForm.hospitalId}
+                          selectedTime={bookForm.time}
+                          onSelectTime={(slot) => setBookForm((f) => ({ ...f, time: slot }))}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5 text-slate-700">Pet Name</label>
+                    <input
+                      type="text"
+                      value={bookForm.petName}
+                      onChange={e => setBookForm(f => ({ ...f, petName: e.target.value }))}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5 text-slate-700">Species</label>
+                    <input
+                      type="text"
+                      value={bookForm.species}
+                      onChange={e => setBookForm(f => ({ ...f, species: e.target.value }))}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium mb-1.5 text-slate-700">Description</label>
+                    <textarea
+                      value={bookForm.description}
+                      onChange={e => setBookForm(f => ({ ...f, description: e.target.value }))}
+                      rows={3}
+                      className="w-full px-4 py-3 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition"
+                      placeholder="Optional booking notes"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-slate-50 p-4 border border-slate-200">
+                  <p className="text-sm text-slate-500">Select a hospital and date to load the shared Google Calendar booked slots picker.</p>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowBookModal(false)}
+                    className="px-5 py-2.5 border border-slate-200 rounded-full font-semibold text-slate-600 hover:bg-slate-50 transition"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-full font-semibold shadow-lg shadow-blue-500/20 disabled:opacity-60 hover:bg-blue-700 transition"
+                  >
+                    {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <CalendarPlus className="w-4 h-4" />}
+                    {saving ? 'Booking…' : 'Book Appointment'}
                   </button>
                 </div>
               </form>
