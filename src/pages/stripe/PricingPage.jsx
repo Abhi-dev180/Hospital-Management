@@ -83,26 +83,6 @@ export default function PricingPage() {
   }, []);
 
   // ─── Fetch booking info if token exists ─────────────────────
-  // useEffect(() => {
-  //   if (!token) {
-  //     setLoadingInfo(false);
-  //     return;
-  //   }
-  //   (async () => {
-  //     try {
-  //       const res = await fetch(`${API_URL}/api/feedback/${token}`);
-  //       const data = await res.json();
-  //       if (res.ok && data.booking) {
-  //         setBookingInfo(data.booking);
-  //       }
-  //     } catch (err) {
-  //       console.error('Could not fetch booking details for pricing page', err);
-  //     } finally {
-  //       setLoadingInfo(false);
-  //     }
-  //   })();
-  // }, [token]);
-
   useEffect(() => {
     if (!token) {
       setLoadingInfo(false);
@@ -130,65 +110,6 @@ export default function PricingPage() {
 
 
   // ─── Handle plan selection ───────────────────────────────────
-  // const handleChoosePlan = async (planKey) => {
-  //   try {
-  //     setSubmitting(planKey);
-
-  //     // Get auth token
-  //     const authToken = localStorage.getItem('token');
-  //     const headers = {
-  //       'Content-Type': 'application/json',
-  //       ...(authToken && { Authorization: `Bearer ${authToken}` })
-  //     };
-
-  //     // Build request body
-  //     const body = {
-  //       planKey,
-  //       ...(token && { feedbackToken: token }),
-  //       ...(bookingInfo?.id && { bookingId: bookingInfo.id }),
-  //       ...(user?.id && { userId: user.id }),
-  //       ...(bookingInfo?.hospitalName && { hospitalName: bookingInfo.hospitalName }),
-  //       isRenewal: isRenewal
-  //     };
-
-  //     // If user is logged in, use subscription endpoint
-  //     const endpoint = user
-  //       ? '/api/subscriptions/create-checkout'
-  //       : '/api/payments/create-checkout-session';
-
-  //     const res = await fetch(`${API_URL}${endpoint}`, {
-  //       method: 'POST',
-  //       headers,
-  //       body: JSON.stringify(body)
-  //     });
-
-  //     const data = await res.json();
-
-  //     if (!res.ok) {
-  //       // Fallback for dev mode when Stripe isn't configured
-  //       if (res.status === 503 || data.message?.includes('Stripe not configured')) {
-  //         toast.success('Redirecting to registration...');
-  //         navigate(`/register/${token}?plan=${planKey}`);
-  //         return;
-  //       }
-  //       toast.error(data.message || 'Could not initiate payment');
-  //       return;
-  //     }
-
-  //     if (data.url) {
-  //       window.location.href = data.url; // Redirect to Stripe Checkout
-  //     } else {
-  //       navigate(`/register/${token}?plan=${planKey}`);
-  //     }
-  //   } catch (err) {
-  //     console.error('Payment error:', err);
-  //     toast.error('Network error during payment initiation. Redirecting...');
-  //     navigate(`/register/${token}?plan=${planKey}`);
-  //   } finally {
-  //     setSubmitting(null);
-  //   }
-  // };
-
   const handleChoosePlan = async (planKey) => {
   try {
     setSubmitting(planKey);

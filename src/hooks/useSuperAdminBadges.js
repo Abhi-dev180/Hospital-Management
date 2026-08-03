@@ -2,18 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import API_URL from '../config/api';
 
-/**
- * Live "needs attention" counts for the superadmin navigation.
- *
- * The number on each tab is the real count of unhandled records
- * (pending registrations, new contact enquiries, un-actioned demo requests).
- * Opening a section acknowledges what is currently there, so the badge drops
- * to 0 and only reappears when something new arrives.
- *
- * Acknowledgement is stored per browser in localStorage — it's a read marker,
- * not application state, so it deliberately never hits the server.
- */
-
 const POLL_MS = 15000;
 const SEEN_KEY = 'superadmin:seenCounts';
 

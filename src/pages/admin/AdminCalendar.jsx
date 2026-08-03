@@ -1,6 +1,4 @@
 import CalendarBoard from '../../components/CalendarBoard';
-
-// Rendered inside AdminLayout's <Outlet />, which already provides the page chrome.
 export default function AdminCalendar() {
   return (
     <div className="space-y-6">

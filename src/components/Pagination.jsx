@@ -1,4 +1,3 @@
-// Reusable pagination. Shows Prev / page numbers / Next; hides itself when there's ≤1 page.
 export default function Pagination({ page, total, perPage = 10, onChange }) {
   const totalPages = Math.ceil(total / perPage);
   if (totalPages <= 1) return null;
