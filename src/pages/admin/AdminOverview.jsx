@@ -106,14 +106,14 @@ export default function AdminOverview() {
 
   const stats = useMemo(
     () => [
-      {
-        title: 'Total Calls',
-        value: calls.length,
-        icon: PhoneCall,
-        color: 'border-blue-500',
-        iconBg: 'bg-blue-100',
-        iconText: 'text-blue-600'
-      },
+      // {
+      //   title: 'Total Calls',
+      //   value: calls.length,
+      //   icon: PhoneCall,
+      //   color: 'border-blue-500',
+      //   iconBg: 'bg-blue-100',
+      //   iconText: 'text-blue-600'
+      // },
       {
         title: 'Total Feedbacks',
         value: feedbacks.length,
@@ -122,14 +122,15 @@ export default function AdminOverview() {
         iconBg: 'bg-green-100',
         iconText: 'text-green-600'
       },
-      {
-        title: 'Transcriptions',
-        value: transcriptions.length,
-        icon: FileText,
-        color: 'border-red-500',
-        iconBg: 'bg-red-100',
-        iconText: 'text-red-600'
-      },
+      // {
+      //   title: 'Transcriptions',
+      //   value: transcriptions.length,
+      //   icon: FileText,
+      //   color: 'border-red-500',
+      //   iconBg: 'bg-red-100',
+      //   iconText: 'text-red-600'
+      // },
+      
       {
         title: 'Appointments',
         value: appointments.length,

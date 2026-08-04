@@ -109,7 +109,7 @@ export default function Navbar() {
         { name: 'Calendar', to: '/admin/calendar' },
         { name: 'Timings', to: '/admin/timings' },
         { name: 'Feedback', to: '/admin/appointment-feedback' },
-        { name: 'Transcriptions', to: '/admin/transcriptions' }
+        // { name:         'Transcriptions', to: '/admin/transcriptions' }
       ];
     }
 

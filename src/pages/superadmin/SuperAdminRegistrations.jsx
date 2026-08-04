@@ -64,6 +64,25 @@ export default function SuperAdminRegistrations() {
     Authorization: `Bearer ${localStorage.getItem('token')}`
   });
 
+  const syncSessionFor = async (r) => {
+    if (!r?.payment?.stripe_session_id) return toast.error('No session id available');
+    if (!window.confirm('Re-sync this payment from Stripe?')) return;
+    try {
+      toast.loading('Resyncing session…', { id: `sync-${r.id}` });
+      const res = await fetch(`${API_URL}/api/payments/sync-session`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ session_id: r.payment.stripe_session_id })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Sync failed');
+      toast.success('Resync complete', { id: `sync-${r.id}` });
+      fetchRows();
+    } catch (e) {
+      toast.error(e.message || 'Sync failed', { id: `sync-${r.id}` });
+    }
+  };
+
   const fetchRows = async () => {
     setLoading(true);
     try {
@@ -217,6 +236,9 @@ export default function SuperAdminRegistrations() {
                   <th className="py-3 px-4 font-semibold rounded-tl-lg">Hospital</th>
                   <th className="py-3 px-4 font-semibold">Contact</th>
                   <th className="py-3 px-4 font-semibold">Submitted</th>
+                  <th className="py-3 px-4 font-semibold">Plan</th>
+                  <th className="py-3 px-4 font-semibold">Starts</th>
+                  <th className="py-3 px-4 font-semibold">Ends</th>
                   <th className="py-3 px-4 font-semibold">Assigned</th>
                   <th className="py-3 px-4 font-semibold">Status</th>
                   <th className="py-3 px-4 font-semibold text-right rounded-tr-lg">Actions</th>
@@ -229,6 +251,20 @@ export default function SuperAdminRegistrations() {
                     <td className="py-4 px-4">
                       <div className="font-semibold text-medical-dark">{r.hospitalName}</div>
                       <div className="text-gray-500 text-xs">{[r.city, r.beds ? `${r.beds} beds` : null].filter(Boolean).join(' · ') || '—'}</div>
+                      {r.payment && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          <span className="font-semibold">Plan:</span> {r.payment.plan_key || r.subscription?.plan_key || '—'}
+                          {/* {r.subscription?.start_date && (
+                            <span className="ml-2">• Starts: {fmt(r.subscription.start_date)}</span>
+                          )}
+                          {r.subscription?.expiry_date && (
+                            <span className="ml-2">• Ends: {fmt(r.subscription.expiry_date)}</span>
+                          )} */}
+                          {r.payment.stripe_session_id && (
+                            <TxnDisplay txn={r.payment.stripe_session_id} />
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td className="py-4 px-4">
                       <div className="text-gray-800">{r.contactName}</div>
@@ -236,6 +272,9 @@ export default function SuperAdminRegistrations() {
                       {r.phone && <div className="text-gray-500 text-xs">{r.phone}</div>}
                     </td>
                     <td className="py-4 px-4 text-gray-600 whitespace-nowrap">{fmt(r.createdAt)}</td>
+                    <td className="py-4 px-4 text-sm text-gray-700">{r.subscription?.plan_key || r.payment?.plan_key || '—'}</td>
+                    <td className="py-4 px-4 text-sm text-gray-600 whitespace-nowrap">{r.subscription?.start_date ? fmt(r.subscription.start_date) : '—'}</td>
+                    <td className="py-4 px-4 text-sm text-gray-600 whitespace-nowrap">{r.subscription?.expiry_date ? fmt(r.subscription.expiry_date) : '—'}</td>
                     <td className="py-4 px-4">
                       {r.hospitalId
                         ? <span className="inline-flex items-center gap-1 text-green-700 text-xs font-medium"><Building2 size={14} /> {hospitalName(r.hospitalId) || r.hospitalId}</span>
@@ -276,6 +315,14 @@ export default function SuperAdminRegistrations() {
                               >
                                 <Link2 size={14} /> {r.hospitalId ? 'Reassign' : 'Assign'}
                               </button>
+                              {r.payment?.stripe_session_id && (
+                                <button
+                                  onClick={() => { syncSessionFor(r); setActiveMenuId(null); }}
+                                  className="w-full flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                                >
+                                  <RefreshCw size={14} /> Resync payment
+                                </button>
+                              )}
                               {(r.status === 'pending' || r.status === 'denied') && (
                                 <button
                                   onClick={() => { setStatus(r, 'approved'); setActiveMenuId(null); }}
@@ -357,5 +404,19 @@ export default function SuperAdminRegistrations() {
         )}
       </AnimatePresence>
     </DashboardLayout>
+  );
+}
+
+function TxnDisplay({ txn }) {
+  const [show, setShow] = useState(false);
+  if (!txn) return null;
+  const short = txn.length > 24 ? `${txn.slice(0, 2)}...${txn.slice(-3)}` : txn;
+  return (
+    <div className="text-xs text-gray-400 mt-1">
+      Txn: <span className="font-mono">{show ? txn : short}</span>
+      {!show && txn.length > 24 && (
+        <button onClick={() => setShow(true)} className="ml-2 text-medical-blue text-xs font-semibold">See more</button>
+      )}
+    </div>
   );
 }

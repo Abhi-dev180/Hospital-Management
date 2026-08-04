@@ -130,11 +130,19 @@ export default function PricingPage() {
     };
 
     const body = {
-      booking,                    
+      booking,
       planKey,
       feedbackToken: token,
       isRenewal: isRenewal
     };
+
+    // If the user is logged in but this flow is part of a registration (token),
+    // tell the subscription endpoint to redirect back to the registration page
+    // after successful payment instead of the default dashboard.
+    if (user && token) {
+      body.successPath = `/register/${token}`;
+      body.cancelPath = `/pricing${token ? `?token=${token}` : ''}`;
+    }
 
     // If user is logged in, use subscription endpoint; otherwise, use payment endpoint
     const endpoint = user

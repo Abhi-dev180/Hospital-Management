@@ -166,22 +166,6 @@ export default function SuperAdminDemos() {
     }
   };
 
-  const handleInvite = async (b) => {
-    setActiveMenuId(null);
-    try {
-      const res = await fetch(`${API_URL}/api/demos/${b.id}/invite`, {
-        method: 'POST',
-        headers: authHeaders()
-      });
-      const data = await res.json();
-      if (!res.ok) return toast.error(data.message || 'Could not send invite');
-      toast.success('Scheduling invite emailed successfully');
-      fetchBookings();
-    } catch {
-      toast.error('Could not send invite');
-    }
-  };
-
   const openRescheduleModal = (b) => {
     setActiveMenuId(null);
     const current = b.scheduled_at ? new Date(b.scheduled_at).toISOString().slice(0, 16) : '';
@@ -513,15 +497,6 @@ export default function SuperAdminDemos() {
                                   <div className="px-3 py-1.5 border-b border-slate-100 mb-1">
                                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Manage Booking</p>
                                   </div>
-
-                                  {(b.status === 'requested' || b.status === 'invited') && (
-                                    <button
-                                      onClick={() => handleInvite(b)}
-                                      className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-purple-700 hover:bg-purple-50 transition"
-                                    >
-                                      <Send size={14} /> {b.status === 'invited' ? 'Resend Invite' : 'Send Invite'}
-                                    </button>
-                                  )}
 
                                   <button
                                     onClick={() => openRescheduleModal(b)}

@@ -53,8 +53,8 @@ export default function AdminLayout() {
             <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
               Welcome, {hospitalName}
             </h1>
-            <p className="text-xs sm:text-sm text-gray-300 mt-1 font-medium">
-              Manage appointments, timings, calls, transcriptions, and patient feedback.
+            <p className="text-xs sm:text-sm text-gray-300 mt-1 font-medium">  
+              Manage appointments, timings, calls, and patient feedback.  
             </p>
           </div>
         </div>
