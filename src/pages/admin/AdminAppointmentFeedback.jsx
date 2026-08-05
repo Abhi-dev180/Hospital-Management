@@ -1066,13 +1066,12 @@
 // }
 
 
-
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, RefreshCw, Edit3, X, CheckCircle2, Loader2,
   Phone, PhoneOff, Plus, MessageSquareText, Calendar, Clock,
-  Link2, Hash, Mail, Phone as PhoneIcon
+  Link2, Hash, Mail, Phone as PhoneIcon, User, FileText
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
@@ -1095,11 +1094,6 @@ const pageVariants = {
 const cardVariants = {
   hidden: { opacity: 0, y: 14, scale: 0.99 },
   visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.28 } }
-};
-
-const rowVariants = {
-  hidden: { opacity: 0, y: 8 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.2 } }
 };
 
 const modalBackdrop = {
@@ -1240,7 +1234,7 @@ export default function AdminAppointmentFeedback() {
     const q = search.trim().toLowerCase();
     return rows.filter(r => {
       const matchStatus = statusFilter === 'all' || r.feedbackStatus === statusFilter;
-      const matchSearch = !q || [r.patientName, r.petName, r.appointmentType].join(' ').toLowerCase().includes(q);
+      const matchSearch = !q || [r.patientName, r.petName, r.appointmentType, r.email, r.patientPhone].join(' ').toLowerCase().includes(q);
       return matchStatus && matchSearch;
     });
   }, [rows, search, statusFilter]);
@@ -1254,42 +1248,40 @@ export default function AdminAppointmentFeedback() {
         initial="hidden"
         animate="visible"
         variants={pageVariants}
-        className="min-h-screen bg-gradient-to-br from-slate-100/70 via-indigo-50/30 to-blue-50/50 p-3 sm:p-6 rounded-3xl"
+        className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 p-3 sm:p-4 lg:p-6"
       >
         <motion.div
           variants={cardVariants}
-          className="bg-white/90 backdrop-blur-2xl p-5 sm:p-8 rounded-3xl shadow-[0_20px_50px_rgba(8,112,184,0.07)] border border-slate-200/80"
+          className="max-w-[2190px] mx-auto bg-white/90 backdrop-blur-xl p-6 sm:p-8 lg:p-10 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50"
         >
           {/* Header Section */}
-          <div className="flex flex-col lg:flex-row lg:justify-between items-start lg:items-center gap-4 mb-8 pb-6 border-b border-slate-100">
-            <div>
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-blue-600 text-white rounded-2xl shadow-md shadow-blue-500/20">
-                  <MessageSquareText size={24} />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Appointment Feedback</h2>
-                  <p className="text-sm font-medium text-slate-500 mt-0.5">Manage and track client responses seamlessly</p>
-                </div>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 lg:mb-8">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-2xl shadow-lg shadow-blue-500/30">
+                <MessageSquareText size={26} />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">Appointment Feedback</h2>
+                <p className="text-sm text-slate-500 mt-0.5">Manage and track client responses seamlessly</p>
               </div>
             </div>
 
             {/* Action Bar */}
-            <div className="flex flex-wrap gap-3 items-center w-full lg:w-auto">
-              <div className="relative flex-1 sm:flex-initial sm:w-72">
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="relative w-full sm:w-72">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  placeholder="Search patient, pet, type…"
-                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-2xl bg-slate-50/50 text-sm font-medium outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
+                  placeholder="Search patient, pet, email, phone…"
+                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl bg-white text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
                 />
               </div>
 
               <select
                 value={statusFilter}
                 onChange={e => setStatusFilter(e.target.value)}
-                className="px-4 py-2.5 border border-slate-200 rounded-2xl bg-slate-50/50 text-sm font-semibold text-slate-700 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm cursor-pointer"
+                className="px-4 py-2.5 border border-slate-200 rounded-xl bg-white text-sm font-medium text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all cursor-pointer shadow-sm"
               >
                 <option value="all">All Statuses</option>
                 {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
@@ -1297,15 +1289,15 @@ export default function AdminAppointmentFeedback() {
 
               <button
                 onClick={fetchRows}
-                className="bg-white border border-slate-200 p-2.5 rounded-2xl text-slate-700 hover:bg-slate-50 hover:text-blue-600 shadow-sm transition-all active:scale-95"
-                title="Refresh Records"
+                className="bg-white border border-slate-200 p-2.5 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-blue-600 shadow-sm transition-all active:scale-95"
+                title="Refresh"
               >
                 <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
               </button>
 
               <button
                 onClick={openCreate}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2.5 rounded-2xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all ml-auto sm:ml-0"
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-2 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
                 <Plus size={18} />
                 <span>Add Feedback</span>
@@ -1317,112 +1309,132 @@ export default function AdminAppointmentFeedback() {
           {loading ? (
             <TableSkeleton rows={6} cols={7} />
           ) : (
-            <div className="overflow-x-auto rounded-2xl border border-slate-200/60 bg-white shadow-sm">
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
               <table className="w-full text-left border-collapse min-w-[1200px]">
                 <thead>
-                  <tr className="bg-slate-50/80 text-slate-600 text-xs font-bold uppercase tracking-wider border-b border-slate-200/60">
-                    <th className="py-4 px-5">ID</th>
-                    <th className="py-4 px-5">Appt #</th>
-                    <th className="py-4 px-5">Patient</th>
-                    <th className="py-4 px-5">Email</th>         {/* ✅ NEW */}
-                    <th className="py-4 px-5">Phone</th>         {/* ✅ NEW */}
-                    <th className="py-4 px-5">Pet Name</th>
-                    <th className="py-4 px-5">Type</th>
-                    <th className="py-4 px-5">Schedule</th>
-                    <th className="py-4 px-5">Status</th>
-                    <th className="py-4 px-5">Feedback</th>
-                    <th className="py-4 px-5">Call Status</th>
-                    <th className="py-4 px-5 text-right">Actions</th>
+                  <tr className="bg-gradient-to-r from-slate-50 to-slate-50/50 text-slate-600 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
+                    <th className="py-4 px-6">ID</th>
+                    <th className="py-4 px-6">Appt #</th>
+                    <th className="py-4 px-6">Patient Details</th>
+                    <th className="py-4 px-6">Pet Name</th>
+                    <th className="py-4 px-6">Type</th>
+                    <th className="py-4 px-6">Schedule</th>
+                    <th className="py-4 px-6">Status</th>
+                    <th className="py-4 px-6">Feedback</th>
+                    <th className="py-4 px-6">Call Status</th>
+                    <th className="py-4 px-6 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {paginated.map((r, idx) => (
                     <motion.tr
                       key={r.id}
-                      variants={rowVariants}
+                      variants={{
+                        hidden: { opacity: 0, y: 8 },
+                        visible: { opacity: 1, y: 0, transition: { duration: 0.2 } }
+                      }}
                       initial="hidden"
                       animate="visible"
                       transition={{ delay: idx * 0.03 }}
-                      className="hover:bg-blue-50/30 transition-colors group text-sm"
+                      className="hover:bg-blue-50/40 transition-colors group"
                     >
-                      <td className="py-4 px-5 text-slate-400 font-mono text-xs font-semibold">#{r.id}</td>
-                      <td className="py-4 px-5">
+                      <td className="py-4 px-6 text-slate-400 font-mono text-xs font-semibold">#{r.id}</td>
+                      <td className="py-4 px-6">
                         {r.appointmentNumber ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100/80 rounded-xl text-xs font-bold font-mono">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-lg text-xs font-semibold font-mono">
                             <Hash size={12} />
                             {r.appointmentNumber}
                           </span>
                         ) : (
-                          <span className="text-slate-300 font-medium text-xs">—</span>
-                        )}
-                      </td>
-                      <td className="py-4 px-5 font-bold text-slate-900">{r.patientName}</td>
-                      <td className="py-4 px-5 text-sm text-slate-600">
-                        {r.email ? (
-                          <span className="inline-flex items-center gap-1.5">
-                            <Mail size={14} className="text-slate-400" />
-                            {r.email}
-                          </span>
-                        ) : (
                           <span className="text-slate-300">—</span>
                         )}
                       </td>
-                      <td className="py-4 px-5 text-sm text-slate-600">
-                        {r.patientPhone ? (
-                          <span className="inline-flex items-center gap-1.5">
-                            <PhoneIcon size={14} className="text-slate-400" />
-                            {r.patientPhone}
-                          </span>
-                        ) : (
-                          <span className="text-slate-300">—</span>
-                        )}
+                      <td className="py-4 px-6">
+                        <div className="flex flex-col gap-1.5">
+                          <span className="font-semibold text-slate-900 text-sm">{r.patientName}</span>
+                          <div className="flex flex-col gap-1">
+                            {r.email && (
+                              <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                                <Mail size={12} className="text-slate-400" />
+                                {r.email}
+                              </span>
+                            )}
+                            {r.patientPhone && (
+                              <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                                <PhoneIcon size={12} className="text-slate-400" />
+                                {r.patientPhone}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </td>
-                      <td className="py-4 px-5 font-medium text-slate-600">{r.petName || <span className="text-slate-300">—</span>}</td>
-                      <td className="py-4 px-5">
-                        <span className="inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100/60 shadow-sm">
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-2">
+                          {r.petName ? (
+                            <>
+                              <User size={14} className="text-slate-400" />
+                              <span className="font-medium text-slate-700 text-sm">{r.petName}</span>
+                            </>
+                          ) : (
+                            <span className="text-slate-300 text-sm">—</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
                           {r.appointmentType}
                         </span>
                       </td>
-                      <td className="py-4 px-5">
-                        <div className="flex flex-col text-xs font-medium text-slate-600 gap-0.5">
-                          <span className="flex items-center gap-1"><Calendar size={12} className="text-slate-400" />{r.date}</span>
-                          {r.time && <span className="flex items-center gap-1 text-slate-400"><Clock size={12} />{r.time}</span>}
+                      <td className="py-4 px-6">
+                        <div className="flex flex-col text-xs font-medium text-slate-600 gap-1">
+                          <span className="flex items-center gap-1.5">
+                            <Calendar size={13} className="text-slate-400" />
+                            {r.date}
+                          </span>
+                          {r.time && (
+                            <span className="flex items-center gap-1.5 text-slate-400">
+                              <Clock size={13} />
+                              {r.time}
+                            </span>
+                          )}
                         </div>
                       </td>
-                      <td className="py-4 px-5">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold shadow-sm ${
+                      <td className="py-4 px-6">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold border ${
                           r.feedbackStatus === 'Completed'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
-                            : 'bg-amber-50 text-amber-700 border border-amber-200/60'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-amber-50 text-amber-700 border-amber-200'
                         }`}>
                           {r.feedbackStatus}
                         </span>
                       </td>
-                      <td className="py-4 px-5 font-semibold text-slate-700">
+                      <td className="py-4 px-6">
                         {r.feedbackGiven ? (
-                          <span className="text-emerald-600 flex items-center gap-1 font-bold text-xs"><CheckCircle2 size={14} /> Given</span>
+                          <span className="inline-flex items-center gap-1.5 text-emerald-600 font-semibold text-xs">
+                            <CheckCircle2 size={14} /> Given
+                          </span>
                         ) : (
                           <span className="text-slate-400 font-medium text-xs">Pending</span>
                         )}
                       </td>
-                      <td className="py-4 px-5">
+                      <td className="py-4 px-6">
                         {r.callAttempted ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-xl border border-blue-100">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
                             <Phone size={12} /> Attempted
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-xl">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 bg-slate-100 px-2.5 py-1 rounded-lg">
                             <PhoneOff size={12} /> Not called
                           </span>
                         )}
                       </td>
-                      <td className="py-4 px-5 text-right">
+                      <td className="py-4 px-6 text-right">
                         <button
                           onClick={() => openEdit(r)}
-                          className="inline-flex items-center justify-center bg-slate-100 group-hover:bg-blue-600 group-hover:text-white text-slate-700 p-2.5 rounded-xl shadow-sm transition-all"
-                          title="Edit Feedback"
+                          className="inline-flex items-center justify-center bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 p-2.5 rounded-xl shadow-sm transition-all"
+                          title="Edit"
                         >
-                          <Edit3 size={15} />
+                          <Edit3 size={16} />
                         </button>
                       </td>
                     </motion.tr>
@@ -1430,8 +1442,11 @@ export default function AdminAppointmentFeedback() {
 
                   {filtered.length === 0 && (
                     <tr>
-                      <td colSpan={12} className="py-16 text-center text-slate-400 italic font-medium">
-                        No feedback records found matching your query.
+                      <td colSpan={10} className="py-16 text-center">
+                        <div className="flex flex-col items-center gap-3 text-slate-400">
+                          <FileText size={48} className="opacity-30" />
+                          <p className="text-sm font-medium">No feedback records found</p>
+                        </div>
                       </td>
                     </tr>
                   )}
@@ -1445,184 +1460,184 @@ export default function AdminAppointmentFeedback() {
             <Pagination page={page} total={filtered.length} perPage={PER_PAGE} onChange={setPage} />
           </div>
         </motion.div>
-      </motion.div>
 
-      {/* Modal Popup */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4"
-            variants={modalBackdrop}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            onClick={() => setShowModal(false)}
-          >
+        {/* Modal Popup */}
+        <AnimatePresence>
+          {showModal && (
             <motion.div
-              variants={modalPanel}
+              className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4"
+              variants={modalBackdrop}
               initial="hidden"
               animate="visible"
               exit="exit"
-              onClick={e => e.stopPropagation()}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 border border-white/80"
+              onClick={() => setShowModal(false)}
             >
-              <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-                <div>
-                  <h3 className="text-xl font-black text-slate-900">
-                    {editing ? 'Edit Feedback Record' : 'Create New Feedback'}
-                  </h3>
-                  <p className="text-xs font-medium text-slate-500 mt-0.5">
-                    Fill out the required information accurately below.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="h-10 w-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              {!editing && (
-                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50/60 to-indigo-50/60 rounded-2xl border border-blue-100/60">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-blue-900 mb-2">
-                    <Link2 size={14} className="inline mr-1.5" /> Quick Prefill From Appointment
-                  </label>
-                  <select
-                    onChange={e => handlePrefill(e.target.value)}
-                    defaultValue=""
-                    className="w-full px-4 py-2.5 border border-blue-200/80 rounded-xl bg-white text-sm font-semibold text-slate-700 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all cursor-pointer shadow-sm"
+              <motion.div
+                variants={modalPanel}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                onClick={e => e.stopPropagation()}
+                className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 border border-white/50"
+              >
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">
+                      {editing ? 'Edit Feedback Record' : 'Create New Feedback'}
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Fill out the information below
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="h-10 w-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all"
                   >
-                    <option value="">Select an existing appointment…</option>
-                    {appointments.map(app => (
-                      <option key={app.id} value={app.id}>
-                        #{app.appointment_number || '—'} – {app.patientName} – {app.date} {app.time}
-                      </option>
-                    ))}
-                  </select>
+                    <X size={18} />
+                  </button>
                 </div>
-              )}
 
-              <form onSubmit={submit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Patient Name *</label>
-                    <input
-                      type="text"
-                      value={form.patientName}
-                      onChange={e => setForm(f => ({ ...f, patientName: e.target.value }))}
-                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm"
-                      placeholder="e.g. John Doe"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Pet Name</label>
-                    <input
-                      type="text"
-                      value={form.petName}
-                      onChange={e => setForm(f => ({ ...f, petName: e.target.value }))}
-                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm"
-                      placeholder="e.g. Max"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Appointment Type</label>
-                    <input
-                      type="text"
-                      value={form.appointmentType}
-                      onChange={e => setForm(f => ({ ...f, appointmentType: e.target.value }))}
-                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm"
-                      placeholder="e.g. Consult"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Date *</label>
-                    <input
-                      type="date"
-                      value={form.date}
-                      onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm cursor-pointer"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Time</label>
-                    <input
-                      type="time"
-                      value={form.time}
-                      onChange={e => setForm(f => ({ ...f, time: e.target.value }))}
-                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm cursor-pointer"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Feedback Status</label>
+                {!editing && (
+                  <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-blue-900 mb-2">
+                      <Link2 size={14} className="inline mr-1.5" /> Quick Prefill From Appointment
+                    </label>
                     <select
-                      value={form.feedbackStatus}
-                      onChange={e => setForm(f => ({ ...f, feedbackStatus: e.target.value }))}
-                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50/50 text-sm font-semibold text-slate-700 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm cursor-pointer"
+                      onChange={e => handlePrefill(e.target.value)}
+                      defaultValue=""
+                      className="w-full px-4 py-2.5 border border-blue-200 rounded-xl bg-white text-sm font-medium text-slate-700 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all cursor-pointer shadow-sm"
                     >
-                      {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                      <option value="">Select an existing appointment…</option>
+                      {appointments.map(app => (
+                        <option key={app.id} value={app.id}>
+                          #{app.appointment_number || '—'} – {app.patientName} – {app.date} {app.time}
+                        </option>
+                      ))}
                     </select>
                   </div>
-                </div>
+                )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                  <Toggle label="Feedback Given" checked={form.feedbackGiven} onChange={v => setForm(f => ({ ...f, feedbackGiven: v }))} />
-                  <Toggle label="Call Attempted" checked={form.callAttempted} onChange={v => setForm(f => ({ ...f, callAttempted: v }))} />
-                  <Toggle label="Call Picked" checked={form.callPicked} onChange={v => setForm(f => ({ ...f, callPicked: v }))} />
-                </div>
+                <form onSubmit={submit} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Patient Name *</label>
+                      <input
+                        type="text"
+                        value={form.patientName}
+                        onChange={e => setForm(f => ({ ...f, patientName: e.target.value }))}
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm"
+                        placeholder="e.g. John Doe"
+                        required
+                      />
+                    </div>
 
-                <div className="pt-2">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Feedback Notes</label>
-                  <textarea
-                    rows={3}
-                    value={form.feedbackText}
-                    onChange={e => setForm(f => ({ ...f, feedbackText: e.target.value }))}
-                    placeholder="Enter explicit feedback details or comments…"
-                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm resize-none"
-                  />
-                </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Pet Name</label>
+                      <input
+                        type="text"
+                        value={form.petName}
+                        onChange={e => setForm(f => ({ ...f, petName: e.target.value }))}
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm"
+                        placeholder="e.g. Max"
+                      />
+                    </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="px-5 py-2.5 border border-slate-200 rounded-full font-bold text-xs uppercase tracking-wider text-slate-600 hover:bg-slate-50 transition-all"
-                  >
-                    Cancel
-                  </button>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Appointment Type</label>
+                      <input
+                        type="text"
+                        value={form.appointmentType}
+                        onChange={e => setForm(f => ({ ...f, appointmentType: e.target.value }))}
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm"
+                        placeholder="e.g. Consult"
+                      />
+                    </div>
 
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full font-bold text-xs uppercase tracking-wider shadow-lg shadow-blue-500/25 disabled:opacity-60 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-95 transition-all"
-                  >
-                    {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
-                    <span>{saving ? 'Saving...' : editing ? 'Update Changes' : 'Save Record'}</span>
-                  </button>
-                </div>
-              </form>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Date *</label>
+                      <input
+                        type="date"
+                        value={form.date}
+                        onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm cursor-pointer"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Time</label>
+                      <input
+                        type="time"
+                        value={form.time}
+                        onChange={e => setForm(f => ({ ...f, time: e.target.value }))}
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm cursor-pointer"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Feedback Status</label>
+                      <select
+                        value={form.feedbackStatus}
+                        onChange={e => setForm(f => ({ ...f, feedbackStatus: e.target.value }))}
+                        className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm font-medium text-slate-700 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all cursor-pointer shadow-sm"
+                      >
+                        {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                    <Toggle label="Feedback Given" checked={form.feedbackGiven} onChange={v => setForm(f => ({ ...f, feedbackGiven: v }))} />
+                    <Toggle label="Call Attempted" checked={form.callAttempted} onChange={v => setForm(f => ({ ...f, callAttempted: v }))} />
+                    <Toggle label="Call Picked" checked={form.callPicked} onChange={v => setForm(f => ({ ...f, callPicked: v }))} />
+                  </div>
+
+                  <div className="pt-2">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Feedback Notes</label>
+                    <textarea
+                      rows={3}
+                      value={form.feedbackText}
+                      onChange={e => setForm(f => ({ ...f, feedbackText: e.target.value }))}
+                      placeholder="Enter feedback details or comments…"
+                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm resize-none"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setShowModal(false)}
+                      className="px-5 py-2.5 border border-slate-200 rounded-full font-semibold text-xs uppercase tracking-wider text-slate-600 hover:bg-slate-50 transition-all"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full font-semibold text-xs uppercase tracking-wider shadow-lg shadow-blue-500/25 disabled:opacity-60 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-95 transition-all"
+                    >
+                      {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                      <span>{saving ? 'Saving...' : editing ? 'Update' : 'Save'}</span>
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </DashboardLayout>
   );
 }
 
 function Toggle({ label, checked, onChange }) {
   return (
-    <div className="flex items-center justify-between bg-slate-50/70 border border-slate-200/80 p-3.5 rounded-2xl shadow-sm">
-      <span className="text-xs font-bold text-slate-700">{label}</span>
+    <div className="flex items-center justify-between bg-slate-50 border border-slate-200 p-3.5 rounded-xl shadow-sm">
+      <span className="text-xs font-semibold text-slate-700">{label}</span>
       <label className="relative inline-flex items-center cursor-pointer">
         <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="sr-only peer" />
-        <div className="w-10 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-500/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border after:border-slate-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-blue-600 peer-checked:to-indigo-600"></div>
+        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-500/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-blue-600 peer-checked:to-indigo-600"></div>
       </label>
     </div>
   );

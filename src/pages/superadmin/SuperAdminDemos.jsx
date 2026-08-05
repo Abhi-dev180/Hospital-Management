@@ -428,6 +428,11 @@ export default function SuperAdminDemos() {
                               <span className="text-slate-400 text-xs block font-normal capitalize">
                                 {b.payment.interval || ''}
                               </span>
+                              {b.payment.startDate && (
+                                <span className="text-slate-400 text-[10px] block font-normal mt-0.5">
+                                  {new Date(b.payment.startDate).toLocaleDateString()} - {b.payment.endDate ? new Date(b.payment.endDate).toLocaleDateString() : 'Active'}
+                                </span>
+                              )}
                             </span>
                           ) : <span className="text-slate-400 font-normal">—</span>}
                         </td>
