@@ -1,3 +1,4 @@
+// frontend/src/components/SlotSelector.jsx
 import { useState, useEffect } from 'react';
 import API_URL from '../config/api';
 
