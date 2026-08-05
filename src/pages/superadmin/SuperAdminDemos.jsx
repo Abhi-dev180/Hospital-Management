@@ -32,7 +32,7 @@ import DashboardTabs from '../../components/DashboardTabs';
 import Pagination from '../../components/Pagination';
 import { SectionLoader } from '../../components/Loader';
 
-const PER_PAGE = 6;
+const PER_PAGE = 4;
 
 const STATUS_CONFIG = {
   requested: {

@@ -49,7 +49,7 @@ export default function Footer() {
               <li><Link to="/doctors" className="hover:text-cyan-400 transition-colors flex items-center gap-1"><span>›</span> Doctors</Link></li>
               <li><Link to="/hospitals" className="hover:text-cyan-400 transition-colors flex items-center gap-1"><span>›</span> Hospitals Network</Link></li>
               <li><Link to="/contact" className="hover:text-cyan-400 transition-colors flex items-center gap-1"><span>›</span> Contact Us</Link></li>
-              <li><Link to="/dashboard/book-appointment" className="hover:text-cyan-400 transition-colors flex items-center gap-1"><span>›</span> Book Appointment</Link></li>
+              <li><Link to="/appointment" className="hover:text-cyan-400 transition-colors flex items-center gap-1"><span>›</span> Book Appointment</Link></li>
             </ul>
           </motion.div>
 

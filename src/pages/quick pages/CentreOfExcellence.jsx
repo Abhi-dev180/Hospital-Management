@@ -18,10 +18,10 @@ import {
   Microscope
 } from 'lucide-react';
 
-import homeTopVideo from '../../assets/home top.mp4';
-import brainVideo from '../../assets/brain.mp4';
-import childCareVideo from '../../assets/child care.mp4';
-import hospitalVideo from '../../assets/hospital.mp4';
+import homeTopVideo from '../../../assets/home top.mp4';
+import brainVideo from '../../../assets/brain.mp4';
+import childCareVideo from '../../../assets/child care.mp4';
+import hospitalVideo from '../../../assets/hospital.mp4';
 
 export default function CentreOfExcellence() {
   const heroVideoRef = useRef(null);

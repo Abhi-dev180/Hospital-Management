@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import API_URL from '../config/api';
+import API_URL from '../../config/api';
 import {
   Building2,
   MapPin,
@@ -21,9 +21,9 @@ import {
   Clock4
 } from 'lucide-react';
 
-import hospitalVideo from '../../assets/hospital.mp4';
-import brainVideo from '../../assets/brain.mp4';
-import childCareVideo from '../../assets/child care.mp4';
+import hospitalVideo from '../../../assets/hospital.mp4';
+import brainVideo from '../../../assets/brain.mp4';
+import childCareVideo from '../../../assets/child care.mp4';
 
 export default function Hospitals() {
   const heroVideoRef = useRef(null);

@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { MapPin, Loader2 } from 'lucide-react';
 
 // Address autocomplete using OpenStreetMap Nominatim (free, no API key).
-// Debounced; shows suggestions; clicking one fills the field with the full address.
-// cityOnly: when a result is picked, fill just the city/town name instead of the full address.
 export default function AddressAutocomplete({ value, onChange, placeholder = 'Search address…', cityOnly = false }) {
   const [query, setQuery] = useState(value || '');
   const [results, setResults] = useState([]);

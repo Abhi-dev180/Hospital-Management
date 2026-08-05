@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import API_URL from '../config/api';
+import API_URL from '../../config/api';
 import {
   Mail,
   Phone,
@@ -16,7 +16,7 @@ import {
   CheckCircle2,
   Headphones
 } from 'lucide-react';
-import hospitalVideo from '../../assets/hospital.mp4';
+import hospitalVideo from '../../../assets/hospital.mp4';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export default function Contact() {
   const heroVideoRef = useRef(null);

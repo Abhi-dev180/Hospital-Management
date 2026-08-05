@@ -12,7 +12,7 @@ import DashboardTabs from '../../components/DashboardTabs';
 import Pagination from '../../components/Pagination';
 import { TableSkeleton } from '../../components/Loader';
 
-const PER_PAGE = 6;
+const PER_PAGE = 3;
 
 const STATUS_STYLES = {
   pending: 'bg-amber-100 text-amber-700',

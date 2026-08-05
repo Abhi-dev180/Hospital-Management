@@ -5,7 +5,7 @@ import HomePracticeAreas from '../components/HomePracticeAreas';
 import HomeHealthPackages from '../components/HomeHealthPackages';
 import HomeTestimonials from '../components/HomeTestimonials';
 // import PublicFeedbackForm from '../components/PublicFeedbackFor';
-import PublicFeedbackForm from "../components/portal/PublicFeedbackForm";
+import PublicFeedbackForm from "../../components/portal/PublicFeedbackForm";
 import HomeFAQ from '../components/HomeFAQ';
 
 export default function Home() {

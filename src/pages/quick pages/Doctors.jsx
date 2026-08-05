@@ -16,9 +16,9 @@ import {
   CheckCircle2
 } from 'lucide-react';
 
-import childCareVideo from '../../assets/child care.mp4';
-import brainVideo from '../../assets/brain.mp4';
-import hospitalVideo from '../../assets/hospital.mp4';
+import childCareVideo from '../../../assets/child care.mp4';
+import brainVideo from '../../../assets/brain.mp4';
+import hospitalVideo from '../../../assets/hospital.mp4';
 
 export default function Doctors() {
   const heroVideoRef = useRef(null);

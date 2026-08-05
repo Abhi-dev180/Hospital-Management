@@ -6,8 +6,8 @@ import {
   ArrowRight, ArrowLeft, Building2, Activity, CalendarCheck, AlertCircle, Share2, Star
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import API_URL from '../config/api';
-import { SectionLoader } from '../components/Loader';
+import API_URL from '../../config/api';
+import { SectionLoader } from '../../components/Loader';
 
 import hospitalVideo from '../../assets/hospital.mp4';
 import brainVideo from '../../assets/brain.mp4';

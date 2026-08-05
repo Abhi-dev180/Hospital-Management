@@ -29,7 +29,7 @@ import {
 import homeTopVideo from '../../../assets/home top.mp4';
 import heroVideo from '../../../assets/new.mp4';
 import BookDemoSection from '../../components/portal/BookDemoSection';
-import HMSIntegrationAnimation from '../../components/HMSIntegrationAnimation';
+import HMSIntegrationAnimation from '../../components/Quick Links/HMSIntegrationAnimation';
 import PortalSpecialties from '../../components/portal/PortalSpecialties';
 import PortalFAQ from '../../components/portal/PortalFAQ';
 import PublicFeedbackForm from '../../components/portal/PublicFeedbackForm';

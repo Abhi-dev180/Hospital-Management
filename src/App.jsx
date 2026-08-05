@@ -6,7 +6,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import GlobalLoader from './components/GlobalLoader';
 
-const Home = lazy(() => import('./pages/Home'));
+const Home = lazy(() => import('./pages/quick pages/Home'));
 const PortalHome = lazy(() => import('./pages/portal/PortalHome'));
 const SchedulePage = lazy(() => import('./pages/portal/SchedulePage'));
 const FeedbackPage = lazy(() => import('./pages/portal/FeedbackPage'));
@@ -30,11 +30,11 @@ const SuperAdminManageHospitals = lazy(() => import('./pages/superadmin/SuperAdm
 const SuperAdminAppointments = lazy(() => import('./pages/superadmin/SuperAdminAppointments'));
 const UserBookAppointment = lazy(() => import('./pages/user/UserBookAppointment'));
 const UserMyAppointments = lazy(() => import('./pages/user/UserMyAppointments'));
-const CentreOfExcellence = lazy(() => import('./pages/CentreOfExcellence'));
-const Contact = lazy(() => import('./pages/Contact'));
-const Doctors = lazy(() => import('./pages/Doctors'));
-const Hospitals = lazy(() => import('./pages/Hospitals'));
-const HospitalProfile = lazy(() => import('./pages/HospitalProfile'));
+const CentreOfExcellence = lazy(() => import('./pages/quick pages/CentreOfExcellence'));
+const Contact = lazy(() => import('./pages/quick pages/Contact'));
+const Doctors = lazy(() => import('./pages/quick pages/Doctors'));
+const Hospitals = lazy(() => import('./pages/quick pages/Hospitals'));
+const HospitalProfile = lazy(() => import('./pages/quick pages/HospitalProfile'));
 const PricingPage = lazy(() => import('./pages/stripe/PricingPage'));
 const RenewPage = lazy(() => import('./pages/stripe/RenewPage'));
 

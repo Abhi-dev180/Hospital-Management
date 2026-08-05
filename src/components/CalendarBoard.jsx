@@ -11,7 +11,7 @@ import Loader, { SectionLoader } from './Loader';
 /**
  * Month calendar showing appointments and demo meetings side by side.
  * Data comes from GET /api/calendar/events, which scopes rows by role.
- */
+ **/
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
