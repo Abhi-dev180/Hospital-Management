@@ -41,7 +41,7 @@ export default function BookDemoSection() {
   const validate = () => {
     const e = {};
     if (!form.hospitalName.trim()) e.hospitalName = 'Hospital name is required';
-    if (!form.contactName.trim()) e.contactName = 'Your name is required';
+    if (!form.contactName.trim()) e.contactName = 'Admin name is required';
     if (!form.email.trim()) e.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = 'Enter a valid email';
     if (form.phone && !/^\d{10}$/.test(form.phone.trim())) e.phone = 'Enter a valid 10-digit mobile number';
@@ -88,7 +88,7 @@ export default function BookDemoSection() {
               <Field icon={Building2} label="Hospital / Clinic name *" error={errors.hospitalName}>
                 <input value={form.hospitalName} onChange={update('hospitalName')} placeholder="Happy Paws Veterinary" className="portal-input" />
               </Field>
-              <Field icon={User} label="Your name *" error={errors.contactName}>
+              <Field icon={User} label="Hospital Admin Name *" error={errors.contactName}>
                 <input value={form.contactName} onChange={update('contactName')} placeholder="Dr. Jane Doe" className="portal-input" />
               </Field>
               <Field icon={Mail} label="Email *" error={errors.email}>

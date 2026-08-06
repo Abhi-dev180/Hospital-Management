@@ -276,9 +276,9 @@ export default function RegisterPage() {
           <Field icon={MapPin} label="City">
             <input value={form.city} onChange={update('city')} className="portal-input" placeholder="Mumbai" />
           </Field>
-          <Field icon={BedDouble} label="Number of beds">
+          {/* <Field icon={BedDouble} label="Number of beds">
             <input type="number" min="0" value={form.beds} onChange={update('beds')} className="portal-input" placeholder="50" />
-          </Field>
+          </Field> */}
           <div className="sm:col-span-2">
             <Field icon={Home} label="Address">
               <AddressAutocomplete
