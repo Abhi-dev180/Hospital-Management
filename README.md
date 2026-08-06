@@ -91,6 +91,11 @@ frontend/
 ├── package.json            # Dependencies and scripts
 └── README.md               # Project documentation
 
+<<<<<<< HEAD
+=======
+---
+
+>>>>>>> 30e35ee4629deeaab883b1538481d02b6625d903
 💻 Installation & Setup (Frontend)
 Clone the repository:
 
@@ -214,4 +219,8 @@ To make this README look beautiful on GitHub, you can **commit and push it**:
 ```bash
 git add README.md
 git commit -m "Add professional README file"
+<<<<<<< HEAD
 git push origin main
+=======
+git push origin main
+>>>>>>> 30e35ee4629deeaab883b1538481d02b6625d903
