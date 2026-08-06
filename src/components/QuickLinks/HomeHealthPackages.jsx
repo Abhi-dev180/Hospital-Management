@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle2, ArrowRight } from 'lucide-react';
-import homeTopVideo from '../../assets/home top.mp4';
+import homeTopVideo from '../../../assets/home top.mp4';
 
 const healthPackages = [
   {

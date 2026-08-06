@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Play, Pause, Volume2, VolumeX, ArrowRight, HeartPulse } from 'lucide-react';
-import newVideo from '../../assets/new.mp4';
+import newVideo from '../../../assets/new.mp4';
 
 export default function HomeHero() {
   const heroVideoRef = useRef(null);

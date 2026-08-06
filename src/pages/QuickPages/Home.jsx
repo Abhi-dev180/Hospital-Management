@@ -1,12 +1,12 @@
-import HomeHero from '../components/HomeHero';
-import HomeStats from '../components/HomeStats';
-import HMSIntegrationAnimation from '../components/HMSIntegrationAnimation';
-import HomePracticeAreas from '../components/HomePracticeAreas';
-import HomeHealthPackages from '../components/HomeHealthPackages';
-import HomeTestimonials from '../components/HomeTestimonials';
+import HomeHero from '../../components/QuickLinks/HomeHero';
+import HomeStats from '../../components/QuickLinks/HomeStats';
+import HMSIntegrationAnimation from '../../components/QuickLinks/HMSIntegrationAnimation';
+import HomePracticeAreas from '../../components/QuickLinks/HomePracticeAreas';
+import HomeHealthPackages from '../../components/QuickLinks/HomeHealthPackages';
+import HomeTestimonials from '../../components/QuickLinks/HomeTestimonials';
 // import PublicFeedbackForm from '../components/PublicFeedbackFor';
 import PublicFeedbackForm from "../../components/portal/PublicFeedbackForm";
-import HomeFAQ from '../components/HomeFAQ';
+import HomeFAQ from '../../components/QuickLinks/HomeFAQ';
 
 export default function Home() {
   return (

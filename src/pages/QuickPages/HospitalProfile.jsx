@@ -9,9 +9,9 @@ import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
 import { SectionLoader } from '../../components/Loader';
 
-import hospitalVideo from '../../assets/hospital.mp4';
-import brainVideo from '../../assets/brain.mp4';
-import childCareVideo from '../../assets/child care.mp4';
+import hospitalVideo from '../../../assets/hospital.mp4';
+import brainVideo from '../../../assets/brain.mp4';
+import childCareVideo from '../../../assets/child care.mp4';
 
 const FALLBACK_IMG =
   'https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?auto=format&fit=crop&w=1600&q=80';

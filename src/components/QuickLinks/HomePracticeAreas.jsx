@@ -1,8 +1,8 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, Volume2, VolumeX, X, ArrowRight } from 'lucide-react';
-import brainVideo from '../../assets/brain.mp4';
-import childCareVideo from '../../assets/child care.mp4';
+import brainVideo from '../../../assets/brain.mp4';
+import childCareVideo from '../../../assets/child care.mp4';
 
 const practiceAreas = [
   {
