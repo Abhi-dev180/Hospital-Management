@@ -134,25 +134,29 @@ export default function CalendarBoard({ title = "Hospital Calendar", subtitle = 
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex-1 flex items-center justify-center text-slate-400">
-          <span className="animate-pulse">Loading calendar…</span>
-        </div>
-      ) : error ? (
+      {error ? (
         <div className="flex-1 flex items-center justify-center text-red-500 text-sm p-4">
           {error}
         </div>
       ) : (
-        <div className="flex flex-col sm:flex-row flex-1 min-h-0 overflow-hidden">
+        <div className="flex flex-col sm:flex-row flex-1 min-h-0 overflow-hidden relative">
+          {loading && (
+            <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-20 flex items-center justify-center">
+              <div className="bg-white py-2 px-4 rounded-full shadow-md border border-slate-100 flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
+                <span className="text-sm font-semibold text-slate-600 animate-pulse">Loading month...</span>
+              </div>
+            </div>
+          )}
           {/* ─── Calendar Grid ───────────────────────────────── */}
           <div className="w-full sm:w-[62%] flex flex-col border-b sm:border-b-0 sm:border-r border-slate-200 bg-white overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 shrink-0">
-              <button onClick={handlePrevMonth} className="w-8 h-8 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all text-sm font-bold shadow-sm cursor-pointer">‹</button>
+              <button disabled={loading} onClick={handlePrevMonth} className="w-8 h-8 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all text-sm font-bold shadow-sm">‹</button>
               <div className="flex items-center gap-2 sm:gap-3">
                 <span className="font-bold text-slate-800 text-sm">{MONTH_NAMES[month]} {year}</span>
-                <button onClick={handleToday} className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1 rounded-lg font-semibold transition-all border border-blue-200 cursor-pointer">Today</button>
+                <button disabled={loading} onClick={handleToday} className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1 rounded-lg font-semibold transition-all border border-blue-200 disabled:opacity-50 disabled:cursor-not-allowed">Today</button>
               </div>
-              <button onClick={handleNextMonth} className="w-8 h-8 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all text-sm font-bold shadow-sm cursor-pointer">›</button>
+              <button disabled={loading} onClick={handleNextMonth} className="w-8 h-8 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all text-sm font-bold shadow-sm">›</button>
             </div>
 
             <div className="grid grid-cols-7 gap-px bg-slate-200 border-b border-slate-200">

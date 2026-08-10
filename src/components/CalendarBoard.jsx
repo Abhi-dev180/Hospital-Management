@@ -173,7 +173,8 @@ export default function CalendarBoard({ title = 'Calendar', subtitle = 'Appointm
         <button
           type="button"
           onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
-          className="p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition"
+          disabled={loading}
+          className="p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Previous month"
         >
           <ChevronLeft size={17} />
@@ -184,7 +185,8 @@ export default function CalendarBoard({ title = 'Calendar', subtitle = 'Appointm
           <button
             type="button"
             onClick={goToday}
-            className="text-xs font-bold text-medical-blue hover:text-medical-dark border border-medical-blue/30 rounded-full px-3 py-1 transition"
+            disabled={loading}
+            className="text-xs font-bold text-medical-blue hover:text-medical-dark border border-medical-blue/30 rounded-full px-3 py-1 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Today
           </button>
@@ -193,7 +195,8 @@ export default function CalendarBoard({ title = 'Calendar', subtitle = 'Appointm
         <button
           type="button"
           onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
-          className="p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition"
+          disabled={loading}
+          className="p-2 rounded-full border border-gray-200 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Next month"
         >
           <ChevronRight size={17} />
@@ -211,7 +214,12 @@ export default function CalendarBoard({ title = 'Calendar', subtitle = 'Appointm
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-0">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-0 relative">
+          {loading && (
+            <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center">
+              <Loader size="md" />
+            </div>
+          )}
           {/* ─── Month grid ────────────────────────────── */}
           <div className="xl:col-span-2 p-4 sm:p-6 border-b xl:border-b-0 xl:border-r border-gray-100">
             <div className="grid grid-cols-7 gap-1 mb-2">

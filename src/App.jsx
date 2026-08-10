@@ -225,6 +225,7 @@ import GlobalLoader from "./components/GlobalLoader";
 import ProfilePage from "./pages/profile/ProfilePage";
 import FeedbackPage from "./pages/Feedback/FeedbackPage";        // wrapper that renders PublicFeedbackForm
 import PublicFeedbackForm from "./components/portal/PublicFeedbackForm";
+import ScrollToTop from "./components/ScrollToTop";
 
 // ─── Lazy imports ───────────────────────────────────────────────
 const Home = lazy(() => import("./pages/QuickPages/Home"));
@@ -264,6 +265,7 @@ const AdminAppointmentFeedback = lazy(() => import("./pages/admin/AdminAppointme
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Toaster
         position="top-right"
         containerStyle={{ marginTop: "3rem" }}
