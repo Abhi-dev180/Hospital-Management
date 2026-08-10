@@ -181,12 +181,16 @@ export default function SuperAdminManageHospitals() {
   };
 
   const handleDelete = async (id) => {
+     if (!window.confirm('Are you sure you want to delete this hospital?.')) {
+    return; 
+  }
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/hospitals/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
+
       const data = await res.json();
       if (!res.ok) {
         return toast.error(data.message || 'Unable to delete hospital');
