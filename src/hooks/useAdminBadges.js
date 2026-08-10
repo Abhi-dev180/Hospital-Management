@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import API_URL from '../config/api';
+import { useWebSocket } from './useWebSocket';
 
 const POLL_MS = 15000;
 const SEEN_KEY = 'admin:seenCounts';
@@ -63,6 +64,19 @@ export default function useAdminBadges(enabled = true) {
       window.removeEventListener('focus', onFocus);
     };
   }, [enabled, fetchCounts]);
+
+  // Real-time WebSocket listeners trigger a fresh count fetch
+  const handleRealTimeEvent = useCallback(() => {
+    if (enabled) fetchCounts();
+  }, [enabled, fetchCounts]);
+
+  useWebSocket('appointment_created', handleRealTimeEvent);
+  useWebSocket('appointment_updated', handleRealTimeEvent);
+  useWebSocket('appointment_deleted', handleRealTimeEvent);
+  
+  useWebSocket('feedback_created', handleRealTimeEvent);
+  useWebSocket('feedback_updated', handleRealTimeEvent);
+  useWebSocket('feedback_deleted', handleRealTimeEvent);
 
   // Opening a section marks its current count as read.
   useEffect(() => {

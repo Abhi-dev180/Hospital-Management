@@ -12,6 +12,7 @@ import API_URL from '../../config/api';
 import Pagination from '../../components/Pagination';
 import SlotSelector from '../../components/SlotSelector';
 import { TableSkeleton } from '../../components/Loader';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 const PER_PAGE = 10;
 const STATUSES = ['Pending', 'Confirmed', 'In Progress', 'Completed', 'Cancelled', 'Rescheduled'];
@@ -147,6 +148,26 @@ export default function AdminAppointments() {
     const u = localStorage.getItem('user');
     if (u) fetchAppointments(JSON.parse(u));
   };
+
+  // ─── Real-Time WebSocket Updates ─────────────────────────────
+  useWebSocket("appointment_created", (newAppt) => {
+    // Only add if it belongs to this admin's hospital (or if superadmin)
+    if (user?.role === 'admin' && String(newAppt.hospitalId) !== String(user.hospitalId)) return;
+    setAppointments((prev) => {
+      if (prev.some(a => a.id === newAppt.id)) return prev;
+      return [newAppt, ...prev];
+    });
+    toast.success(`New appointment for ${newAppt.patientName}`);
+  });
+
+  useWebSocket("appointment_updated", (updatedAppt) => {
+    if (user?.role === 'admin' && String(updatedAppt.hospitalId) !== String(user.hospitalId)) return;
+    setAppointments((prev) => prev.map(a => a.id === updatedAppt.id ? updatedAppt : a));
+  });
+
+  useWebSocket("appointment_deleted", ({ id }) => {
+    setAppointments((prev) => prev.filter((a) => a.id !== id));
+  });
 
   const fetchHospitals = async () => {
     try {

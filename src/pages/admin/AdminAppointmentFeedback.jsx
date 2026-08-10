@@ -11,6 +11,7 @@ import API_URL from '../../config/api';
 import DashboardLayout from '../../components/DashboardLayout';
 import Pagination from '../../components/Pagination';
 import { TableSkeleton } from '../../components/Loader';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 const PER_PAGE = 6;
 const STATUSES = ['Pending', 'Completed'];
@@ -95,6 +96,25 @@ export default function AdminAppointmentFeedback() {
       if (res.ok) setAppointments(Array.isArray(data) ? data : []);
     } catch {}
   };
+
+  // ─── Real-Time WebSocket Updates ─────────────────────────────
+  useWebSocket("feedback_created", (newFeedback) => {
+    if (user?.role === 'admin' && String(newFeedback.hospitalId) !== String(user.hospitalId)) return;
+    setRows((prev) => {
+      if (prev.some(r => r.id === newFeedback.id)) return prev;
+      return [newFeedback, ...prev];
+    });
+    toast.success(`New feedback from ${newFeedback.patientName}`);
+  });
+
+  useWebSocket("feedback_updated", (updatedFeedback) => {
+    if (user?.role === 'admin' && String(updatedFeedback.hospitalId) !== String(user.hospitalId)) return;
+    setRows((prev) => prev.map(r => r.id === updatedFeedback.id ? updatedFeedback : r));
+  });
+
+  useWebSocket("feedback_deleted", ({ id }) => {
+    setRows((prev) => prev.filter((r) => r.id !== id));
+  });
 
   const openCreate = () => {
     setEditing(null);

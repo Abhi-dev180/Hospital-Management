@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
 import DashboardLayout from '../../components/DashboardLayout';
 import Loader, { TableSkeleton, StatSkeleton, OverlayLoader } from '../../components/Loader';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 const STATUS_META = {
   new: { label: 'New', pill: 'bg-amber-100 text-amber-800', icon: Inbox },
@@ -27,7 +28,6 @@ export default function SuperAdminContacts() {
 
   const [loading, setLoading] = useState(true);
   const [contacts, setContacts] = useState([]);
-  const [counts, setCounts] = useState({ total: 0, new: 0, in_progress: 0, resolved: 0, closed: 0 });
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
@@ -62,13 +62,28 @@ export default function SuperAdminContacts() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Could not load messages');
       setContacts(Array.isArray(data.contacts) ? data.contacts : []);
-      if (data.counts) setCounts(data.counts);
     } catch (err) {
       toast.error(err.message || 'Unable to load contact messages.');
     } finally {
       setLoading(false);
     }
   };
+
+  useWebSocket("contact_created", (newContact) => {
+    setContacts((prev) => {
+      if (prev.some(c => c.id === newContact.id)) return prev;
+      return [newContact, ...prev];
+    });
+    toast.success(`New contact message from ${newContact.name}`);
+  });
+
+  useWebSocket("contact_updated", (updatedContact) => {
+    setContacts((prev) => prev.map(c => c.id === updatedContact.id ? updatedContact : c));
+  });
+
+  useWebSocket("contact_deleted", ({ id }) => {
+    setContacts((prev) => prev.filter((c) => c.id !== id));
+  });
 
   // ─── Filtering ────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -81,6 +96,17 @@ export default function SuperAdminContacts() {
       );
     });
   }, [contacts, search, statusFilter]);
+
+  const counts = useMemo(() => {
+    return contacts.reduce(
+      (acc, c) => {
+        acc.total += 1;
+        acc[c.status] = (acc[c.status] || 0) + 1;
+        return acc;
+      },
+      { total: 0, new: 0, in_progress: 0, resolved: 0, closed: 0 }
+    );
+  }, [contacts]);
 
   useEffect(() => setPage(1), [search, statusFilter]);
 

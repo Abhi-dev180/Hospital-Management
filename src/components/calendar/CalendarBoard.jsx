@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import API_URL from '../../config/api'; 
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 // ─── Helpers ──────────────────────────────────────────────────
 const formatDateKey = (year, month, day) => {
@@ -87,6 +88,18 @@ export default function CalendarBoard({ title = "Hospital Calendar", subtitle = 
   useEffect(() => {
     fetchEvents();
   }, [year, month]);
+
+  // ─── Real-Time WebSocket Updates ─────────────────────────────
+  const handleRealTimeEvent = useCallback(() => {
+    fetchEvents();
+  }, [year, month]); // Re-fetch the current month view
+
+  useWebSocket("appointment_created", handleRealTimeEvent);
+  useWebSocket("appointment_updated", handleRealTimeEvent);
+  useWebSocket("appointment_deleted", handleRealTimeEvent);
+  useWebSocket("demo_created", handleRealTimeEvent);
+  useWebSocket("demo_updated", handleRealTimeEvent);
+  useWebSocket("demo_deleted", handleRealTimeEvent);
 
   // ─── Handlers ──────────────────────────────────────────────────
   const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1, 1));

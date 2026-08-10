@@ -31,6 +31,7 @@ import DashboardLayout from "../../components/DashboardLayout";
 import DashboardTabs from "../../components/DashboardTabs";
 import Pagination from "../../components/Pagination";
 import { SectionLoader } from "../../components/Loader";
+import { useWebSocket } from "../../hooks/useWebSocket";
 
 const PER_PAGE = 4;
 
@@ -115,7 +116,6 @@ const rowAnimation = {
 export default function SuperAdminDemos() {
   const [user, setUser] = useState(null);
   const [bookings, setBookings] = useState([]);
-  const [counts, setCounts] = useState(emptyCounts);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -173,17 +173,33 @@ export default function SuperAdminDemos() {
       if (!res.ok) {
         toast.error(data.message || "Failed to load demo bookings");
         setBookings([]);
-        setCounts(emptyCounts);
         return;
       }
       setBookings(Array.isArray(data.bookings) ? data.bookings : []);
-      setCounts(data.counts || emptyCounts);
     } catch {
       toast.error("Unable to reach the server");
     } finally {
       setLoading(false);
     }
   };
+
+  // ─── Real-Time WebSocket Updates ─────────────────────────────
+  useWebSocket("demo_created", (newDemo) => {
+    setBookings((prev) => {
+      if (prev.some(b => b.id === newDemo.id)) return prev;
+      return [newDemo, ...prev];
+    });
+    toast.success(`New demo booked by ${newDemo.hospital_name}`);
+  });
+
+  useWebSocket("demo_updated", (updatedDemo) => {
+    setBookings((prev) => prev.map(b => b.id === updatedDemo.id ? updatedDemo : b));
+    // The fetchBookings handles exact counts better, but for UI updates the list changes instantly.
+  });
+
+  useWebSocket("demo_deleted", ({ id }) => {
+    setBookings((prev) => prev.filter((b) => b.id !== id));
+  });
 
   const patchBooking = async (id, body, successMsg) => {
     try {
@@ -295,6 +311,17 @@ export default function SuperAdminDemos() {
       return matchesStatus && matchesSearch;
     });
   }, [bookings, search, statusFilter]);
+
+  const counts = useMemo(() => {
+    return bookings.reduce(
+      (acc, b) => {
+        acc.total += 1;
+        acc[b.status] = (acc[b.status] || 0) + 1;
+        return acc;
+      },
+      { total: 0, requested: 0, invited: 0, scheduled: 0, completed: 0, cancelled: 0 }
+    );
+  }, [bookings]);
 
   const [page, setPage] = useState(1);
   useEffect(() => {
@@ -604,17 +631,23 @@ export default function SuperAdminDemos() {
                         </td>
 
                         <td className="py-4 px-5">
-                          {b.meeting_link ? (
-                            <a
-                              href={b.meeting_link}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm"
-                            >
-                              <Video size={13} /> Join{" "}
-                              <ExternalLink size={10} />
-                            </a>
-                          ) : (
+                          {b.meeting_link ? (() => {
+                            const isZoom = b.meeting_link.includes("zoom.us");
+                            const isMeet = b.meeting_link.includes("meet.google.com");
+                            const joinText = isZoom ? "Join Zoom" : isMeet ? "Join Meet" : "Join";
+                            
+                            return (
+                              <a
+                                href={b.meeting_link}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm"
+                              >
+                                <Video size={13} /> {joinText}{" "}
+                                <ExternalLink size={10} />
+                              </a>
+                            );
+                          })() : (
                             <span className="text-slate-400 text-xs font-normal italic">
                               No meeting link
                             </span>

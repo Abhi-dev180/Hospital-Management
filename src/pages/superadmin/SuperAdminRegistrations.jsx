@@ -11,6 +11,7 @@ import DashboardLayout from '../../components/DashboardLayout';
 import DashboardTabs from '../../components/DashboardTabs';
 import Pagination from '../../components/Pagination';
 import { TableSkeleton } from '../../components/Loader';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 const PER_PAGE = 3;
 
@@ -28,7 +29,6 @@ const fmt = (iso) => (iso ? new Date(iso).toLocaleString('en-US', { dateStyle: '
 export default function SuperAdminRegistrations() {
   const [user, setUser] = useState(null);
   const [rows, setRows] = useState([]);
-  const [counts, setCounts] = useState(emptyCounts);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -88,15 +88,31 @@ export default function SuperAdminRegistrations() {
     try {
       const res = await fetch(`${API_URL}/api/registrations`, { headers: authHeaders() });
       const data = await res.json();
-      if (!res.ok) { toast.error(data.message || 'Failed to load registrations'); setRows([]); setCounts(emptyCounts); return; }
+      if (!res.ok) { toast.error(data.message || 'Failed to load registrations'); setRows([]); return; }
       setRows(Array.isArray(data.registrations) ? data.registrations : []);
-      setCounts(data.counts || emptyCounts);
     } catch {
       toast.error('Unable to reach the server');
     } finally {
       setLoading(false);
     }
   };
+
+  // ─── Real-Time WebSocket Updates ─────────────────────────────
+  useWebSocket("registration_created", (newReg) => {
+    setRows((prev) => {
+      if (prev.some(r => r.id === newReg.id)) return prev;
+      return [newReg, ...prev];
+    });
+    toast.success(`New registration from ${newReg.hospitalName || newReg.hospital_name}`);
+  });
+
+  useWebSocket("registration_updated", (updatedReg) => {
+    setRows((prev) => prev.map(r => r.id === updatedReg.id ? updatedReg : r));
+  });
+
+  useWebSocket("registration_deleted", ({ id }) => {
+    setRows((prev) => prev.filter((r) => r.id !== id));
+  });
 
   const fetchHospitals = async () => {
     try {
@@ -153,17 +169,30 @@ export default function SuperAdminRegistrations() {
   };
 
   const [page, setPage] = useState(1);
-  useEffect(() => { setPage(1); }, [search, statusFilter]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
-      const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
-      const matchesSearch = !q || [r.hospitalName, r.contactName, r.email, r.city, r.username]
-        .filter(Boolean).some((v) => v.toLowerCase().includes(q));
-      return matchesStatus && matchesSearch;
+      if (statusFilter !== 'all' && r.status !== statusFilter) return false;
+      if (!q) return true;
+      return [r.hospitalName, r.hospital_name, r.email, r.contactPerson].some((f) =>
+        String(f || '').toLowerCase().includes(q)
+      );
     });
   }, [rows, search, statusFilter]);
+
+  const counts = useMemo(() => {
+    return rows.reduce(
+      (acc, r) => {
+        acc.total += 1;
+        acc[r.status] = (acc[r.status] || 0) + 1;
+        return acc;
+      },
+      { total: 0, pending: 0, approved: 0, denied: 0, active: 0, inactive: 0 }
+    );
+  }, [rows]);
+
+  useEffect(() => setPage(1), [search, statusFilter]);
 
   const paginated = useMemo(() => filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE), [filtered, page]);
 

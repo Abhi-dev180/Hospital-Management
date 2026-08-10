@@ -90,6 +90,7 @@
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import API_URL from '../config/api';
+import { useWebSocket } from './useWebSocket';
 
 const POLL_MS = 15000;
 const SEEN_KEY = 'superadmin:seenCounts';
@@ -153,6 +154,24 @@ export default function useSuperAdminBadges(enabled = true) {
       window.removeEventListener('focus', onFocus);
     };
   }, [enabled, fetchCounts]);
+
+  // Real-time WebSocket listeners trigger a fresh count fetch
+  // to ensure perfect accuracy across creations, updates (status changes), and deletions.
+  const handleRealTimeEvent = useCallback(() => {
+    if (enabled) fetchCounts();
+  }, [enabled, fetchCounts]);
+
+  useWebSocket('registration_created', handleRealTimeEvent);
+  useWebSocket('registration_updated', handleRealTimeEvent);
+  useWebSocket('registration_deleted', handleRealTimeEvent);
+  
+  useWebSocket('demo_created', handleRealTimeEvent);
+  useWebSocket('demo_updated', handleRealTimeEvent);
+  useWebSocket('demo_deleted', handleRealTimeEvent);
+
+  useWebSocket('contact_created', handleRealTimeEvent);
+  useWebSocket('contact_updated', handleRealTimeEvent);
+  useWebSocket('contact_deleted', handleRealTimeEvent);
 
   // Opening a section marks its current count as read.
   useEffect(() => {
