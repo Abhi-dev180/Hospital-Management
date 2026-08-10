@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 
-// Centered card layout shared by the public funnel pages (schedule / feedback / register).
+// Centered card layout shared by the public funnel pages (schedule / feedback / register). abc
 export default function PortalCardPage({ icon: Icon, title, subtitle, children, wide = false }) {
   return (
     <div className="min-h-[calc(100vh-4rem)] portal-bg py-12 px-4">
