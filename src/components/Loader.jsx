@@ -1,20 +1,6 @@
 import { motion } from 'framer-motion';
 import { PawPrint, Loader2 } from 'lucide-react';
 
-/**
- * Shared loading primitives for the whole app.
- *
- *  <Loader />                 – inline spinner (buttons, small areas)
- *  <SectionLoader />          – centered block loader for a page/card region
- *  <OverlayLoader />          – blocking overlay while an action completes
- *  <TableSkeleton />          – shimmering rows while a table loads
- *  <CardSkeleton />           – shimmering card while a grid loads
- *  <ListSkeleton />           – shimmering stacked rows
- *  <StatSkeleton />           – shimmering KPI tile
- *
- * The full-screen brand loader used for route transitions lives in GlobalLoader.jsx.
- */
-
 // ─── Shimmer base ─────────────────────────────────────────────
 const shimmer =
   'relative overflow-hidden bg-slate-200/70 before:absolute before:inset-0 ' +
