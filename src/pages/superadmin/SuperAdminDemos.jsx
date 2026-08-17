@@ -217,12 +217,39 @@ export default function SuperAdminDemos() {
     }
   };
 
-  const openRescheduleModal = (b) => {
+  const openRescheduleModal = async (b) => {
     setActiveMenuId(null);
-    const current = b.scheduled_at
-      ? new Date(b.scheduled_at).toISOString().slice(0, 16)
-      : "";
-    setRescheduleModal({ open: true, booking: b, datetime: current });
+    setRescheduleModal({ open: true, booking: b, datetime: b.scheduled_at ? new Date(b.scheduled_at).toISOString().slice(0, 16) : "", slots: null, activeDay: '' });
+    try {
+      const res = await fetch(`${API_URL}/api/schedule/${b.feedback_token}`);
+      if (res.ok) {
+        const data = await res.json();
+        setRescheduleModal(m => ({ ...m, slots: data.slots || [] }));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const pickAdminSlot = async (iso) => {
+    const { booking } = rescheduleModal;
+    setRescheduling(true);
+    try {
+      const res = await fetch(`${API_URL}/api/schedule/${booking.feedback_token}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slot: iso })
+      });
+      const data = await res.json();
+      if (!res.ok) return toast.error(data.message || "Failed to schedule slot");
+      toast.success("Demo scheduled and meeting link generated!");
+      setRescheduleModal({ open: false, booking: null, datetime: "", slots: null, activeDay: '' });
+      fetchBookings();
+    } catch (e) {
+      toast.error("Network error");
+    } finally {
+      setRescheduling(false);
+    }
   };
 
   const submitReschedule = async (e) => {
@@ -235,11 +262,11 @@ export default function SuperAdminDemos() {
     setRescheduling(true);
     await patchBooking(
       booking.id,
-      { scheduledAt: iso.toISOString(), status: "scheduled" },
-      "Demo rescheduled successfully",
+      { scheduled_at: iso.toISOString(), status: "scheduled" },
+      "Demo rescheduled successfully (Manual override, no link generated)",
     );
     setRescheduling(false);
-    setRescheduleModal({ open: false, booking: null, datetime: "" });
+    setRescheduleModal({ open: false, booking: null, datetime: "", slots: null, activeDay: '' });
   };
 
   const openLinkModal = (b) => {
@@ -253,7 +280,7 @@ export default function SuperAdminDemos() {
     setSavingLink(true);
     await patchBooking(
       booking.id,
-      { meetingLink: link.trim() },
+      { meeting_link: link.trim() },
       "Meeting link updated successfully",
     );
     setSavingLink(false);
@@ -771,7 +798,7 @@ export default function SuperAdminDemos() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() =>
-              setRescheduleModal({ open: false, booking: null, datetime: "" })
+              setRescheduleModal({ open: false, booking: null, datetime: "", slots: null, activeDay: '' })
             }
           >
             <motion.div
@@ -798,6 +825,8 @@ export default function SuperAdminDemos() {
                       open: false,
                       booking: null,
                       datetime: "",
+                      slots: null,
+                      activeDay: ''
                     })
                   }
                   className="h-10 w-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition"
@@ -812,7 +841,7 @@ export default function SuperAdminDemos() {
               >
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                    New Date & Time *
+                    Manual Override Date & Time
                   </label>
                   <input
                     type="datetime-local"
@@ -823,12 +852,47 @@ export default function SuperAdminDemos() {
                         datetime: e.target.value,
                       }))
                     }
-                    className="w-full px-4 py-3 bg-slate-50/80 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition text-sm font-semibold text-slate-800 shadow-inner"
-                    required
+                    className="w-full px-4 py-3 bg-slate-50/80 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition text-sm font-semibold text-slate-800 shadow-inner mb-2"
                   />
+                  <p className="text-[10px] text-slate-400 mb-4">* Manual override will not automatically generate a meeting link.</p>
+
+                  {rescheduleModal.slots !== null && (
+                    <div className="mt-4 border-t pt-4">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+                        Or pick an available slot (Generates Link)
+                      </label>
+                      {rescheduleModal.slots.length === 0 ? (
+                        <div className="text-sm text-slate-500 py-4 text-center">No slots available right now.</div>
+                      ) : (
+                        <div className="max-h-60 overflow-y-auto pr-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {rescheduleModal.slots.map(s => {
+                            const label = new Date(s.iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+                            if (s.taken) {
+                              return (
+                                <div key={s.iso} className="py-2 px-2 text-center rounded-xl border border-red-200 bg-red-50 text-red-400 text-xs font-semibold line-through select-none cursor-not-allowed">
+                                  {label}
+                                </div>
+                              );
+                            }
+                            return (
+                              <button
+                                key={s.iso}
+                                type="button"
+                                onClick={() => pickAdminSlot(s.iso)}
+                                disabled={rescheduling}
+                                className="py-2 px-2 text-center rounded-xl border-2 border-green-200 bg-green-50 text-green-700 text-xs font-bold hover:bg-green-500 hover:text-white hover:border-green-500 transition disabled:opacity-50"
+                              >
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-2">
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() =>

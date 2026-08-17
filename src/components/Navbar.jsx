@@ -56,7 +56,7 @@ export default function Navbar() {
     return () => window.removeEventListener('storage', checkAuth);
   }, []);
 
-  // ─── Close mobile menu on route change ──────────────────────
+  // ─── Close mobile menu on route change ────────────────────
   useEffect(() => {
     if (isOpen) setIsOpen(false);
   }, [location.pathname]);

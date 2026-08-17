@@ -12,24 +12,6 @@ import API_URL from '../../config/api';
 import Loader, { ListSkeleton, OverlayLoader } from '../../components/Loader';
 
 // ─── Constants ────────────────────────────────────────────────
-const SLOT_START_HOUR = 9;      // 9 AM
-const SLOT_END_HOUR = 17;       // 5 PM
-const SLOT_STEP_MINUTES = 30;
-
-const generateTimeSlots = () => {
-  const slots = [];
-  for (let h = SLOT_START_HOUR; h < SLOT_END_HOUR; h++) {
-    for (let m = 0; m < 60; m += SLOT_STEP_MINUTES) {
-      const hour = String(h).padStart(2, '0');
-      const min = String(m).padStart(2, '0');
-      slots.push(`${hour}:${min}`);
-    }
-  }
-  return slots;
-};
-
-const ALL_SLOTS = generateTimeSlots();
-
 const initialForm = {
   patientName: '',
   patientPhone: '',
@@ -119,6 +101,7 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [bookedSlots, setBookedSlots] = useState([]);
+  const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
   // Calendar state
@@ -151,6 +134,7 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
         const res = await fetch(`${API_URL}/api/appointments/booked-slots?date=${form.date}&hospitalId=${form.hospitalId || ''}`);
         const data = await res.json();
         setBookedSlots(res.ok && Array.isArray(data.bookedSlots) ? data.bookedSlots : []);
+        setAvailableSlots(res.ok && Array.isArray(data.availableSlots) ? data.availableSlots : []);
       } catch (e) {
         console.error('Could not fetch booked slots:', e);
       } finally {
@@ -234,9 +218,8 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
   if (!form.date) e.date = 'Please select a date';
   if (!form.time) e.time = 'Please select a time';
 
-// 🔥 NEW VALIDATION: Ensure the time is within business hours!
-  if (form.time && !ALL_SLOTS.includes(form.time)) {
-    e.time = 'Selected time is outside business hours (9:00 AM - 5:00 PM).';
+  if (form.time && availableSlots.length > 0 && !availableSlots.includes(form.time)) {
+    e.time = 'Selected time is outside business hours.';
   }
 
   if (form.time && bookedSlots.includes(form.time)) {
@@ -366,19 +349,20 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
           </Field>
         </div>
 
+
         {/* ─── Calendar & Time Picker ─────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Calendar */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-4">
+          <div className="bg-white border border-gray-200 rounded-2xl p-3">
             <div className="flex justify-between items-center mb-4">
               <button type="button" onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 rounded-full">
-                <ChevronLeft className="w-5 h-5 text-gray-600" />
+                <ChevronLeft className="w-3 h-3 text-gray-600" />
               </button>
               <span className="font-semibold text-medical-dark">
                 {new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}
               </span>
               <button type="button" onClick={handleNextMonth} className="p-1 hover:bg-gray-100 rounded-full">
-                <ChevronRight className="w-5 h-5 text-gray-600" />
+                <ChevronRight className="w-3 h-3 text-gray-600" />
               </button>
             </div>
             <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-500 mb-2">
@@ -401,7 +385,7 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
                     type="button"
                     disabled={isPast}
                     onClick={() => handleDateSelect(day)}
-                    className={`p-2 rounded-full text-sm font-medium transition ${
+                    className={`p-1.5 rounded-full text-sm font-medium transition ${
                       isPast
                         ? 'text-gray-300 cursor-not-allowed'
                         : isSelected
@@ -420,15 +404,15 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
           </div>
 
           {/* ─── Time Picker (Round Clock with Up/Down Arrows) ── */}
-          <div className="bg-blue-50/30 border border-blue-100 rounded-2xl p-5 space-y-4">
+          <div className="bg-blue-50/30 border border-blue-100 rounded-2xl p-3 space-y-3">
             <div className="flex items-center gap-2 text-blue-700 font-semibold">
-              <Clock className="w-4 h-4" />
+              <Clock className="w-3 h-3" />
               <span className="text-sm uppercase tracking-wide">SELECT TIME</span>
             </div>
 
             {/* Clock Face */}
             <div className="flex justify-center py-2">
-              <div className="relative w-40 h-40 rounded-full border-2 border-blue-200 bg-white shadow-inner flex items-center justify-center">
+              <div className="relative w-28 h-28 rounded-full border-2 border-blue-200 bg-white shadow-inner flex items-center justify-center">
                 <svg viewBox="0 0 200 200" className="w-full h-full">
                   {/* Center dot */}
                   <circle cx="100" cy="100" r="5" fill="#1e40af" />
@@ -500,7 +484,7 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
                 >
                   ▲
                 </button>
-                <div className="w-10 h-9 border-2 border-blue-200 rounded-lg bg-white flex items-center justify-center text-xl font-bold text-blue-800 shadow-sm">
+                <div className="w-8 h-8 border-2 border-blue-200 rounded-lg bg-white flex items-center justify-center text-xl font-bold text-blue-800 shadow-sm">
                   {String(timeHour).padStart(2, '0')}
                 </div>
                 <button
@@ -523,7 +507,7 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
                 >
                   ▲
                 </button>
-                <div className="w-10 h-9 border-2 border-blue-200 rounded-lg bg-white flex items-center justify-center text-xl font-bold text-blue-800 shadow-sm">
+                <div className="w-8 h-8 border-2 border-blue-200 rounded-lg bg-white flex items-center justify-center text-xl font-bold text-blue-800 shadow-sm">
                   {String(timeMinute).padStart(2, '0')}
                 </div>
                 <button
@@ -569,7 +553,7 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
                   Available Slots {loadingSlots && <Loader size="xs" label="checking calendar…" />}
                 </span>
                 <SlotGrid
-                  slots={ALL_SLOTS}
+                  slots={availableSlots}
                   booked={bookedSlots}
                   selected={form.time}
                   onSelect={(slot) => {
@@ -614,6 +598,7 @@ function ManageTab({ onBook }) {
   const [editing, setEditing] = useState(null);
   const [draft, setDraft] = useState({ date: '', time: '', petName: '', reason: '' });
   const [slots, setSlots] = useState([]);
+  const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [busyId, setBusyId] = useState(null);
   const [busyAction, setBusyAction] = useState('');
@@ -680,7 +665,8 @@ function ManageTab({ onBook }) {
         const data = await res.json();
         const booked = res.ok && Array.isArray(data.bookedSlots) ? data.bookedSlots : [];
         setSlots(draft.date === appt.date ? booked.filter((s) => s !== appt.time) : booked);
-      } catch {
+        setAvailableSlots(res.ok && Array.isArray(data.availableSlots) ? data.availableSlots : []);
+      } catch (e) {
         setSlots([]);
       } finally {
         setLoadingSlots(false);
@@ -942,7 +928,7 @@ function ManageTab({ onBook }) {
                                 Available Slots {loadingSlots && <Loader size="xs" label="checking…" />}
                               </span>
                               <SlotGrid
-                                slots={ALL_SLOTS}
+                                slots={availableSlots}
                                 booked={slots}
                                 selected={draft.time}
                                 onSelect={(slot) => setDraft((d) => ({ ...d, time: slot }))}

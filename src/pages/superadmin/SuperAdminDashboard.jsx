@@ -14,6 +14,7 @@ import {
 import toast from 'react-hot-toast';
 import DashboardLayout from '../../components/DashboardLayout';
 import Loader, { StatSkeleton, TableSkeleton } from '../../components/Loader';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 // How often the live counters refresh (ms). The API rate limiter allows 120 req/min.
 const LIVE_REFRESH_MS = 15000;
@@ -128,6 +129,20 @@ export default function SuperAdminDashboard() {
       if (data.counts) setDemoCounts(data.counts);
     } catch (err) {}
   };
+
+  const handleRealTimeEvent = () => {
+    fetchStats({ silent: true });
+    fetchDemoStats();
+    loadAppointments(); // Optional: keeps appointments table fresh too
+  };
+
+  // Real-time WebSocket triggers for instant dashboard updates
+  useWebSocket('demo_created', handleRealTimeEvent);
+  useWebSocket('demo_updated', handleRealTimeEvent);
+  useWebSocket('demo_deleted', handleRealTimeEvent);
+  useWebSocket('registration_created', handleRealTimeEvent);
+  useWebSocket('registration_updated', handleRealTimeEvent);
+  useWebSocket('registration_deleted', handleRealTimeEvent);
 
   const fetchAdmins = async () => {
     setLoadingAdmins(true);

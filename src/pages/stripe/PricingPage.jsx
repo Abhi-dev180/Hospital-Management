@@ -25,7 +25,8 @@ const ICONS = {
 export default function PricingPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const token = searchParams.get('token') || '';
+  const isPaypalReturn = searchParams.get('paypal_return') === 'true';
+  const token = isPaypalReturn ? searchParams.get('f_token') : (searchParams.get('token') || '');
   const isRenewal = searchParams.get('renew') === 'true';
   // Stripe's cancel_url sends people back here with ?payment=cancelled.
   const paymentCancelled = ['cancelled', 'canceled', 'true'].includes(
@@ -39,6 +40,10 @@ export default function PricingPage() {
   const [selectedPlan, setSelectedPlan] = useState('');
   const [submitting, setSubmitting] = useState(null);
   const [user, setUser] = useState(null);
+  
+  // Payment Modal State
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentPlanKey, setPaymentPlanKey] = useState('');
 
   // ─── Plans (from backend config) ────────────────────────────
   const [plans, setPlans] = useState([]);
@@ -108,84 +113,204 @@ export default function PricingPage() {
     })();
   }, [token]);
 
+  // ─── Handle PayPal Return ────────────────────────────────────
+  useEffect(() => {
+    if (isPaypalReturn) {
+      const orderId = searchParams.get('token'); // PayPal sends the order ID in the 'token' param
+      const pPlan = searchParams.get('plan');
+      
+      const capturePayPal = async () => {
+        toast.loading('Capturing PayPal payment...', { id: 'paypal_capture' });
+        try {
+          const res = await fetch(`${API_URL}/api/payments/paypal/capture-order`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              orderId, 
+              planKey: pPlan, 
+              feedbackToken: token,
+              isRenewal 
+            })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            toast.success('PayPal Payment Successful!', { id: 'paypal_capture' });
+            setTimeout(() => {
+              navigate(`/register/${token}?plan=${pPlan}`);
+            }, 1500);
+          } else {
+            throw new Error(data.message);
+          }
+        } catch (err) {
+          toast.error(err.message || 'Failed to capture PayPal', { id: 'paypal_capture' });
+          setCheckoutError(err.message);
+        }
+      };
+      capturePayPal();
+    }
+  }, [isPaypalReturn, searchParams, navigate, token, isRenewal]);
+
+
 
   // ─── Handle plan selection ───────────────────────────────────
-  const handleChoosePlan = async (planKey) => {
-  try {
-    setSubmitting(planKey);
-    setCheckoutError('');
-    setShowCancelNotice(false);
+  const handleChoosePlan = (planKey) => {
+    setPaymentPlanKey(planKey);
+    setShowPaymentModal(true);
+  };
 
-    const authToken = localStorage.getItem('token');
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(authToken && { Authorization: `Bearer ${authToken}` })
-    };
-
-    // Build the booking object with email
-    const booking = {
-      id: bookingInfo?.id || 'demo-booking',
-      email: bookingInfo?.email || user?.email || 'customer@example.com',
-      hospital_name: bookingInfo?.hospitalName || 'Pet Hospital'
-    };
-
-    const body = {
-      booking,
-      planKey,
-      feedbackToken: token,
-      isRenewal: isRenewal
-    };
-
-    // If the user is logged in but this flow is part of a registration (token),
-    // tell the subscription endpoint to redirect back to the registration page
-    // after successful payment instead of the default dashboard.
-    if (user && token) {
-      body.successPath = `/register/${token}`;
-      body.cancelPath = `/pricing${token ? `?token=${token}` : ''}`;
-    }
-
-    // If user is logged in, use subscription endpoint; otherwise, use payment endpoint
-    const endpoint = user
-      ? '/api/subscriptions/create-checkout'
-      : '/api/payments/create-checkout-session';
-
-    const res = await fetch(`${API_URL}${endpoint}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body)
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      // Stripe genuinely switched off — skipping straight to registration is correct.
-      if (res.status === 503 || data.message?.includes('Stripe not configured')) {
-        toast.success('Payments are disabled — taking you to registration…');
-        navigate(`/register/${token}?plan=${planKey}`);
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
         return;
       }
-      // Any other failure is a real error: stay put so the user can retry.
-      // Bouncing them to /register here would look like the payment succeeded.
-      setCheckoutError(data.message || 'We could not start the payment. Please try again.');
-      toast.error(data.message || 'Could not initiate payment');
-      return;
-    }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
 
-    if (data.url) {
-      window.location.href = data.url;
-      return;
-    }
+  const processPayment = async (method) => {
+    try {
+      setSubmitting(paymentPlanKey);
+      setCheckoutError('');
+      setShowCancelNotice(false);
+      setShowPaymentModal(false);
 
-    setCheckoutError('Stripe did not return a checkout link. Please try again in a moment.');
-    toast.error('Could not open the payment page');
-  } catch (err) {
-    console.error('Payment error:', err);
-    setCheckoutError('Network error — we could not reach the payment service. Please check your connection and try again.');
-    toast.error('Network error during payment initiation');
-  } finally {
-    setSubmitting(null);
-  }
-};
+      const authToken = localStorage.getItem('token');
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(authToken && { Authorization: `Bearer ${authToken}` })
+      };
+
+      const booking = {
+        id: bookingInfo?.id || 'demo-booking',
+        email: bookingInfo?.email || user?.email || 'customer@example.com',
+        hospital_name: bookingInfo?.hospitalName || 'Pet Hospital'
+      };
+
+      const body = {
+        booking,
+        planKey: paymentPlanKey,
+        feedbackToken: token,
+        isRenewal: isRenewal
+      };
+
+      if (user && token) {
+        body.successPath = `/register/${token}`;
+        body.cancelPath = `/pricing${token ? `?token=${token}` : ''}`;
+      }
+
+      if (method === 'stripe') {
+        const endpoint = user
+          ? '/api/subscriptions/create-checkout'
+          : '/api/payments/create-checkout-session';
+
+        const res = await fetch(`${API_URL}${endpoint}`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Stripe error');
+        if (data.url) {
+          window.location.href = data.url;
+          return;
+        }
+      } else if (method === 'paypal') {
+        const returnUrl = `${window.location.origin}/pricing?paypal_return=true&f_token=${token}&plan=${paymentPlanKey}&renew=${isRenewal}`;
+        const cancelUrl = `${window.location.origin}/pricing${token ? `?token=${token}` : ''}`;
+
+        const res = await fetch(`${API_URL}/api/payments/paypal/create-order`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ ...body, returnUrl, cancelUrl })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'PayPal error');
+        
+        const approveLink = data.links?.find(link => link.rel === 'approve')?.href;
+        if (approveLink) {
+           window.location.href = approveLink;
+        } else {
+           throw new Error('PayPal did not return an approval link.');
+        }
+        return;
+      } else if (method === 'upi') {
+        const res = await fetch(`${API_URL}/api/payments/razorpay/create-order`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Razorpay error');
+
+        const loaded = await loadRazorpay();
+        if (!loaded) throw new Error('Failed to load Razorpay SDK');
+
+        const options = {
+          key: data.key_id,
+          amount: data.amount,
+          currency: data.currency,
+          name: "Hospital Management System",
+          description: "Subscription Payment",
+          order_id: data.id,
+          handler: async function (response) {
+            try {
+              toast.loading('Verifying payment...', { id: 'upi_verify' });
+              const verifyRes = await fetch(`${API_URL}/api/payments/razorpay/verify-payment`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ 
+                  ...body, 
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature 
+                })
+              });
+              const verifyData = await verifyRes.json();
+              if (verifyRes.ok) {
+                toast.success('UPI Payment Successful!', { id: 'upi_verify' });
+                setTimeout(() => {
+                  navigate(body.successPath || `/register/${token}?plan=${paymentPlanKey}`);
+                }, 1500);
+              } else {
+                 throw new Error(verifyData.message);
+              }
+            } catch (e) {
+              toast.error(e.message || 'Failed to verify UPI', { id: 'upi_verify' });
+              setCheckoutError(e.message);
+            }
+          },
+          prefill: {
+            email: body.booking.email,
+            contact: '9999999999' // Hardcoded since phone might not be in bookingInfo
+          },
+          theme: {
+            color: "#0d9488"
+          }
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function (response){
+           setCheckoutError(response.error.description);
+        });
+        rzp.open();
+        return;
+      }
+
+    } catch (err) {
+      console.error('Payment error:', err);
+      setCheckoutError(err.message || 'Payment initiation failed.');
+      toast.error('Payment failed');
+      setSubmitting(null);
+    }
+  };
+
+
 
   const getIntervalLabel = (interval) => {
     const map = {
@@ -383,8 +508,72 @@ export default function PricingPage() {
 
         {/* Footer Note */}
         <div className="mt-12 text-center text-xs text-slate-400">
-          🔒 Payments are securely processed via Stripe. After payment, you will automatically be redirected to finish registering your hospital credentials.
+          🔒 Payments are securely processed. After payment, you will automatically be redirected to finish registering your hospital credentials.
         </div>
+
+        {/* Payment Selection Modal */}
+        <AnimatePresence>
+          {showPaymentModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl relative"
+              >
+                <button 
+                  onClick={() => setShowPaymentModal(false)}
+                  className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition"
+                >
+                  <X size={20} />
+                </button>
+                <h2 className="text-2xl font-black text-slate-900 mb-2">How would you like to pay?</h2>
+                <p className="text-slate-500 text-sm mb-6">Select a secure payment method below to complete your subscription.</p>
+                
+                <div className="space-y-3">
+                  <button onClick={() => processPayment('stripe')} className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 transition group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-1.1c-1.3-.2-2.5-1.1-2.9-2.4l1.4-.6c.2.8.9 1.4 1.7 1.6V11H10c-1.1 0-2-.9-2-2s.9-2 2-2v-1.1c1.3.2 2.5 1.1 2.9 2.4l-1.4.6c-.2-.8-.9-1.4-1.7-1.6V13h1.2c1.1 0 2 .9 2 2s-.9 2-2 2z"/></svg>
+                      </div>
+                      <div className="text-left">
+                        <div className="font-bold text-slate-900 group-hover:text-indigo-900">Credit / Debit Card</div>
+                        <div className="text-xs text-slate-500">Securely processed via Stripe</div>
+                      </div>
+                    </div>
+                    <ArrowRight size={18} className="text-slate-300 group-hover:text-indigo-600" />
+                  </button>
+
+                  <button onClick={() => processPayment('paypal')} className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-slate-100 hover:border-blue-500 hover:bg-blue-50 transition group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-black italic text-lg">
+                        P
+                      </div>
+                      <div className="text-left">
+                        <div className="font-bold text-slate-900 group-hover:text-blue-900">PayPal</div>
+                        <div className="text-xs text-slate-500">Pay with your PayPal balance</div>
+                      </div>
+                    </div>
+                    <ArrowRight size={18} className="text-slate-300 group-hover:text-blue-600" />
+                  </button>
+
+                  <button onClick={() => processPayment('upi')} className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-slate-100 hover:border-teal-500 hover:bg-teal-50 transition group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-600 flex items-center justify-center">
+                        <Zap size={20} />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-bold text-slate-900 group-hover:text-teal-900">UPI / Netbanking</div>
+                        <div className="text-xs text-slate-500">Fast payment via Razorpay</div>
+                      </div>
+                    </div>
+                    <ArrowRight size={18} className="text-slate-300 group-hover:text-teal-600" />
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

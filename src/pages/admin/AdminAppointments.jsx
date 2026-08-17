@@ -894,7 +894,7 @@ export default function AdminAppointments() {
                   {/* ─── Calendar + Time Picker ────────────────── */}
                   <div className="sm:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Calendar */}
-                    <div className="bg-white border border-slate-200 rounded-2xl p-4">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-3">
                       <div className="flex justify-between items-center mb-4">
                         <button type="button" onClick={handlePrevMonth} className="p-1 hover:bg-slate-100 rounded-full">
                           <ChevronLeft className="w-5 h-5 text-slate-600" />
@@ -922,7 +922,7 @@ export default function AdminAppointments() {
                               type="button"
                               disabled={isPast}
                               onClick={() => handleDateSelect(day)}
-                              className={`p-2 rounded-full text-sm font-medium transition ${
+                              className={`p-1.5 rounded-full text-sm font-medium transition ${
                                 isPast ? 'text-slate-300 cursor-not-allowed' :
                                 isSelected ? 'bg-medical-blue text-white shadow-md' :
                                 isToday ? 'bg-blue-50 text-medical-blue border border-medical-blue' :
@@ -938,28 +938,144 @@ export default function AdminAppointments() {
                     </div>
 
                     {/* Time Picker */}
-                    <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-slate-700">SELECT TIME</span>
-                        <span className="text-xs text-slate-400">Must be at least 1 hour from now.</span>
+                    <div className="bg-blue-50/30 border border-blue-100 rounded-2xl p-3 space-y-3">
+                      <div className="flex items-center gap-2 text-blue-700 font-semibold">
+                        <Clock className="w-3 h-3" />
+                        <span className="text-sm uppercase tracking-wide">SELECT TIME</span>
                       </div>
-                      <div className="flex items-center justify-center gap-6 py-2">
-                        <div className="flex flex-col items-center">
-                          <button type="button" onClick={() => setTimeHour(h => (h < 12 ? h + 1 : 1))} className="text-slate-400 hover:text-slate-700 transition text-xl">▲</button>
-                          <span className="text-4xl font-bold w-14 text-center text-medical-dark">{String(timeHour).padStart(2,'0')}</span>
-                          <button type="button" onClick={() => setTimeHour(h => (h > 1 ? h - 1 : 12))} className="text-slate-400 hover:text-slate-700 transition text-xl">▼</button>
-                        </div>
-                        <span className="text-4xl font-bold text-slate-300">:</span>
-                        <div className="flex flex-col items-center">
-                          <button type="button" onClick={() => setTimeMinute(m => (m < 45 ? m + 15 : 0))} className="text-slate-400 hover:text-slate-700 transition text-xl">▲</button>
-                          <span className="text-4xl font-bold w-14 text-center text-medical-dark">{String(timeMinute).padStart(2,'0')}</span>
-                          <button type="button" onClick={() => setTimeMinute(m => (m > 0 ? m - 15 : 45))} className="text-slate-400 hover:text-slate-700 transition text-xl">▼</button>
-                        </div>
-                        <div className="flex flex-col gap-1.5 ml-2">
-                          <button type="button" onClick={() => setTimeAmPm('AM')} className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${timeAmPm === 'AM' ? 'bg-medical-blue text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>AM</button>
-                          <button type="button" onClick={() => setTimeAmPm('PM')} className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${timeAmPm === 'PM' ? 'bg-medical-blue text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>PM</button>
+
+                      {/* Clock Face */}
+                      <div className="flex justify-center py-2">
+                        <div className="relative w-28 h-28 rounded-full border-2 border-blue-200 bg-white shadow-inner flex items-center justify-center">
+                          <svg viewBox="0 0 200 200" className="w-full h-full">
+                            {/* Center dot */}
+                            <circle cx="100" cy="100" r="5" fill="#1e40af" />
+
+                            {/* Hour numbers (1-12) */}
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => {
+                              const isActive = timeHour === num;
+                              const rotation = num * 30;
+                              return (
+                                <g
+                                  key={num}
+                                  transform={`rotate(${rotation}, 100, 100)`}
+                                  onClick={() => {
+                                    setTimeHour(num);
+                                    setBookErrors((p) => ({ ...p, time: undefined }));
+                                  }}
+                                  className="cursor-pointer"
+                                >
+                                  {isActive && <circle cx="100" cy="27" r="13" fill="#2563eb" />}
+                                  <text
+                                    x="100"
+                                    y="32"
+                                    textAnchor="middle"
+                                    className={`text-xs font-bold select-none ${
+                                      isActive ? 'fill-white' : 'fill-gray-600'
+                                    }`}
+                                  >
+                                    {num}
+                                  </text>
+                                </g>
+                              );
+                            })}
+
+                            {/* Hour Hand */}
+                            <line
+                              x1="100"
+                              y1="100"
+                              x2="100"
+                              y2="65"
+                              stroke="#2563eb"
+                              strokeWidth="4"
+                              strokeLinecap="round"
+                              transform={`rotate(${(timeHour % 12) * 30 + timeMinute * 0.5}, 100, 100)`}
+                            />
+
+                            {/* Minute Hand */}
+                            <line
+                              x1="100"
+                              y1="100"
+                              x2="100"
+                              y2="50"
+                              stroke="#ec4899"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              transform={`rotate(${timeMinute * 6}, 100, 100)`}
+                            />
+                          </svg>
                         </div>
                       </div>
+
+                      {/* Up/Down Selectors */}
+                      <div className="flex justify-center items-end gap-4 mt-1">
+                        {/* Hour */}
+                        <div className="flex flex-col items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setTimeHour((h) => (h < 12 ? h + 1 : 1))}
+                            className="text-blue-500 hover:text-blue-700 transition text-lg"
+                          >
+                            ▲
+                          </button>
+                          <div className="w-8 h-8 border-2 border-blue-200 rounded-lg bg-white flex items-center justify-center text-xl font-bold text-blue-800 shadow-sm">
+                            {String(timeHour).padStart(2, '0')}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setTimeHour((h) => (h > 1 ? h - 1 : 12))}
+                            className="text-blue-500 hover:text-blue-700 transition text-lg"
+                          >
+                            ▼
+                          </button>
+                        </div>
+
+                        <div className="text-3xl font-bold text-blue-300 mb-4">:</div>
+
+                        {/* Minute */}
+                        <div className="flex flex-col items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setTimeMinute((m) => (m < 45 ? m + 15 : 0))}
+                            className="text-blue-500 hover:text-blue-700 transition text-lg"
+                          >
+                            ▲
+                          </button>
+                          <div className="w-8 h-8 border-2 border-blue-200 rounded-lg bg-white flex items-center justify-center text-xl font-bold text-blue-800 shadow-sm">
+                            {String(timeMinute).padStart(2, '0')}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setTimeMinute((m) => (m > 0 ? m - 15 : 45))}
+                            className="text-blue-500 hover:text-blue-700 transition text-lg"
+                          >
+                            ▼
+                          </button>
+                        </div>
+
+                        {/* AM / PM */}
+                        <div className="flex flex-col bg-white rounded-lg border-2 border-blue-200 overflow-hidden shadow-sm ml-1">
+                          <button
+                            type="button"
+                            onClick={() => setTimeAmPm('AM')}
+                            className={`px-3 py-1.5 text-sm font-bold transition ${
+                              timeAmPm === 'AM' ? 'bg-blue-600 text-white' : 'text-blue-600 hover:bg-blue-50'
+                            }`}
+                          >
+                            AM
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setTimeAmPm('PM')}
+                            className={`px-3 py-1.5 text-sm font-bold transition border-t border-blue-200 ${
+                              timeAmPm === 'PM' ? 'bg-blue-600 text-white' : 'text-blue-600 hover:bg-blue-50'
+                            }`}
+                          >
+                            PM
+                          </button>
+                        </div>
+                      </div>
+
                       {bookErrors.time && <p className="text-red-500 text-xs text-center">{bookErrors.time}</p>}
 
                       {bookForm.date && (

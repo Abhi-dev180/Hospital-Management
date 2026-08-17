@@ -34,7 +34,7 @@ import Pagination from "../../components/Pagination";
 import SlotSelector from "../../components/SlotSelector";
 import { TableSkeleton } from "../../components/Loader";
 
-const PER_PAGE = 10;
+const PER_PAGE = 6;
 const STATUSES = [
   "Pending",
   "Confirmed",
@@ -78,8 +78,10 @@ const modalPanel = {
 export default function SuperAdminAppointments() {
   const [user, setUser] = useState(null);
   const [appointments, setAppointments] = useState([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const navigate = useNavigate();
@@ -133,20 +135,44 @@ export default function SuperAdminAppointments() {
       return;
     }
     setUser(parsed);
-    fetchAppointments();
     fetchHospitals();
   }, [navigate]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 450);
+    return () => clearTimeout(handler);
+  }, [search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
+
+  useEffect(() => {
+    if (user) {
+      fetchAppointments();
+    }
+  }, [user, page, statusFilter, debouncedSearch]);
 
   const fetchAppointments = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/appointments`, {
+      const queryParams = new URLSearchParams({
+        page,
+        limit: PER_PAGE,
+        status: statusFilter,
+        search: debouncedSearch
+      });
+      const res = await fetch(`${API_URL}/api/appointments?${queryParams.toString()}`, {
         headers: authHeaders(),
       });
       const data = await res.json();
       if (!res.ok)
         return toast.error(data.message || "Failed to load appointments");
-      setAppointments(Array.isArray(data) ? data : []);
+      setAppointments(data.appointments || []);
+      setTotal(data.total || 0);
     } catch {
       toast.error("Network error");
     } finally {
@@ -409,33 +435,7 @@ export default function SuperAdminAppointments() {
     }
   };
 
-  // ─── Filtering ─────────────────────────────────────────────
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return appointments.filter((a) => {
-      const matchStatus = statusFilter === "all" || a.status === statusFilter;
-      const matchSearch =
-        !q ||
-        [
-          a.patientName,
-          a.petName,
-          a.appointmentType,
-          a.email,
-          a.patientPhone,
-          a.hospital,
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(q);
-      return matchStatus && matchSearch;
-    });
-  }, [appointments, search, statusFilter]);
-
-  const paginated = useMemo(
-    () => filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE),
-    [filtered, page],
-  );
-  useEffect(() => setPage(1), [search, statusFilter]);
+  // Server-side pagination, status filtering, and debounced search are used instead of client-side filtering
 
   return (
     <DashboardLayout
@@ -461,19 +461,13 @@ export default function SuperAdminAppointments() {
               <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
                 Showing{" "}
                 <span className="text-blue-600 font-bold">
-                  {filtered.length}
+                  {appointments.length}
                 </span>{" "}
-                of {appointments.length} total entries
+                of {total} total entries
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
-              <button
-                onClick={openBookModal}
-                className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white px-5 py-2.5 rounded-2xl font-bold text-sm shadow-md shadow-blue-500/20 transition-all duration-200 shrink-0"
-              >
-                <CalendarPlus size={18} /> Book Appointment
-              </button>
 
               <div className="relative flex-1 sm:w-64 min-w-[200px]">
                 <Search
@@ -538,7 +532,7 @@ export default function SuperAdminAppointments() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-sm">
-                  {paginated.map((a, idx) => (
+                  {appointments.map((a, idx) => (
                     <motion.tr
                       key={a.id}
                       initial={{ opacity: 0, y: 6 }}
@@ -653,7 +647,7 @@ export default function SuperAdminAppointments() {
                     </motion.tr>
                   ))}
 
-                  {filtered.length === 0 && (
+                  {appointments.length === 0 && (
                     <tr>
                       <td
                         colSpan={10}
@@ -671,7 +665,7 @@ export default function SuperAdminAppointments() {
           <div className="mt-6">
             <Pagination
               page={page}
-              total={filtered.length}
+              total={total}
               perPage={PER_PAGE}
               onChange={setPage}
             />

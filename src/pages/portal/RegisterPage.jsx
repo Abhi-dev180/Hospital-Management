@@ -47,7 +47,7 @@ export default function RegisterPage() {
   const verifyPayment = async () => {
     setFailReason('');
     try {
-      const res = await fetch(`${API_URL}/api/payments/verify?session_id=${sessionId || ''}`);
+      const res = await fetch(`${API_URL}/api/payments/verify?session_id=${sessionId || ''}&token=${token || ''}`);
       const data = await res.json();
 
       // Stripe switched off (dev / self-hosted) → let registration through.
