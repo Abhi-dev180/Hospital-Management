@@ -6,10 +6,13 @@ import { Info, X, CalendarCheck, Eye, EyeOff, Mail, KeyRound, Loader2, ArrowLeft
 import toast from 'react-hot-toast';
 import API_URL from '../config/api';
 
+import PlanExpiredModal from '../components/PlanExpiredModal';
+
 export default function Login() {
   // Login-only page. Hospital onboarding happens through the demo → registration funnel.
   const isLogin = true;
   const [showNoticeModal, setShowNoticeModal] = useState(false);
+  const [expiredModalUser, setExpiredModalUser] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [forgot, setForgot] = useState(null); // null | { step: 'email'|'reset', email, otp, password, sending }
@@ -21,6 +24,13 @@ export default function Login() {
   });
 
   const navigate = useNavigate();
+
+  const handlePostLoginRedirect = (userObj) => {
+    if (!userObj) return;
+    if (userObj.role === 'superadmin') navigate('/superadmin');
+    else if (userObj.role === 'admin') navigate('/admin');
+    else navigate('/dashboard');
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -128,9 +138,16 @@ export default function Login() {
       toast.success(isLogin ? 'Successfully logged in!' : 'Successfully registered!');
       window.dispatchEvent(new Event('storage'));
 
-      if (data.user.role === 'superadmin') navigate('/superadmin');
-      else if (data.user.role === 'admin') navigate('/admin');
-      else navigate('/dashboard');
+      const expiryDate = data.user.subscription?.expiry_date || data.user.planEnd || data.user.expiryDate;
+      const isExpired = expiryDate
+        ? new Date(expiryDate).getTime() < Date.now()
+        : Boolean(data.user.isExpired);
+
+      if (isExpired) {
+        setExpiredModalUser(data.user);
+      } else {
+        handlePostLoginRedirect(data.user);
+      }
     } catch (err) {
       console.error('LOGIN ERROR:', err);
       toast.error(err.message || 'An error occurred. Please try again.');
@@ -520,6 +537,18 @@ export default function Login() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Plan Expired Modal on Login */}
+      <PlanExpiredModal
+        isOpen={Boolean(expiredModalUser)}
+        onClose={() => {
+          const userObj = expiredModalUser;
+          setExpiredModalUser(null);
+          handlePostLoginRedirect(userObj);
+        }}
+        subscription={expiredModalUser?.subscription}
+        user={expiredModalUser}
+      />
     </div>
   );
 }

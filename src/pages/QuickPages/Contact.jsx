@@ -352,6 +352,59 @@ export default function Contact() {
                 {errors.message && <p className="mt-1 text-xs text-red-500">{errors.message}</p>}
               </div>
 
+              {/* Attachments */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Attach Documents / Images (Optional)</label>
+                <input
+                  type="file"
+                  multiple
+                  id="user-contact-file-input"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    files.forEach((file) => {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        setForm((prev) => ({
+                          ...prev,
+                          attachments: [
+                            ...(prev.attachments || []),
+                            { filename: file.name, data: event.target.result }
+                          ]
+                        }));
+                      };
+                      reader.readAsDataURL(file);
+                    });
+                  }}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="user-contact-file-input"
+                  className="w-full py-3 px-4 rounded-2xl border-2 border-dashed border-gray-200 hover:border-medical-blue bg-slate-50 text-gray-700 font-semibold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
+                >
+                  <span>📎 Attach Files (PDF, Images, Medical Reports)</span>
+                </label>
+
+                {form.attachments && form.attachments.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {form.attachments.map((file, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-2 bg-blue-50/80 rounded-lg text-xs font-semibold text-slate-800 border border-blue-200">
+                        <span className="truncate">📄 {file.filename}</span>
+                        <button
+                          type="button"
+                          onClick={() => setForm((prev) => ({
+                            ...prev,
+                            attachments: prev.attachments.filter((_, i) => i !== idx)
+                          }))}
+                          className="text-red-500 hover:text-red-700 text-xs font-bold ml-2 cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <button
                 type="submit"
                 disabled={loading}

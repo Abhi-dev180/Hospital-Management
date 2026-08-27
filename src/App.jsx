@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -13,6 +13,7 @@ import ProfilePage from "./pages/profile/ProfilePage";
 import FeedbackPage from "./pages/Feedback/FeedbackPage";        // wrapper that renders PublicFeedbackForm
 import PublicFeedbackForm from "./components/portal/PublicFeedbackForm";
 import ScrollToTop from "./components/ScrollToTop";
+import PlanExpiredModal from "./components/PlanExpiredModal";
 
 // ─── Lazy imports ───────────────────────────────────────────────
 const Home = lazy(() => import("./pages/QuickPages/Home"));
@@ -49,7 +50,32 @@ const RenewPage = lazy(() => import("./pages/stripe/RenewPage"));
 const AdminAppointments = lazy(() => import("./pages/admin/AdminAppointments"));
 const AdminAppointmentFeedback = lazy(() => import("./pages/admin/AdminAppointmentFeedback"));
 
-function App() {
+function AppContent() {
+  const [expiredUser, setExpiredUser] = useState(null);
+
+  useEffect(() => {
+    const checkUserExpiry = () => {
+      try {
+        const stored = localStorage.getItem('user');
+        if (stored) {
+          const u = JSON.parse(stored);
+          const expiryDate = u?.subscription?.expiry_date || u?.planEnd || u?.expiryDate;
+          const isExp = expiryDate
+            ? new Date(expiryDate).getTime() < Date.now()
+            : Boolean(u?.isExpired);
+          if (isExp) setExpiredUser(u);
+          else setExpiredUser(null);
+        } else {
+          setExpiredUser(null);
+        }
+      } catch (e) {}
+    };
+
+    checkUserExpiry();
+    window.addEventListener('storage', checkUserExpiry);
+    return () => window.removeEventListener('storage', checkUserExpiry);
+  }, []);
+
   return (
     <Router>
       <ScrollToTop />
@@ -134,8 +160,19 @@ function App() {
         </main>
         <Footer />
       </div>
+
+      <PlanExpiredModal
+        isOpen={Boolean(expiredUser)}
+        onClose={() => setExpiredUser(null)}
+        subscription={expiredUser?.subscription}
+        user={expiredUser}
+      />
     </Router>
   );
+}
+
+function App() {
+  return <AppContent />;
 }
 
 export default App;

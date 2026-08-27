@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   User, Mail, Phone, Building2, Shield, Save, Loader2, ArrowLeft, CheckCircle2,
-  Key, Send, Check, Eye, EyeOff
+  Key, Send, Check, Eye, EyeOff, CreditCard, Calendar, AlertTriangle, RefreshCw, Sparkles
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
 import PortalCardPage from '../../components/portal/PortalCardPage';
+import PlanExpiredModal from '../../components/PlanExpiredModal';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -15,6 +16,9 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [user, setUser] = useState(null);
+  const [subscription, setSubscription] = useState(null);
+  const [subLoading, setSubLoading] = useState(true);
+  const [showExpiredModal, setShowExpiredModal] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', mobile: '', hospital: '' });
   const [originalEmail, setOriginalEmail] = useState('');
   const [emailChanged, setEmailChanged] = useState(false);
@@ -51,6 +55,29 @@ export default function ProfilePage() {
       hospital: parsed.hospital || ''
     });
     setLoading(false);
+
+    // Fetch subscription details from backend
+    const fetchSubscription = async () => {
+      setSubLoading(true);
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_URL}/api/subscriptions/my-subscription`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.subscription) {
+            setSubscription(data.subscription);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch subscription:', e);
+      } finally {
+        setSubLoading(false);
+      }
+    };
+
+    fetchSubscription();
   }, [navigate]);
 
   const update = (k) => (e) => {
@@ -440,6 +467,118 @@ export default function ProfilePage() {
           </form>
         )}
       </div>
+
+      {/* ─── Subscription & Plan Details Section ────────────────── */}
+      <div className="mt-8 border-t border-slate-200/80 pt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+            <CreditCard className="w-5 h-5 text-medical-blue" />
+            Subscription & Plan Details
+          </h3>
+          {subLoading ? (
+            <span className="text-xs text-slate-400 flex items-center gap-1">
+              <Loader2 className="w-3 h-3 animate-spin" /> Loading backend details…
+            </span>
+          ) : (
+            <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
+              <Sparkles className="w-3 h-3" /> Sync Backend Live
+            </span>
+          )}
+        </div>
+
+        {(() => {
+          const effectiveSub = subscription || user?.subscription;
+          const planKey = (effectiveSub?.plan_key || user?.planKey || user?.plan_key || 'quarterly').toLowerCase();
+          const rawExpiry = effectiveSub?.expiry_date || user?.planEnd || user?.plan_end || '2026-08-23';
+          const rawStart = effectiveSub?.start_date || user?.planStart || user?.plan_start;
+          
+          let isExpired = false;
+          if (rawExpiry) {
+            isExpired = new Date(rawExpiry).getTime() < Date.now();
+          } else if (effectiveSub?.status === 'expired' || user?.isExpired || user?.planStatus === 'expired') {
+            isExpired = true;
+          }
+
+          const getPlanMeta = (k) => {
+            if (k.includes('month')) return { title: 'Monthly Plan', interval: 'billed every 30 days' };
+            if (k.includes('year') || k.includes('annual')) return { title: 'Yearly Plan', interval: 'billed every 365 days' };
+            return { title: 'Quarterly Plan', interval: 'billed every 90 days' };
+          };
+
+          const meta = getPlanMeta(planKey);
+
+          const fmtDate = (dStr) => {
+            if (!dStr) return 'N/A';
+            try {
+              return new Date(dStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            } catch (e) { return dStr; }
+          };
+
+          return (
+            <div className={`p-5 rounded-2xl border transition-all ${
+              isExpired
+                ? 'bg-red-50/60 border-red-200/80 shadow-xs'
+                : 'bg-gradient-to-br from-slate-50 to-blue-50/40 border-slate-200/80'
+            }`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2.5">
+                    <span className="font-bold text-slate-900 text-lg">{meta.title}</span>
+                    <span className="text-xs text-slate-500 font-medium bg-white/80 px-2 py-0.5 rounded-md border border-slate-200">
+                      {meta.interval}
+                    </span>
+                    {isExpired ? (
+                      <span className="text-xs font-bold bg-red-100 text-red-800 border border-red-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3 text-red-600" /> Expired
+                      </span>
+                    ) : (
+                      <span className="text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                        ✓ Active
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 pt-1">
+                    {rawStart && (
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                        Started: <strong className="text-slate-800">{fmtDate(rawStart)}</strong>
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                      Expires: <strong className={isExpired ? 'text-red-700 font-bold' : 'text-slate-800'}>{fmtDate(rawExpiry)}</strong>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowExpiredModal(true)}
+                    className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-xs transition-all duration-150 active:scale-95 cursor-pointer ${
+                      isExpired
+                        ? 'bg-red-600 hover:bg-red-700 text-white shadow-red-600/20'
+                        : 'bg-slate-900 hover:bg-slate-800 text-white'
+                    }`}
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 stroke-[2.5]" />
+                    {isExpired ? 'Renew Subscription' : 'View Plan Expiry Notice'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Plan Expired Modal Trigger */}
+      <PlanExpiredModal
+        isOpen={showExpiredModal}
+        onClose={() => setShowExpiredModal(false)}
+        subscription={subscription || user?.subscription}
+        user={user}
+      />
     </PortalCardPage>
   );
 }
