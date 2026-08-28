@@ -92,9 +92,17 @@ export default function SuperAdminContacts() {
   };
 
   const handleOpenAttachment = (att) => {
-    const fileUrl = att?.url || att?.data || att?.path;
+    const fileUrl = typeof att === 'string'
+      ? att
+      : (att?.url || att?.link || att?.path || att?.data || att?.href || att?.secure_url);
+
     if (!fileUrl) {
       toast.error('Attachment file link is unavailable.');
+      return;
+    }
+
+    if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+      window.open(fileUrl, '_blank', 'noopener,noreferrer');
       return;
     }
 
@@ -133,6 +141,63 @@ export default function SuperAdminContacts() {
     } else {
       window.open(fileUrl, '_blank', 'noopener,noreferrer');
     }
+  };
+
+  const renderClickableMessage = (text) => {
+    if (!text) return null;
+
+    const urlMatches = Array.from(text.matchAll(/(\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)|https?:\/\/[^\s]+|www\.[^\s]+)/g));
+
+    if (urlMatches.length === 0) {
+      return <span className="whitespace-pre-wrap">{text}</span>;
+    }
+
+    const parts = [];
+    let lastIdx = 0;
+
+    urlMatches.forEach((match, index) => {
+      const matchText = match[0];
+      const matchIdx = match.index;
+
+      if (matchIdx > lastIdx) {
+        parts.push(<span key={`text-${index}`}>{text.slice(lastIdx, matchIdx)}</span>);
+      }
+
+      let linkTitle = '📁 Download / View File';
+      let href = matchText;
+
+      if (matchText.startsWith('[')) {
+        linkTitle = match[2] || '📁 Download / View File';
+        href = match[3];
+      } else {
+        href = matchText.startsWith('www.') ? `https://${matchText}` : matchText;
+        const isImage = /\.(jpeg|jpg|gif|png|webp|svg)/i.test(href) || href.includes('cloudinary');
+        linkTitle = isImage ? '📷 View Attached Image / File' : '📁 Download / View File';
+      }
+
+      parts.push(
+        <a
+          key={`link-${index}`}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-lg transition-all shadow-2xs my-1 cursor-pointer"
+        >
+          <Paperclip size={13} className="text-blue-600 shrink-0" />
+          <span>{linkTitle}</span>
+          <ExternalLink size={11} className="shrink-0 text-blue-500" />
+        </a>
+      );
+
+      lastIdx = matchIdx + matchText.length;
+    });
+
+    if (lastIdx < text.length) {
+      parts.push(<span key="text-end">{text.slice(lastIdx)}</span>);
+    }
+
+    return <div className="whitespace-pre-wrap">{parts}</div>;
   };
 
   // ─── Auth gate ────────────────────────────────────────────
@@ -606,7 +671,9 @@ export default function SuperAdminContacts() {
                         </td>
                         <td className="py-4 px-4 max-w-md">
                           <div className="font-semibold text-gray-800">{c.subject}</div>
-                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">{c.message}</p>
+                          <div className="text-xs text-gray-600 mt-1">
+                            {renderClickableMessage(c.message)}
+                          </div>
 
                           {/* Attachments listing */}
                           {atts.length > 0 && (

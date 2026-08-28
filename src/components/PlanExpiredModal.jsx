@@ -5,7 +5,9 @@ import { RefreshCw } from 'lucide-react';
 export default function PlanExpiredModal({ isOpen, onClose, subscription, user }) {
   const navigate = useNavigate();
 
-  if (!isOpen) return null;
+  const isUserActive = user?.isExpired === false || user?.subscription_status === 'active' || user?.plan_status === 'active' || subscription?.status === 'active';
+
+  if (!isOpen || isUserActive) return null;
 
   // Extract plan key and resolve plan name & interval label
   const rawPlanKey = (subscription?.plan_key || user?.planKey || user?.plan_key || 'quarterly').toLowerCase();

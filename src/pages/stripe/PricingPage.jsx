@@ -3,11 +3,12 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Check, ShieldCheck, Zap, Crown, ArrowRight, Loader2, Sparkles,
-  Building2, Calendar, Star, Rocket, Gem, AlertCircle, RefreshCw, X
+  Building2, Calendar, Star, Rocket, Gem, AlertCircle, RefreshCw, X, QrCode
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
 import { CardSkeleton } from '../../components/Loader';
+import UpiQrPaymentModal from '../../components/UpiQrPaymentModal';
 
 // Plans come from the backend (HMS_BACKEND/config/stripePlans.js). The backend sends an
 // icon *key*; this map turns it into the lucide component to render.
@@ -43,6 +44,7 @@ export default function PricingPage() {
   
   // Payment Modal State
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showUpiQrModal, setShowUpiQrModal] = useState(false);
   const [paymentPlanKey, setPaymentPlanKey] = useState('');
 
   // ─── Plans (from backend config) ────────────────────────────
@@ -531,6 +533,25 @@ export default function PricingPage() {
                 <p className="text-slate-500 text-sm mb-6">Select a secure payment method below to complete your subscription.</p>
                 
                 <div className="space-y-3">
+                  {/* Free UPI QR Code Option */}
+                  <button 
+                    onClick={() => { setShowPaymentModal(false); setShowUpiQrModal(true); }}
+                    className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-emerald-300 bg-emerald-50/60 hover:border-emerald-500 hover:bg-emerald-100/80 transition group shadow-xs"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold">
+                        <QrCode size={22} />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-bold text-slate-900 group-hover:text-emerald-950 flex items-center gap-2">
+                          Free UPI QR Scan <span className="bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase">0% Fee</span>
+                        </div>
+                        <div className="text-xs text-slate-600">Scan via GPay, PhonePe, Paytm, BHIM</div>
+                      </div>
+                    </div>
+                    <ArrowRight size={18} className="text-emerald-600 group-hover:text-emerald-800" />
+                  </button>
+
                   <button onClick={() => processPayment('stripe')} className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 transition group">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
@@ -556,24 +577,20 @@ export default function PricingPage() {
                     </div>
                     <ArrowRight size={18} className="text-slate-300 group-hover:text-blue-600" />
                   </button>
-
-                  <button onClick={() => processPayment('upi')} className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-slate-100 hover:border-teal-500 hover:bg-teal-50 transition group">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-600 flex items-center justify-center">
-                        <Zap size={20} />
-                      </div>
-                      <div className="text-left">
-                        <div className="font-bold text-slate-900 group-hover:text-teal-900">UPI / Netbanking</div>
-                        <div className="text-xs text-slate-500">Fast payment via Razorpay</div>
-                      </div>
-                    </div>
-                    <ArrowRight size={18} className="text-slate-300 group-hover:text-teal-600" />
-                  </button>
                 </div>
               </motion.div>
             </div>
           )}
         </AnimatePresence>
+
+        {/* Free UPI QR Code Modal */}
+        <UpiQrPaymentModal
+          isOpen={showUpiQrModal}
+          onClose={() => setShowUpiQrModal(false)}
+          plan={plans.find(p => p.key === (paymentPlanKey || selectedPlan)) || { key: paymentPlanKey || selectedPlan || 'yearly', amount: 299 }}
+          user={user}
+          registrationToken={token}
+        />
       </div>
     </div>
   );

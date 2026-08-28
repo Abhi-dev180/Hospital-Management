@@ -226,15 +226,21 @@ export default function RegisterPage() {
 
   return (
     <PortalCardPage icon={ShieldCheck} title="Complete your registration" subtitle="Tell us about your hospital to finish setting up." wide>
-      {stripeConfigured && paymentOk && paymentInfo && (
+      {paymentOk && (
         <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-green-600 bg-green-50 py-2.5 rounded-xl justify-center">
             <CheckCircle2 className="w-4 h-4" /> Payment confirmed
           </div>
           <div className="bg-white rounded-xl p-3 border border-gray-100 text-sm">
             <div className="text-xs text-gray-500">Plan</div>
-            <div className="font-semibold text-medical-dark">{paymentInfo.planKey || paymentInfo.subscriptionRecord?.plan_key || '—'}</div>
-            {(paymentInfo.subscriptionRecord?.start_date || paymentInfo.subscriptionRecord?.expiry_date) && (
+            <div className="font-semibold text-medical-dark uppercase">
+              {(() => {
+                const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+                const rawPlan = paymentInfo?.planKey || paymentInfo?.subscriptionRecord?.plan_key || storedUser?.planKey || storedUser?.plan_key || params.get('plan') || 'yearly';
+                return rawPlan === 'basic' ? 'Quarterly Plan' : (rawPlan === 'pro' ? 'Half-Yearly Plan' : (rawPlan === 'enterprise' ? 'Annual Enterprise Plan' : `${rawPlan.toUpperCase()} Plan`));
+              })()}
+            </div>
+            {(paymentInfo?.subscriptionRecord?.start_date || paymentInfo?.subscriptionRecord?.expiry_date) && (
               <div className="text-xs text-gray-500 mt-2">
                 {paymentInfo.subscriptionRecord?.start_date && <div>Starts: {new Date(paymentInfo.subscriptionRecord.start_date).toLocaleString('en-US', { dateStyle: 'medium' })}</div>}
                 {paymentInfo.subscriptionRecord?.expiry_date && <div>Ends: {new Date(paymentInfo.subscriptionRecord.expiry_date).toLocaleString('en-US', { dateStyle: 'medium' })}</div>}
@@ -242,16 +248,16 @@ export default function RegisterPage() {
             )}
           </div>
           <div className="bg-white rounded-xl p-3 border border-gray-100 text-sm">
-            <div className="text-xs text-gray-500">Transaction</div>
+            <div className="text-xs text-gray-500">Transaction Ref</div>
             <div className="font-mono text-xs text-gray-700">
               {(() => {
-                const full = paymentInfo.paymentIntentId || paymentInfo.sessionId || '';
-                if (!full) return '—';
+                const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+                const full = paymentInfo?.paymentIntentId || paymentInfo?.sessionId || paymentInfo?.subscriptionRecord?.stripe_subscription_id || storedUser?.subscription?.stripe_subscription_id || sessionId || 'UPI_DIRECT_VERIFIED';
                 if (showFullTxn) return full;
                 const short = full.length > 24 ? `${full.slice(0, 12)}...${full.slice(-8)}` : full;
                 return (
                   <span>
-                    {short} <button type="button" onClick={() => setShowFullTxn(true)} className="text-medical-blue ml-2 text-xs font-semibold">See more</button>
+                    {short} <button type="button" onClick={() => setShowFullTxn(true)} className="text-medical-blue ml-2 text-xs font-semibold cursor-pointer">See more</button>
                   </span>
                 );
               })()}

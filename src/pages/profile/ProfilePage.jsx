@@ -17,6 +17,7 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
   const [user, setUser] = useState(null);
   const [subscription, setSubscription] = useState(null);
+  const [subscriptionsList, setSubscriptionsList] = useState([]);
   const [subLoading, setSubLoading] = useState(true);
   const [showExpiredModal, setShowExpiredModal] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', mobile: '', hospital: '' });
@@ -39,6 +40,29 @@ export default function ProfilePage() {
   const [showNewPw, setShowNewPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
 
+  const fetchSubscription = async () => {
+    setSubLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_URL}/api/subscriptions/my-subscriptions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.subscription) {
+          setSubscription(data.subscription);
+        }
+        if (Array.isArray(data.subscriptions)) {
+          setSubscriptionsList(data.subscriptions);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch subscription:', e);
+    } finally {
+      setSubLoading(false);
+    }
+  };
+
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (!userData) {
@@ -56,28 +80,21 @@ export default function ProfilePage() {
     });
     setLoading(false);
 
-    // Fetch subscription details from backend
-    const fetchSubscription = async () => {
-      setSubLoading(true);
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${API_URL}/api/subscriptions/my-subscription`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.subscription) {
-            setSubscription(data.subscription);
-          }
-        }
-      } catch (e) {
-        console.error('Failed to fetch subscription:', e);
-      } finally {
-        setSubLoading(false);
+    fetchSubscription();
+
+    const handleCustomSubUpdate = () => {
+      fetchSubscription();
+      const updatedStr = localStorage.getItem('user');
+      if (updatedStr) {
+        setUser(JSON.parse(updatedStr));
       }
     };
-
-    fetchSubscription();
+    window.addEventListener('user_subscription_updated', handleCustomSubUpdate);
+    window.addEventListener('storage', handleCustomSubUpdate);
+    return () => {
+      window.removeEventListener('user_subscription_updated', handleCustomSubUpdate);
+      window.removeEventListener('storage', handleCustomSubUpdate);
+    };
   }, [navigate]);
 
   const update = (k) => (e) => {
@@ -492,11 +509,15 @@ export default function ProfilePage() {
           const rawExpiry = effectiveSub?.expiry_date || user?.planEnd || user?.plan_end || '2026-08-23';
           const rawStart = effectiveSub?.start_date || user?.planStart || user?.plan_start;
           
+          const isExplicitlyActive = user?.isExpired === false || user?.subscription_status === 'active' || user?.plan_status === 'active' || effectiveSub?.status === 'active';
+          
           let isExpired = false;
-          if (rawExpiry) {
-            isExpired = new Date(rawExpiry).getTime() < Date.now();
-          } else if (effectiveSub?.status === 'expired' || user?.isExpired || user?.planStatus === 'expired') {
-            isExpired = true;
+          if (!isExplicitlyActive) {
+            if (rawExpiry) {
+              isExpired = new Date(rawExpiry).getTime() < Date.now();
+            } else if (effectiveSub?.status === 'expired' || user?.isExpired || user?.planStatus === 'expired') {
+              isExpired = true;
+            }
           }
 
           const getPlanMeta = (k) => {
@@ -570,6 +591,72 @@ export default function ProfilePage() {
             </div>
           );
         })()}
+
+        {/* ─── Subscription History Table ────────────────────────── */}
+        <div className="mt-6">
+          <h4 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-indigo-600" />
+            Subscription & Renewal History ({subscriptionsList.length})
+          </h4>
+
+          {subscriptionsList.length === 0 ? (
+            <p className="text-xs text-gray-500 italic bg-slate-50 p-4 rounded-xl border border-slate-100">
+              No previous billing transactions recorded yet.
+            </p>
+          ) : (
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-xs">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-100/80 text-slate-700 font-bold uppercase tracking-wider">
+                  <tr>
+                    <th className="py-3.5 px-4">Plan Name</th>
+                    <th className="py-3.5 px-4">Amount</th>
+                    <th className="py-3.5 px-4">Status</th>
+                    <th className="py-3.5 px-4">Start Date</th>
+                    <th className="py-3.5 px-4">Expiry Date</th>
+                    <th className="py-3.5 px-4">Stripe Txn / Session Ref</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {subscriptionsList.map((sub, idx) => {
+                    const sStatus = sub.status || 'active';
+                    const isAct = sStatus === 'active';
+                    const planTitle = (sub.plan_key || 'yearly').replace('_', ' ').toUpperCase();
+                    const amt = (sub.amount ? (sub.amount > 1000 ? sub.amount / 100 : sub.amount) : 299).toFixed(2);
+                    const fmtDateLocal = (dStr) => {
+                      if (!dStr) return 'N/A';
+                      try {
+                        return new Date(dStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                      } catch (e) { return dStr; }
+                    };
+
+                    return (
+                      <tr key={sub.id || idx} className="hover:bg-blue-50/30 transition-colors">
+                        <td className="py-3.5 px-4 font-bold text-slate-900">
+                          {planTitle} Plan
+                        </td>
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-800">
+                          ${amt} USD
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
+                            isAct ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200'
+                          }`}>
+                            {isAct ? '✓ Active' : sStatus.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-600">{fmtDateLocal(sub.start_date)}</td>
+                        <td className="py-3.5 px-4 text-slate-600">{fmtDateLocal(sub.expiry_date)}</td>
+                        <td className="py-3.5 px-4 font-mono text-[11px] text-indigo-600 font-semibold truncate max-w-[180px]">
+                          {sub.stripe_subscription_id || sub.id || 'N/A'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Plan Expired Modal Trigger */}

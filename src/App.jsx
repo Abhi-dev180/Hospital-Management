@@ -14,6 +14,7 @@ import FeedbackPage from "./pages/Feedback/FeedbackPage";        // wrapper that
 import PublicFeedbackForm from "./components/portal/PublicFeedbackForm";
 import ScrollToTop from "./components/ScrollToTop";
 import PlanExpiredModal from "./components/PlanExpiredModal";
+import useStripeSessionVerifier from "./hooks/useStripeSessionVerifier";
 
 // ─── Lazy imports ───────────────────────────────────────────────
 const Home = lazy(() => import("./pages/QuickPages/Home"));
@@ -50,6 +51,66 @@ const RenewPage = lazy(() => import("./pages/stripe/RenewPage"));
 const AdminAppointments = lazy(() => import("./pages/admin/AdminAppointments"));
 const AdminAppointmentFeedback = lazy(() => import("./pages/admin/AdminAppointmentFeedback"));
 
+function AppRoutes() {
+  useStripeSessionVerifier();
+
+  return (
+    <Suspense fallback={<GlobalLoader />}>
+      <Routes>
+        {/* ─── Public & Portal ─────────────────────────────── */}
+        <Route path="/" element={<PortalHome />} />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/renew/:token" element={<RenewPage />} />
+        <Route path="/how-it-works" element={<Navigate to="/#how-it-works" replace />} />
+        <Route path="/about" element={<Navigate to="/#about" replace />} />
+        <Route path="/book-demo" element={<Navigate to="/#book-demo" replace />} />
+        <Route path="/appointment" element={<BookAppointmentPage />} />
+        <Route path="/schedule/:token" element={<SchedulePage />} />
+        <Route path="/register/:token" element={<RegisterPage />} />
+        <Route path="/medpark" element={<Home />} />
+        <Route path="/excellence" element={<CentreOfExcellence />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/doctors" element={<Doctors />} />
+        <Route path="/hospitals" element={<Hospitals />} />
+        <Route path="/hospitals/:id" element={<HospitalProfile />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/feedback" element={<FeedbackPage />} />
+        <Route path="/feedback/:token" element={<TokenFeedbackPage />} />
+
+        {/* ─── User Portal ────────────────────────────────── */}
+        <Route path="/dashboard" element={<UserDashboard />} />
+        <Route path="/dashboard/book-appointment" element={<UserBookAppointment />} />
+        <Route path="/dashboard/my-appointments" element={<UserMyAppointments />} />
+
+        {/* ─── Super Admin Dashboard ───────────────────────── */}
+        <Route path="/superadmin" element={<SuperAdminDashboard />} />
+        <Route path="/superadmin/demos" element={<SuperAdminDemos />} />
+        <Route path="/superadmin/registrations" element={<SuperAdminRegistrations />} />
+        <Route path="/superadmin/users" element={<SuperAdminUsers />} />
+        <Route path="/superadmin/contacts" element={<SuperAdminContacts />} />
+        <Route path="/superadmin/calendar" element={<SuperAdminCalendar />} />
+        <Route path="/superadmin/manage-admin" element={<SuperAdminManageAdmin />} />
+        <Route path="/superadmin/manage-hospitals" element={<SuperAdminManageHospitals />} />
+        <Route path="/superadmin/appointments" element={<SuperAdminAppointments />} />
+
+        {/* ─── Hospital Admin Dashboard ─────────────────────── */}
+        <Route path="/admin" element={<AdminOverview />} />
+        <Route path="/admin/overview" element={<AdminOverview />} />
+        <Route path="/admin/appointments" element={<AdminAppointments />} />
+        <Route path="/admin/calendar" element={<AdminCalendar />} />
+        <Route path="/admin/timings" element={<AdminTimings />} />
+        <Route path="/admin/appointment-feedback" element={<AdminAppointmentFeedback />} />
+        <Route path="/admin/transcriptions" element={<AdminTranscriptions />} />
+
+        {/* ─── Profile ────────────────────────────────────── */}
+        <Route path="/profile" element={<ProfilePage />} />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
+  );
+}
+
 function AppContent() {
   const [expiredUser, setExpiredUser] = useState(null);
 
@@ -59,21 +120,37 @@ function AppContent() {
         const stored = localStorage.getItem('user');
         if (stored) {
           const u = JSON.parse(stored);
-          const expiryDate = u?.subscription?.expiry_date || u?.planEnd || u?.expiryDate;
-          const isExp = expiryDate
-            ? new Date(expiryDate).getTime() < Date.now()
-            : Boolean(u?.isExpired);
+          const isExplicitlyActive = u?.isExpired === false || u?.subscription_status === 'active' || u?.plan_status === 'active';
+
+          const rawExp = u?.planEnd || u?.plan_end || u?.subscription?.expiry_date || u?.expiryDate;
+          const expTime = rawExp ? new Date(rawExp).getTime() : 0;
+          const now = Date.now();
+
+          // If plan is explicitly active and has a valid future expiry (or no past expiry), do NOT show expiry modal
+          if (isExplicitlyActive && (!expTime || expTime > now)) {
+            setExpiredUser(null);
+            return;
+          }
+
+          // Show modal only if user is explicitly expired or date is past
+          const isExp = u?.isExpired === true || (expTime > 0 && expTime < now);
           if (isExp) setExpiredUser(u);
           else setExpiredUser(null);
         } else {
           setExpiredUser(null);
         }
-      } catch (e) {}
+      } catch (e) {
+        setExpiredUser(null);
+      }
     };
 
     checkUserExpiry();
     window.addEventListener('storage', checkUserExpiry);
-    return () => window.removeEventListener('storage', checkUserExpiry);
+    window.addEventListener('user_subscription_updated', checkUserExpiry);
+    return () => {
+      window.removeEventListener('storage', checkUserExpiry);
+      window.removeEventListener('user_subscription_updated', checkUserExpiry);
+    };
   }, []);
 
   return (
@@ -99,64 +176,7 @@ function AppContent() {
       <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
         <Navbar />
         <main className="flex-grow">
-          <Suspense fallback={<GlobalLoader />}>
-            <Routes>
-              {/* ─── Public & Portal ─────────────────────────────── */}
-              <Route path="/" element={<PortalHome />} />
-              <Route path="/pricing" element={<PricingPage />} />
-              <Route path="/renew/:token" element={<RenewPage />} />
-              <Route path="/how-it-works" element={<Navigate to="/#how-it-works" replace />} />
-              <Route path="/about" element={<Navigate to="/#about" replace />} />
-              <Route path="/book-demo" element={<Navigate to="/#book-demo" replace />} />
-              <Route path="/appointment" element={<BookAppointmentPage />} />
-              <Route path="/schedule/:token" element={<SchedulePage />} />
-              <Route path="/register/:token" element={<RegisterPage />} />
-              <Route path="/medpark" element={<Home />} />
-              <Route path="/excellence" element={<CentreOfExcellence />} />
-              <Route path="/doctors" element={<Doctors />} />
-              <Route path="/hospitals" element={<Hospitals />} />
-              <Route path="/hospitals/:id" element={<HospitalProfile />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/login" element={<Login />} />
-
-              {/* ─── Feedback ────────────────────────────────────── */}
-              {/* Token-based feedback (used for demo feedback) */}
-              <Route path="/feedback/:token" element={<TokenFeedbackPage />} />
-              {/* Public feedback via appointment number lookup */}
-              <Route path="/feedback" element={<FeedbackPage />} />
-              <Route path="/feedback/appointment/:number" element={<FeedbackPage />} />
-
-              {/* ─── User Dashboard ────────────────────────────── */}
-              <Route path="/dashboard" element={<UserDashboard />} />
-              <Route path="/book-appointment" element={<UserBookAppointment />} />
-              <Route path="/dashboard/book-appointment" element={<UserBookAppointment />} />
-              <Route path="/dashboard/my-appointments" element={<UserMyAppointments />} />
-
-              {/* ─── Super Admin ────────────────────────────────── */}
-              <Route path="/superadmin" element={<SuperAdminDashboard />} />
-              <Route path="/superadmin/manage-admin" element={<SuperAdminManageAdmin />} />
-              <Route path="/superadmin/manage-hospitals" element={<SuperAdminManageHospitals />} />
-              <Route path="/superadmin/appointments" element={<SuperAdminAppointments />} />
-              <Route path="/superadmin/demos" element={<SuperAdminDemos />} />
-              <Route path="/superadmin/registrations" element={<SuperAdminRegistrations />} />
-              <Route path="/superadmin/users" element={<SuperAdminUsers />} />
-              <Route path="/superadmin/contacts" element={<SuperAdminContacts />} />
-              <Route path="/superadmin/calendar" element={<SuperAdminCalendar />} />
-
-              {/* ─── Admin ───────────────────────────────────────── */}
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<AdminOverview />} />
-                <Route path="appointments" element={<AdminAppointments />} />
-                <Route path="calendar" element={<AdminCalendar />} />
-                <Route path="appointment-feedback" element={<AdminAppointmentFeedback />} />
-                <Route path="timings" element={<AdminTimings />} />
-                <Route path="transcriptions" element={<AdminTranscriptions />} />
-              </Route>
-
-              {/* ─── Profile ────────────────────────────────────── */}
-              <Route path="/profile" element={<ProfilePage />} />
-            </Routes>
-          </Suspense>
+          <AppRoutes />
         </main>
         <Footer />
       </div>

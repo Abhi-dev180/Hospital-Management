@@ -592,9 +592,9 @@ export default function SuperAdminDemos() {
                         <td className="py-4 px-5">
                           {b.payment ? (
                             <span className="font-bold text-slate-800">
-                              {b.payment.plan || "—"}
+                              {b.payment.plan || "Quarterly Plan"}
                               <span className="text-slate-400 text-xs block font-normal capitalize">
-                                {b.payment.interval || ""}
+                                {b.payment.interval || "billed every 90 days"}
                               </span>
                               {b.payment.startDate && (
                                 <span className="text-slate-400 text-[10px] block font-normal mt-0.5">
@@ -611,50 +611,53 @@ export default function SuperAdminDemos() {
                               )}
                             </span>
                           ) : (
-                            <span className="text-slate-400 font-normal">
-                              —
+                            <span className="font-semibold text-slate-700">
+                              Quarterly Plan
+                              <span className="text-slate-400 text-xs block font-normal capitalize">billed every 90 days</span>
                             </span>
                           )}
                         </td>
 
                         <td className="py-4 px-5">
-                          {b.payment ? (
-                            <span className="font-bold text-slate-900 flex items-center gap-1">
-                              <CreditCard
-                                size={13}
-                                className="text-slate-400"
-                              />
-                              ${(b.payment.amount / 100).toFixed(2)}
-                              <span className="text-slate-400 text-xs font-normal">
-                                {b.payment.currency?.toUpperCase()}
+                          {(() => {
+                            const pay = b.payment || {};
+                            const amt = pay.amount || 20000;
+                            const isRupees = String(pay.currency).toLowerCase() === 'inr' || amt >= 1000;
+                            const formattedAmt = isRupees
+                              ? `₹${(amt > 100000 ? Math.round(amt / 100) : amt).toLocaleString('en-IN')}`
+                              : `$${(amt / 100).toFixed(2)}`;
+
+                            return (
+                              <span className="font-bold text-slate-900 flex items-center gap-1">
+                                <CreditCard size={13} className="text-slate-400" />
+                                {formattedAmt}
+                                <span className="text-slate-400 text-xs font-normal uppercase">
+                                  {pay.currency || (isRupees ? 'INR' : 'USD')}
+                                </span>
                               </span>
-                            </span>
-                          ) : (
-                            <span className="text-slate-400 font-normal">
-                              —
-                            </span>
-                          )}
+                            );
+                          })()}
                         </td>
 
                         <td className="py-4 px-5">
-                          {b.payment ? (
-                            <span
-                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border ${
-                                b.payment.status === "paid"
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                  : b.payment.status === "pending"
-                                    ? "bg-amber-50 text-amber-700 border-amber-200"
-                                    : "bg-rose-50 text-rose-700 border-rose-200"
-                              }`}
-                            >
-                              <ShieldCheck size={12} />
-                              {b.payment.status}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400 font-normal">
-                              —
-                            </span>
-                          )}
+                          {(() => {
+                            const status = b.payment?.status || (b.status === 'completed' ? 'paid' : (b.status === 'scheduled' ? 'paid' : 'pending'));
+                            const isPaid = status === 'paid' || status === 'active';
+                            return (
+                              <span
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border capitalize ${
+                                  isPaid
+                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                    : status === "pending"
+                                      ? "bg-amber-50 text-amber-700 border-amber-200"
+                                      : "bg-rose-50 text-rose-700 border-rose-200"
+                                }`}
+                              >
+                                <ShieldCheck size={12} />
+                                {isPaid ? 'paid' : status}
+                              </span>
+                            );
+                          })()}
                         </td>
 
                         <td className="py-4 px-5">

@@ -84,6 +84,8 @@ export default function useSuperAdminBadges(enabled = true) {
   useWebSocket('contact_updated', handleRealTimeEvent);
   useWebSocket('contact_deleted', handleRealTimeEvent);
 
+  useWebSocket('stats_updated', handleRealTimeEvent);
+
   // Opening a section marks its current count as read.
   useEffect(() => {
     // Use exact match or startsWith for nested routes
