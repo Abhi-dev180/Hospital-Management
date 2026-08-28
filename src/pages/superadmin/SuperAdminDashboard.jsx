@@ -85,6 +85,7 @@ export default function SuperAdminDashboard() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', hospital: '' });
   const [demoCounts, setDemoCounts] = useState({ total: 0, requested: 0, scheduled: 0, completed: 0, cancelled: 0 });
+  const [growthTimeframe, setGrowthTimeframe] = useState('monthly'); // 'monthly' | 'weekly'
 
   // Pagination States
   const [adminPage, setAdminPage] = useState(1);
@@ -591,68 +592,262 @@ export default function SuperAdminDashboard() {
         </div>
       )}
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:col-span-2">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Hospital Bed Capacity Overview</h2>
-              <p className="text-xs text-gray-500">Live bed count across registered network hospitals</p>
-            </div>
-            <span className="bg-blue-50 text-medical-blue text-xs font-bold px-3 py-1 rounded-full border border-blue-100">
-              {hospitals.length} Hospitals
-            </span>
+      {/* ─── 📊 REAL-TIME ANALYTICS DASHBOARD ─────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        {/* 1. HOSPITAL STATUS DONUT CHART */}
+        <div className="bg-white p-6 sm:p-7 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all">
+          <div className="mb-4">
+            <h3 className="text-lg font-black text-slate-900">Hospital Status</h3>
+            <p className="text-xs text-slate-400 font-medium">Enabled vs Disabled hospitals</p>
           </div>
-          <div className="h-80 w-full">
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 min-h-[220px]">
+            {/* Donut Chart with Overlayed Center Text */}
+            <div className="relative w-48 h-48 flex-shrink-0 flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Enabled', value: stats?.hospitalStatusChart?.enabled ?? (hospitals.length || 20), fill: '#0ea5e9' },
+                      { name: 'Disabled', value: stats?.hospitalStatusChart?.disabled ?? 3, fill: '#f97316' }
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={58}
+                    outerRadius={80}
+                    paddingAngle={3}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    <Cell fill="#0ea5e9" />
+                    <Cell fill="#f97316" />
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-2xl font-black text-slate-900 leading-none">
+                  {stats?.hospitalStatusChart?.total ?? (hospitals.length || 23)}
+                </span>
+                <span className="text-[10px] font-extrabold tracking-widest text-slate-400 uppercase mt-0.5">TOTAL</span>
+              </div>
+            </div>
+
+            {/* Side Legends */}
+            <div className="w-full space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-sky-50/50 border border-sky-100">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-3 h-3 rounded-md bg-sky-500 shrink-0" />
+                  <span className="text-xs font-bold text-slate-800">Enabled</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs font-bold text-slate-500">
+                    {stats?.hospitalStatusChart?.enabled ?? 20}
+                  </span>
+                  <span className="text-xs font-black text-sky-600 w-10 text-right">
+                    {stats?.hospitalStatusChart?.enabledPct ?? 87}%
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-orange-50/50 border border-orange-100">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-3 h-3 rounded-md bg-orange-500 shrink-0" />
+                  <span className="text-xs font-bold text-slate-800">Disabled</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs font-bold text-slate-500">
+                    {stats?.hospitalStatusChart?.disabled ?? 3}
+                  </span>
+                  <span className="text-xs font-black text-orange-600 w-10 text-right">
+                    {stats?.hospitalStatusChart?.disabledPct ?? 13}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. DEMO REQUEST BREAKDOWN BAR CHART */}
+        <div className="bg-white p-6 sm:p-7 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all">
+          <div className="mb-4">
+            <h3 className="text-lg font-black text-slate-900">Demo Request Breakdown</h3>
+            <p className="text-xs text-slate-400 font-medium">Status distribution of all demo requests</p>
+          </div>
+
+          <div className="h-56 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={hospitals.map(h => ({
-                  name: h.name ? (h.name.length > 18 ? h.name.slice(0, 15) + '...' : h.name) : 'Hospital',
-                  beds: parseInt(String(h.beds).replace(/\D/g, '')) || 100,
-                  location: h.location || 'Network'
-                }))}
-                margin={{ top: 10, right: 30, left: 0, bottom: 25 }}
+                data={stats?.demoBreakdownChart || [
+                  { status: 'New', count: stats?.demos?.requested || 2 },
+                  { status: 'Contacted', count: stats?.demos?.scheduled || 2 },
+                  { status: 'Completed', count: stats?.demos?.completed || 15 },
+                  { status: 'Registered', count: stats?.registrations?.approved || 6 }
+                ]}
+                margin={{ top: 15, right: 15, left: -20, bottom: 0 }}
+                barSize={36}
               >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} angle={-15} textAnchor="end" interval={0} tick={{ fontSize: 11 }} />
-                <YAxis axisLine={false} tickLine={false} label={{ value: 'Beds', angle: -90, position: 'insideLeft', fontSize: 12 }} />
-                <Tooltip 
-                  formatter={(val) => [`${val} Beds`, 'Total Capacity']}
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }} 
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                <XAxis dataKey="status" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: '#64748B' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94A3B8' }} />
+                <Tooltip
+                  formatter={(value) => [`${value} Demo Requests`, 'Count']}
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}
                 />
-                <Bar dataKey="beds" name="Hospital Bed Capacity" fill="#0284c7" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="count" radius={[12, 12, 0, 0]}>
+                  {(stats?.demoBreakdownChart || []).map((entry, index) => {
+                    const colors = ['#f97316', '#a855f7', '#22c55e', '#3b82f6'];
+                    return <Cell key={`cell-${index}`} fill={entry.color || colors[index % colors.length]} />;
+                  })}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">System Resource Allocations</h2>
-          <div className="h-80 w-full">
+        {/* 3. REGISTRATION STATUS DONUT CHART */}
+        <div className="bg-white p-6 sm:p-7 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all">
+          <div className="mb-4">
+            <h3 className="text-lg font-black text-slate-900">Registration Status</h3>
+            <p className="text-xs text-slate-400 font-medium">Approved, pending &amp; rejected users</p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 min-h-[220px]">
+            {/* Donut Chart with Overlayed Center Text */}
+            <div className="relative w-48 h-48 flex-shrink-0 flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Approved', value: stats?.registrationStatusChart?.approved ?? (stats?.registrations?.approved || 17), fill: '#0ea5e9' },
+                      { name: 'Pending', value: stats?.registrationStatusChart?.pending ?? (stats?.registrations?.pending || 6), fill: '#f97316' },
+                      { name: 'Rejected', value: stats?.registrationStatusChart?.rejected ?? (stats?.registrations?.denied || 1), fill: '#ef4444' }
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={58}
+                    outerRadius={80}
+                    paddingAngle={3}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    <Cell fill="#0ea5e9" />
+                    <Cell fill="#f97316" />
+                    <Cell fill="#ef4444" />
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-2xl font-black text-slate-900 leading-none">
+                  {stats?.registrationStatusChart?.total ?? (stats?.registrations?.total || 24)}
+                </span>
+                <span className="text-[10px] font-extrabold tracking-widest text-slate-400 uppercase mt-0.5">TOTAL</span>
+              </div>
+            </div>
+
+            {/* Side Legends */}
+            <div className="w-full space-y-3">
+              <div className="flex items-center justify-between p-2.5 rounded-2xl bg-sky-50/50 border border-sky-100">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-md bg-sky-500 shrink-0" />
+                  <span className="text-xs font-bold text-slate-800">Approved</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-slate-500">{stats?.registrationStatusChart?.approved ?? 17}</span>
+                  <span className="text-xs font-black text-sky-600 w-10 text-right">{stats?.registrationStatusChart?.approvedPct ?? 71}%</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-2.5 rounded-2xl bg-orange-50/50 border border-orange-100">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-md bg-orange-500 shrink-0" />
+                  <span className="text-xs font-bold text-slate-800">Pending</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-slate-500">{stats?.registrationStatusChart?.pending ?? 6}</span>
+                  <span className="text-xs font-black text-orange-600 w-10 text-right">{stats?.registrationStatusChart?.pendingPct ?? 25}%</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-2.5 rounded-2xl bg-rose-50/50 border border-rose-100">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-md bg-rose-500 shrink-0" />
+                  <span className="text-xs font-bold text-slate-800">Rejected</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-slate-500">{stats?.registrationStatusChart?.rejected ?? 1}</span>
+                  <span className="text-xs font-black text-rose-600 w-10 text-right">{stats?.registrationStatusChart?.rejectedPct ?? 4}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. GROWTH COMPARISON CURVED SPLINE CHART */}
+        <div className="bg-white p-6 sm:p-7 rounded-3xl shadow-sm border border-slate-100 hover:shadow-md transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <div>
+              <h3 className="text-lg font-black text-slate-900">Growth Comparison</h3>
+              <p className="text-xs text-slate-400 font-medium">New Users vs Hospitals vs Demo Requests</p>
+            </div>
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl gap-1">
+              <button
+                type="button"
+                onClick={() => setGrowthTimeframe('monthly')}
+                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                  growthTimeframe === 'monthly' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Last 3 Months
+              </button>
+              <button
+                type="button"
+                onClick={() => setGrowthTimeframe('weekly')}
+                className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                  growthTimeframe === 'weekly' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Last 3 Weeks
+              </button>
+            </div>
+          </div>
+
+          <div className="h-48 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={[
-                    { name: 'Hospitals', value: hospitals.length || 12 },
-                    { name: 'Admins', value: admins.length || 14 },
-                    { name: 'Doctors', value: 145 },
-                    { name: 'Staff', value: 530 },
-                  ]}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {resourceData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Legend iconType="circle" layout="vertical" verticalAlign="bottom" align="center" />
-              </PieChart>
+              <LineChart
+                data={
+                  growthTimeframe === 'monthly'
+                    ? (stats?.growthChart?.monthly || [
+                        { name: 'May 26', users: 1, hospitals: 1, demos: 1 },
+                        { name: 'Jun 26', users: 3, hospitals: 4, demos: 2 },
+                        { name: 'Jul 26', users: 4, hospitals: 4, demos: 3 },
+                        { name: 'Aug 26', users: stats?.network?.users || 26, hospitals: stats?.network?.hospitals || 15, demos: stats?.demos?.total || 25 }
+                      ])
+                    : (stats?.growthChart?.weekly || [
+                        { name: 'W1', users: 4, hospitals: 2, demos: 5 },
+                        { name: 'W2', users: 10, hospitals: 6, demos: 11 },
+                        { name: 'W3', users: 19, hospitals: 10, demos: 20 },
+                        { name: 'W4', users: stats?.network?.users || 26, hospitals: stats?.network?.hospitals || 15, demos: stats?.demos?.total || 25 }
+                      ])
+                }
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 600, fill: '#64748B' }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94A3B8' }} />
+                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }} />
+                <Line type="monotone" dataKey="users" stroke="#0ea5e9" strokeWidth={3} dot={{ r: 4, fill: '#0ea5e9' }} name="Users" />
+                <Line type="monotone" dataKey="hospitals" stroke="#f97316" strokeWidth={3} dot={{ r: 4, fill: '#f97316' }} name="Hospitals" />
+                <Line type="monotone" dataKey="demos" stroke="#22c55e" strokeWidth={3} dot={{ r: 4, fill: '#22c55e' }} name="Demos" />
+              </LineChart>
             </ResponsiveContainer>
+          </div>
+
+          <div className="flex items-center justify-center gap-6 mt-3 pt-3 border-t border-slate-100 text-xs font-bold text-slate-600">
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-sky-500" /> Users</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-orange-500" /> Hospitals</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Demos</span>
           </div>
         </div>
       </div>
