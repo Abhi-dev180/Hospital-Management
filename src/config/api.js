@@ -13,6 +13,7 @@ const getApiUrl = () => {
   return 'https://hms-backend-g5e2.onrender.com';
 };
 
-const API_URL = getApiUrl();
+const rawApiUrl = getApiUrl();
+const API_URL = String(rawApiUrl || '').replace(/\/+$/, '');
 
 export default API_URL;
