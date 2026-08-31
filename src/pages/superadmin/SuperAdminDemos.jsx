@@ -611,18 +611,16 @@ export default function SuperAdminDemos() {
                               )}
                             </span>
                           ) : (
-                            <span className="font-semibold text-slate-700">
-                              Quarterly Plan
-                              <span className="text-slate-400 text-xs block font-normal capitalize">billed every 90 days</span>
+                            <span className="text-slate-400 text-xs italic font-normal">
+                              No plan chosen
                             </span>
                           )}
                         </td>
 
                         <td className="py-4 px-5">
-                          {(() => {
-                            const pay = b.payment || {};
-                            const amt = pay.amount || 20000;
-                            const isRupees = String(pay.currency).toLowerCase() === 'inr' || amt >= 1000;
+                          {b.payment && b.payment.amount ? (() => {
+                            const amt = b.payment.amount;
+                            const isRupees = String(b.payment.currency).toLowerCase() === 'inr' || amt >= 1000;
                             const formattedAmt = isRupees
                               ? `₹${(amt > 100000 ? Math.round(amt / 100) : amt).toLocaleString('en-IN')}`
                               : `$${(amt / 100).toFixed(2)}`;
@@ -632,29 +630,39 @@ export default function SuperAdminDemos() {
                                 <CreditCard size={13} className="text-slate-400" />
                                 {formattedAmt}
                                 <span className="text-slate-400 text-xs font-normal uppercase">
-                                  {pay.currency || (isRupees ? 'INR' : 'USD')}
+                                  {b.payment.currency || (isRupees ? 'INR' : 'USD')}
                                 </span>
                               </span>
                             );
-                          })()}
+                          })() : (
+                            <span className="text-slate-400 text-xs italic font-normal">—</span>
+                          )}
                         </td>
 
                         <td className="py-4 px-5">
                           {(() => {
-                            const status = b.payment?.status || (b.status === 'completed' ? 'paid' : (b.status === 'scheduled' ? 'paid' : 'pending'));
-                            const isPaid = status === 'paid' || status === 'active';
+                            const isPaid = b.payment && (b.payment.status === 'paid' || b.payment.status === 'active');
+                            const isPending = b.payment && b.payment.status === 'pending';
+
+                            if (isPaid) {
+                              return (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border bg-emerald-50 text-emerald-700 border-emerald-200 capitalize">
+                                  <ShieldCheck size={12} /> Paid
+                                </span>
+                              );
+                            }
+
+                            if (isPending) {
+                              return (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border bg-amber-50 text-amber-700 border-amber-200 capitalize">
+                                  <ShieldCheck size={12} /> Pending
+                                </span>
+                              );
+                            }
+
                             return (
-                              <span
-                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border capitalize ${
-                                  isPaid
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                    : status === "pending"
-                                      ? "bg-amber-50 text-amber-700 border-amber-200"
-                                      : "bg-rose-50 text-rose-700 border-rose-200"
-                                }`}
-                              >
-                                <ShieldCheck size={12} />
-                                {isPaid ? 'paid' : status}
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border bg-slate-50 text-slate-500 border-slate-200">
+                                <ShieldCheck size={12} className="text-slate-400" /> Unpaid
                               </span>
                             );
                           })()}

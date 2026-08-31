@@ -16,8 +16,11 @@ const ROLE_TABS = {
     { name: 'Calendar', to: '/admin/calendar' }
   ],
   user: [
+    { name: 'Overview', to: '/dashboard' },
+    { name: 'Explore Hospitals', to: '/dashboard/explore-hospitals' },
     { name: 'Book Appointment', to: '/dashboard/book-appointment' },
-    { name: 'My Appointments', to: '/dashboard/my-appointments' }
+    { name: 'My Appointments', to: '/dashboard/my-appointments' },
+    { name: 'Feedback & Reviews', to: '/dashboard/feedbacks' }
   ]
 };
 

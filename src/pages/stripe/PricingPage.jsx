@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
 import { CardSkeleton } from '../../components/Loader';
 import UpiQrPaymentModal from '../../components/UpiQrPaymentModal';
+import { load } from '@cashfreepayments/cashfree-js';
 
 // Plans come from the backend (HMS_BACKEND/config/stripePlans.js). The backend sends an
 // icon *key*; this map turns it into the lucide component to render.
@@ -202,7 +203,9 @@ export default function PricingPage() {
 
       if (user && token) {
         body.successPath = `/register/${token}`;
-        body.cancelPath = `/pricing${token ? `?token=${token}` : ''}`;
+        body.cancelPath = `/pricing?token=${token}&payment=cancelled`;
+      } else if (token) {
+        body.cancelPath = `/pricing?token=${token}&payment=cancelled`;
       }
 
       if (method === 'stripe') {
@@ -224,7 +227,7 @@ export default function PricingPage() {
         }
       } else if (method === 'paypal') {
         const returnUrl = `${window.location.origin}/pricing?paypal_return=true&f_token=${token}&plan=${paymentPlanKey}&renew=${isRenewal}`;
-        const cancelUrl = `${window.location.origin}/pricing${token ? `?token=${token}` : ''}`;
+        const cancelUrl = `${window.location.origin}/pricing?token=${token}&payment=cancelled`;
 
         const res = await fetch(`${API_URL}/api/payments/paypal/create-order`, {
           method: 'POST',
@@ -239,6 +242,52 @@ export default function PricingPage() {
            window.location.href = approveLink;
         } else {
            throw new Error('PayPal did not return an approval link.');
+        }
+        return;
+      } else if (method === 'cashfree') {
+        const res = await fetch(`${API_URL}/api/payments/cashfree/create-order`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body)
+        });
+        const orderData = await res.json();
+        if (!res.ok) throw new Error(orderData.message || 'Cashfree error');
+
+        const cashfree = await load({ mode: "sandbox" });
+        if (orderData.payment_session_id) {
+            cashfree.checkout({
+                paymentSessionId: orderData.payment_session_id,
+                redirectTarget: "_modal",
+            }).then(async (result) => {
+                if(result.error) {
+                    setCheckoutError(result.error.message);
+                }
+                if(result.paymentDetails || result.redirect) {
+                    toast.loading('Verifying payment...', { id: 'cf_verify' });
+                    try {
+                        const verifyRes = await fetch(`${API_URL}/api/payments/cashfree/verify-payment`, {
+                            method: 'POST',
+                            headers,
+                            body: JSON.stringify({ 
+                                ...body, 
+                                order_id: orderData.order_id 
+                            })
+                        });
+                        const verifyData = await verifyRes.json();
+                        if(verifyRes.ok) {
+                            toast.success('Payment Successful!', { id: 'cf_verify' });
+                            setTimeout(() => {
+                                navigate(body.successPath || `/register/${token}?plan=${paymentPlanKey}`);
+                            }, 1500);
+                        } else {
+                            throw new Error(verifyData.message);
+                        }
+                    } catch(e) {
+                        toast.error(e.message || 'Failed to verify payment', { id: 'cf_verify' });
+                        setCheckoutError(e.message);
+                    }
+                }
+            });
         }
         return;
       } else if (method === 'upi') {
@@ -258,7 +307,7 @@ export default function PricingPage() {
           amount: data.amount,
           currency: data.currency,
           name: "Hospital Management System",
-          description: "Subscription Payment",
+          description: `${paymentPlanKey?.toUpperCase() || 'Subscription'} Plan Payment`,
           order_id: data.id,
           handler: async function (response) {
             try {
@@ -275,7 +324,7 @@ export default function PricingPage() {
               });
               const verifyData = await verifyRes.json();
               if (verifyRes.ok) {
-                toast.success('UPI Payment Successful!', { id: 'upi_verify' });
+                toast.success('Payment Successful!', { id: 'upi_verify' });
                 setTimeout(() => {
                   navigate(body.successPath || `/register/${token}?plan=${paymentPlanKey}`);
                 }, 1500);
@@ -283,13 +332,14 @@ export default function PricingPage() {
                  throw new Error(verifyData.message);
               }
             } catch (e) {
-              toast.error(e.message || 'Failed to verify UPI', { id: 'upi_verify' });
+              toast.error(e.message || 'Failed to verify payment', { id: 'upi_verify' });
               setCheckoutError(e.message);
             }
           },
           prefill: {
-            email: body.booking.email,
-            contact: '9999999999' // Hardcoded since phone might not be in bookingInfo
+            name: body.booking?.contact_name || body.booking?.hospital_name || 'Customer',
+            email: body.booking?.email || 'customer@example.com',
+            contact: body.booking?.phone || '9876543210'
           },
           theme: {
             color: "#0d9488"
@@ -573,6 +623,34 @@ export default function PricingPage() {
                       <div className="text-left">
                         <div className="font-bold text-slate-900 group-hover:text-blue-900">PayPal</div>
                         <div className="text-xs text-slate-500">Pay with your PayPal balance</div>
+                      </div>
+                    </div>
+                    <ArrowRight size={18} className="text-slate-300 group-hover:text-blue-600" />
+                  </button>
+                  
+                  <button onClick={() => processPayment('cashfree')} className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-slate-100 hover:border-orange-500 hover:bg-orange-50 transition group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center font-black text-lg">
+                        C
+                      </div>
+                      <div className="text-left">
+                        <div className="font-bold text-slate-900 group-hover:text-orange-900">Cashfree Payments</div>
+                        <div className="text-xs text-slate-500">Netbanking, Cards, Wallets</div>
+                      </div>
+                    </div>
+                    <ArrowRight size={18} className="text-slate-300 group-hover:text-orange-600" />
+                  </button>
+
+                  <button onClick={() => processPayment('upi')} className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-slate-100 hover:border-blue-600 hover:bg-blue-50 transition group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm shadow-sm">
+                        RZP
+                      </div>
+                      <div className="text-left">
+                        <div className="font-bold text-slate-900 group-hover:text-blue-900 flex items-center gap-2">
+                          Razorpay <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full">UPI QR / Cards</span>
+                        </div>
+                        <div className="text-xs text-slate-500">Instant UPI QR Code, Cards & Netbanking</div>
                       </div>
                     </div>
                     <ArrowRight size={18} className="text-slate-300 group-hover:text-blue-600" />

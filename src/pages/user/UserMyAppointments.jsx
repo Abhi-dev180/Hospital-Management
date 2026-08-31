@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -13,7 +13,9 @@ import {
   X,
   CheckCircle2,
   Trash2,
-  CalendarClock
+  CalendarClock,
+  Star,
+  MessageSquare
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
@@ -21,6 +23,7 @@ import DashboardLayout from '../../components/DashboardLayout';
 import DashboardTabs from '../../components/DashboardTabs';
 import Pagination from '../../components/Pagination';
 import SlotSelector from '../../components/SlotSelector';
+import AppointmentFeedbackModal from '../../components/portal/AppointmentFeedbackModal';
 import { ListSkeleton } from '../../components/Loader';
 
 const PER_PAGE = 5;
@@ -28,6 +31,7 @@ const PER_PAGE = 5;
 export default function UserMyAppointmentsList() {
   const [user, setUser] = useState(null);
   const [appointments, setAppointments] = useState([]);
+  const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -40,6 +44,9 @@ export default function UserMyAppointmentsList() {
   const [newDate, setNewDate] = useState('');
   const [newTime, setNewTime] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // ─── Modal state for feedback ───────────────────────────────
+  const [selectedApptForFeedback, setSelectedApptForFeedback] = useState(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -60,9 +67,22 @@ export default function UserMyAppointmentsList() {
       });
       if (res.ok) {
         const data = await res.json();
-        setAppointments(data);
+        const list = Array.isArray(data) ? data : (Array.isArray(data.appointments) ? data.appointments : []);
+        setAppointments(list);
       } else {
         toast.error('Failed to load appointments');
+      }
+
+      // Also fetch feedbacks to show status
+      if (token) {
+        const fbRes = await fetch(`${API_URL}/api/appointment-feedbacks`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (fbRes.ok) {
+          const fbData = await fbRes.json();
+          const fbList = Array.isArray(fbData) ? fbData : (Array.isArray(fbData.feedbacks) ? fbData.feedbacks : []);
+          setFeedbacks(fbList);
+        }
       }
     } catch (err) {
       toast.error('Network error');
@@ -70,6 +90,17 @@ export default function UserMyAppointmentsList() {
       setLoading(false);
     }
   };
+
+  // Feedback map
+  const feedbackMap = useMemo(() => {
+    const map = new Map();
+    const list = Array.isArray(feedbacks) ? feedbacks : [];
+    list.forEach((f) => {
+      if (f && f.appointmentId) map.set(String(f.appointmentId), f);
+      if (f && f.appointmentNumber) map.set(String(f.appointmentNumber), f);
+    });
+    return map;
+  }, [feedbacks]);
 
   // ─── Cancel appointment ──────────────────────────────────────
   const handleCancel = async (appointmentId) => {
@@ -113,9 +144,6 @@ export default function UserMyAppointmentsList() {
       return toast.error('Please select both date and time');
     }
 
-    // Check if the selected slot is booked (optional frontend check)
-    // The backend will validate anyway
-
     setSubmitting(true);
     try {
       const token = localStorage.getItem('token');
@@ -148,7 +176,9 @@ export default function UserMyAppointmentsList() {
     }
   };
 
-  const filtered = appointments.filter((app) => {
+  const apptsList = Array.isArray(appointments) ? appointments : [];
+  const filtered = apptsList.filter((app) => {
+    if (!app) return false;
     const matchStatus = statusFilter === 'all' || app.status === statusFilter;
     const q = search.trim().toLowerCase();
     const matchSearch =
@@ -277,7 +307,25 @@ export default function UserMyAppointmentsList() {
                     )}
                   </div>
                   {/* Action buttons */}
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Feedback button */}
+                    {feedbackMap.get(String(app.id)) || feedbackMap.get(String(app.appointment_number)) ? (
+                      <div className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full">
+                        <Star className="w-3.5 h-3.5 fill-emerald-500 text-emerald-500" />
+                        <span>
+                          {feedbackMap.get(String(app.id))?.rating || feedbackMap.get(String(app.appointment_number))?.rating || '5'}★ Reviewed
+                        </span>
+                      </div>
+                    ) : app.status === 'Completed' ? (
+                      <button
+                        onClick={() => setSelectedApptForFeedback(app)}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-amber-900 bg-amber-50 border border-amber-200 rounded-full hover:bg-amber-100 transition shadow-sm"
+                      >
+                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                        Give Feedback
+                      </button>
+                    ) : null}
+
                     {app.status !== 'Cancelled' && app.status !== 'Completed' && (
                       <>
                         <button
@@ -350,9 +398,10 @@ export default function UserMyAppointmentsList() {
                   <label className="block text-sm font-semibold text-gray-700 mb-1">New Date *</label>
                   <input
                     type="date"
+                    min={new Date().toISOString().split('T')[0]}
                     value={newDate}
                     onChange={(e) => setNewDate(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-medical-blue outline-none"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-medical-blue focus:border-medical-blue outline-none"
                     required
                   />
                 </div>
@@ -403,6 +452,16 @@ export default function UserMyAppointmentsList() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ─── Appointment Feedback Modal ────────────────────────── */}
+      <AppointmentFeedbackModal
+        isOpen={Boolean(selectedApptForFeedback)}
+        onClose={() => setSelectedApptForFeedback(null)}
+        appointment={selectedApptForFeedback}
+        onFeedbackSubmitted={() => {
+          fetchAppointments();
+        }}
+      />
     </DashboardLayout>
   );
 }

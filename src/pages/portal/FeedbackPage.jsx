@@ -85,6 +85,16 @@ export default function FeedbackPage() {
         <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-5" />
         <h1 className="text-2xl font-extrabold text-medical-dark">Thank you! 🙏</h1>
         <p className="text-gray-600 mt-3">Your feedback helps us make the Pet Hospital Portal better.</p>
+        
+        <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+          <button
+            type="button"
+            onClick={() => navigate(`/pricing?token=${token}`)}
+            className="inline-flex items-center justify-center gap-2 bg-medical-dark hover:bg-medical-blue text-white font-bold py-3.5 px-6 rounded-full shadow-lg transition-all"
+          >
+            <CreditCard className="w-4 h-4" /> Choose Plan & Complete Registration
+          </button>
+        </div>
       </motion.div>
     </PortalCardPage>
   );

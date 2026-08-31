@@ -201,10 +201,13 @@ export default function Login() {
             </button>
           </div>
 
-          <div className="mb-6 grid gap-3">
-            <div className="p-4 rounded-xl border border-blue-100 bg-blue-50">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-bold text-sm text-medical-dark">Super Admin Demo</h3>
+          <div className="mb-6 grid gap-2.5">
+            <div className="p-3.5 rounded-2xl border border-blue-100 bg-blue-50/70 hover:bg-blue-50 transition">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+                  <h3 className="font-bold text-xs text-medical-dark uppercase tracking-wider">Super Admin</h3>
+                </div>
                 <button
                   type="button"
                   onClick={() => {
@@ -214,23 +217,25 @@ export default function Login() {
                       mobile: '',
                       password: 'Avinash@99',
                     });
+                    toast.success('Super Admin credentials filled');
                   }}
-                  className="text-xs font-semibold text-medical-blue hover:text-medical-dark"
+                  className="text-xs font-bold text-medical-blue hover:text-medical-dark bg-white px-2.5 py-1 rounded-lg border border-blue-200 shadow-xs transition cursor-pointer"
                 >
                   Fill login
                 </button>
               </div>
-              <p className="text-xs text-gray-600">
-                Email: <span className="font-semibold">abhi@yopmail.com</span>
-              </p>
-              <p className="text-xs text-gray-600">
-                Password: <span className="font-semibold">Avinash@99</span>
-              </p>
+              <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                <p>Email: <span className="font-semibold text-slate-800">abhi@yopmail.com</span></p>
+                <p>Pass: <span className="font-semibold text-slate-800">Avinash@99</span></p>
+              </div>
             </div>
 
-            <div className="p-4 rounded-xl border border-green-100 bg-green-50">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-bold text-sm text-medical-dark">Hospital Admin Demo</h3>
+            <div className="p-3.5 rounded-2xl border border-emerald-100 bg-emerald-50/70 hover:bg-emerald-50 transition">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                  <h3 className="font-bold text-xs text-medical-dark uppercase tracking-wider">Hospital Admin</h3>
+                </div>
                 <button
                   type="button"
                   onClick={() => {
@@ -240,18 +245,45 @@ export default function Login() {
                       mobile: '',
                       password: 'Aditi@99',
                     });
+                    toast.success('Hospital Admin credentials filled');
                   }}
-                  className="text-xs font-semibold text-medical-blue hover:text-medical-dark"
+                  className="text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shadow-xs transition cursor-pointer"
                 >
                   Fill login
                 </button>
               </div>
-              <p className="text-xs text-gray-600">
-                Email: <span className="font-semibold">aditiverma@yopmail.com</span>
-              </p>
-              <p className="text-xs text-gray-600">
-                Password: <span className="font-semibold">Aditi@99</span>
-              </p>
+              <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                <p>Email: <span className="font-semibold text-slate-800">aditiverma@yopmail.com</span></p>
+                <p>Pass: <span className="font-semibold text-slate-800">Aditi@99</span></p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl border border-amber-100 bg-amber-50/70 hover:bg-amber-50 transition">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-600"></span>
+                  <h3 className="font-bold text-xs text-medical-dark uppercase tracking-wider">Patient / User</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData({
+                      name: '',
+                      email: 'user@yopmail.com',
+                      mobile: '',
+                      password: 'User@123',
+                    });
+                    toast.success('Patient credentials filled');
+                  }}
+                  className="text-xs font-bold text-amber-800 hover:text-amber-950 bg-white px-2.5 py-1 rounded-lg border border-amber-200 shadow-xs transition cursor-pointer"
+                >
+                  Fill login
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                <p>Email: <span className="font-semibold text-slate-800">user@yopmail.com</span></p>
+                <p>Pass: <span className="font-semibold text-slate-800">User@123</span></p>
+              </div>
             </div>
           </div>
 

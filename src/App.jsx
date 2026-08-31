@@ -41,6 +41,8 @@ const SuperAdminManageHospitals = lazy(() => import("./pages/superadmin/SuperAdm
 const SuperAdminAppointments = lazy(() => import("./pages/superadmin/SuperAdminAppointments"));
 const UserBookAppointment = lazy(() => import("./pages/user/UserBookAppointment"));
 const UserMyAppointments = lazy(() => import("./pages/user/UserMyAppointments"));
+const UserExploreHospitals = lazy(() => import("./pages/user/UserExploreHospitals"));
+const UserFeedbacks = lazy(() => import("./pages/user/UserFeedbacks"));
 const CentreOfExcellence = lazy(() => import("./pages/QuickPages/CentreOfExcellence"));
 const Contact = lazy(() => import("./pages/QuickPages/Contact"));
 const Doctors = lazy(() => import("./pages/QuickPages/Doctors"));
@@ -79,8 +81,10 @@ function AppRoutes() {
 
         {/* ─── User Portal ────────────────────────────────── */}
         <Route path="/dashboard" element={<UserDashboard />} />
+        <Route path="/dashboard/explore-hospitals" element={<UserExploreHospitals />} />
         <Route path="/dashboard/book-appointment" element={<UserBookAppointment />} />
         <Route path="/dashboard/my-appointments" element={<UserMyAppointments />} />
+        <Route path="/dashboard/feedbacks" element={<UserFeedbacks />} />
 
         {/* ─── Super Admin Dashboard ───────────────────────── */}
         <Route path="/superadmin" element={<SuperAdminDashboard />} />

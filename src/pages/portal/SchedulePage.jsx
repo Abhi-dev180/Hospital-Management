@@ -49,7 +49,9 @@ export default function SchedulePage() {
 
   const days = useMemo(() => {
     const map = {};
+    const now = Date.now();
     for (const s of slots) {
+      if (new Date(s.iso).getTime() <= now) continue;
       const key = new Date(s.iso).toDateString();
       (map[key] ||= []).push(s);
     }

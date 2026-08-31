@@ -125,6 +125,24 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
     setForm(f => ({ ...f, time: selectedTime }));
   }, [selectedTime]);
 
+  useEffect(() => {
+    try {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const u = JSON.parse(userData);
+        setForm(f => ({
+          ...f,
+          patientName: f.patientName || u.name || '',
+          patientPhone: f.patientPhone || u.mobile || u.phone || '',
+          email: f.email || u.email || '',
+          hospitalId: presetHospitalId || f.hospitalId || ''
+        }));
+      } else if (presetHospitalId) {
+        setForm(f => ({ ...f, hospitalId: presetHospitalId }));
+      }
+    } catch (e) {}
+  }, [presetHospitalId]);
+
   // Fetch booked slots when date changes
   useEffect(() => {
     if (!form.date) return;
@@ -238,9 +256,13 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
     if (!validate()) return toast.error('Please fix the highlighted fields');
     setSubmitting(true);
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch(`${API_URL}/api/appointments/public`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(form)
       });
       const data = await res.json();
@@ -553,6 +575,7 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
                   Available Slots {loadingSlots && <Loader size="xs" label="checking calendar…" />}
                 </span>
                 <SlotGrid
+                  date={form.date}
                   slots={availableSlots}
                   booked={bookedSlots}
                   selected={form.time}
@@ -928,6 +951,7 @@ function ManageTab({ onBook }) {
                                 Available Slots {loadingSlots && <Loader size="xs" label="checking…" />}
                               </span>
                               <SlotGrid
+                                date={draft.date}
                                 slots={availableSlots}
                                 booked={slots}
                                 selected={draft.time}
@@ -1045,11 +1069,28 @@ function ManageTab({ onBook }) {
 
 
 // ─── Slot Grid ───────────────────────────────────────────────
-function SlotGrid({ slots, booked, selected, onSelect }) {
+function SlotGrid({ slots, booked, selected, onSelect, date }) {
+  const isPastSlot = (slot) => {
+    if (!date) return false;
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (date < todayStr) return true;
+    if (date === todayStr) {
+      const now = new Date();
+      // Require at least 1 hour in advance
+      const minValid = new Date(now.getTime() + 60 * 60 * 1000);
+      const [h, m] = slot.split(':').map(Number);
+      const slotDate = new Date();
+      slotDate.setHours(h, m, 0, 0);
+      return slotDate < minValid;
+    }
+    return false;
+  };
+
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-5 gap-1.5 w-full">
       {slots.map((slot) => {
-        const isBooked = booked.includes(slot);
+        const isPast = isPastSlot(slot);
+        const isBooked = (booked && booked.includes(slot)) || isPast;
         const isSelected = selected === slot;
         return (
           <button
@@ -1058,13 +1099,15 @@ function SlotGrid({ slots, booked, selected, onSelect }) {
             disabled={isBooked}
             onClick={() => onSelect(slot)}
             className={`px-1.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium border transition whitespace-nowrap ${
-              isBooked
+              isPast
+                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through opacity-50'
+                : isBooked
                 ? 'bg-red-100 text-red-400 border-red-200 cursor-not-allowed line-through'
                 : isSelected
                 ? 'bg-green-600 text-white border-green-600 shadow-md'
                 : 'bg-white text-gray-700 border-gray-300 hover:border-green-500 hover:bg-green-50'
             }`}
-            title={isBooked ? 'Slot not available (Already booked)' : 'Click to select slot'}
+            title={isPast ? 'Slot has already passed' : isBooked ? 'Slot not available (Already booked)' : 'Click to select slot'}
           >
             {slot}
           </button>
