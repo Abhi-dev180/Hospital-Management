@@ -91,6 +91,7 @@ export default function Navbar() {
         { name: 'Overview', to: '/superadmin' },
         { name: 'Demo Bookings', to: '/superadmin/demos', badge: 'demos' },
         { name: 'Registrations', to: '/superadmin/registrations', badge: 'registrations' },
+        { name: 'Lab & Diagnostics', to: '/superadmin/services' },
         { name: 'Manage Admin', to: '/superadmin/manage-admin' },
         { name: 'Manage Hospitals', to: '/superadmin/manage-hospitals' },
         { name: 'Appointments', to: '/superadmin/appointments' },
@@ -111,8 +112,11 @@ export default function Navbar() {
 
     return [
       { name: 'Overview', to: '/dashboard' },
+      { name: 'Explore Hospitals', to: '/dashboard/explore-hospitals' },
+      { name: 'Lab & Diagnostics', to: '/dashboard/services' },
       { name: 'Book Appointment', to: '/dashboard/book-appointment' },
-      { name: 'My Appointments', to: '/dashboard/my-appointments' }
+      { name: 'My Appointments', to: '/dashboard/my-appointments' },
+      { name: 'Feedback & Reviews', to: '/dashboard/feedbacks' }
     ];
   };
 

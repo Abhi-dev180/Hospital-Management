@@ -5,7 +5,8 @@ import {
   Search, RefreshCw, CalendarClock, CheckCircle2, XCircle, Loader2,
   CalendarPlus, Mail, Phone, Filter, User, PawPrint, Calendar,
   Clock, MessageSquare, Stethoscope, Eye, Hospital, Trash2,
-  FileText, Check, AlertCircle, ChevronLeft, ChevronRight
+  FileText, Check, AlertCircle, ChevronLeft, ChevronRight,
+  TestTube, Droplet, Activity, AlertTriangle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
@@ -59,6 +60,7 @@ export default function AdminAppointments() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'consult', 'test'
   const [page, setPage] = useState(1);
   const navigate = useNavigate();
 
@@ -221,24 +223,30 @@ export default function AdminAppointments() {
     }
   };
 
-  // ─── Complete ──────────────────────────────────────────────
-  const handleComplete = async () => {
+  // ─── Status Changes ─────────────────────────────────────────
+  const handleUpdateStatus = async (statusName) => {
     if (!selectedAppt) return;
-    if (!confirm(`Mark "${selectedAppt.patientName}" as Completed?`)) return;
     try {
       const res = await fetch(`${API_URL}/api/appointments/${selectedAppt.id}/status`, {
         method: 'PUT',
         headers: authHeaders(),
-        body: JSON.stringify({ status: 'Completed' })
+        body: JSON.stringify({ status: statusName })
       });
       const data = await res.json();
-      if (!res.ok) return toast.error(data.message || 'Failed to complete');
-      toast.success('Appointment completed');
+      if (!res.ok) return toast.error(data.message || `Failed to set ${statusName}`);
+      toast.success(`Appointment status set to ${statusName}`);
       setShowDetailModal(false);
       refreshAppointments();
     } catch {
       toast.error('Network error');
     }
+  };
+
+  // ─── Complete ──────────────────────────────────────────────
+  const handleComplete = async () => {
+    if (!selectedAppt) return;
+    if (!confirm(`Mark "${selectedAppt.patientName}" as Completed?`)) return;
+    handleUpdateStatus('Completed');
   };
 
   // ─── Cancel ─────────────────────────────────────────────────
@@ -506,13 +514,26 @@ export default function AdminAppointments() {
     const q = search.trim().toLowerCase();
     return appointments.filter(a => {
       const matchStatus = statusFilter === 'all' || a.status === statusFilter;
-      const matchSearch = !q || [a.patientName, a.petName, a.appointmentType, a.email, a.patientPhone].join(' ').toLowerCase().includes(q);
-      return matchStatus && matchSearch;
+      const isLabTest = a.appointmentType === 'Lab Test' || Boolean(a.serviceName);
+      const matchType =
+        typeFilter === 'all' ||
+        (typeFilter === 'test' && isLabTest) ||
+        (typeFilter === 'consult' && !isLabTest);
+
+      const matchSearch =
+        !q ||
+        [a.patientName, a.petName, a.appointmentType, a.serviceName, a.serviceCategory, a.email, a.patientPhone]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(q);
+
+      return matchStatus && matchType && matchSearch;
     });
-  }, [appointments, search, statusFilter]);
+  }, [appointments, search, statusFilter, typeFilter]);
 
   const paginated = useMemo(() => filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE), [filtered, page]);
-  useEffect(() => setPage(1), [search, statusFilter]);
+  useEffect(() => setPage(1), [search, statusFilter, typeFilter]);
 
   return (
     <motion.div
@@ -526,7 +547,7 @@ export default function AdminAppointments() {
         {/* ─── Header ─────────────────────────────────────────── */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-100">
           <div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Appointments</h2>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Appointments & Tests</h2>
             <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
               Showing <span className="text-blue-600 font-bold">{filtered.length}</span> of {appointments.length} total entries
             </p>
@@ -540,14 +561,26 @@ export default function AdminAppointments() {
               <CalendarPlus size={18} /> Book Appointment
             </button>
 
-            <div className="relative flex-1 sm:w-64 min-w-[200px]">
+            <div className="relative flex-1 sm:w-56 min-w-[180px]">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Search patient, pet..."
+                placeholder="Search patient, pet, test..."
                 className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50/80 border border-slate-200/80 rounded-2xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
               />
+            </div>
+
+            <div className="relative flex items-center">
+              <select
+                value={typeFilter}
+                onChange={e => setTypeFilter(e.target.value)}
+                className="w-full sm:w-auto px-3.5 py-2.5 text-sm bg-slate-50/80 border border-slate-200/80 rounded-2xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-slate-700 appearance-none"
+              >
+                <option value="all">All Types</option>
+                <option value="test">🧪 Lab & Tests Only</option>
+                <option value="consult">🩺 Consultations</option>
+              </select>
             </div>
 
             <div className="relative flex items-center">
@@ -623,9 +656,21 @@ export default function AdminAppointments() {
                       </div>
                     </td>
                     <td className="py-3.5 px-3">
-                      <span className="inline-block bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-lg text-xs font-semibold">
-                        {a.appointmentType || 'Consult'}
-                      </span>
+                      {a.appointmentType === 'Lab Test' || a.serviceName ? (
+                        <div className="flex flex-col">
+                          <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded-lg text-xs font-bold w-fit">
+                            <TestTube size={11} className="text-rose-600" />
+                            {a.serviceCategory || 'Lab Test'}
+                          </span>
+                          <span className="text-[11px] font-semibold text-slate-600 truncate max-w-[150px] mt-0.5">
+                            {a.serviceName || 'Diagnostic Test'}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="inline-block bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-lg text-xs font-semibold">
+                          {a.appointmentType || 'Consult'}
+                        </span>
+                      )}
                     </td>
                     <td className="py-3.5 px-3 whitespace-nowrap">
                       <div className="flex flex-col bg-blue-50/50 px-2 py-1 rounded-md border border-blue-100/50">
@@ -710,6 +755,32 @@ export default function AdminAppointments() {
                 </button>
               </div>
 
+              {/* Lab Test Notice Banner */}
+              {(selectedAppt.serviceName || selectedAppt.appointmentType === 'Lab Test') && (
+                <div className="mb-5 p-4 rounded-2xl bg-rose-50/80 border border-rose-200 flex items-start gap-3">
+                  <TestTube className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="text-xs space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-rose-900 text-sm">{selectedAppt.serviceName || 'Diagnostic Test'}</span>
+                      <span className="bg-rose-200/80 text-rose-800 font-bold px-2 py-0.5 rounded-full text-[10px]">
+                        {selectedAppt.serviceCategory || 'Lab Test'}
+                      </span>
+                      {selectedAppt.servicePrice && (
+                        <span className="font-extrabold text-rose-950">₹{selectedAppt.servicePrice}</span>
+                      )}
+                    </div>
+                    {selectedAppt.sampleType && (
+                      <p className="text-rose-800"><strong>Sample:</strong> {selectedAppt.sampleType}</p>
+                    )}
+                    {selectedAppt.fastingRequired && (
+                      <p className="text-amber-800 bg-amber-100/70 px-2 py-0.5 rounded-md font-semibold">
+                        ⚡ {selectedAppt.fastingDetails || 'Fasting required before sample collection.'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 <div className="flex items-start gap-2"><Phone size={16} className="text-slate-400 mt-0.5" /><div><p className="text-xs font-semibold text-slate-500 uppercase">Phone</p><p className="text-sm font-medium text-slate-800">{selectedAppt.patientPhone || '—'}</p></div></div>
                 <div className="flex items-start gap-2"><Mail size={16} className="text-slate-400 mt-0.5" /><div><p className="text-xs font-semibold text-slate-500 uppercase">Email</p><p className="text-sm font-medium text-slate-800">{selectedAppt.email || '—'}</p></div></div>
@@ -721,29 +792,46 @@ export default function AdminAppointments() {
                 <div className="flex items-start gap-2"><PawPrint size={16} className="text-slate-400 mt-0.5" /><div><p className="text-xs font-semibold text-slate-500 uppercase">Sex</p><p className="text-sm font-medium text-slate-800">{selectedAppt.sex || '—'}</p></div></div>
                 <div className="flex items-start gap-2"><PawPrint size={16} className="text-slate-400 mt-0.5" /><div><p className="text-xs font-semibold text-slate-500 uppercase">Breed</p><p className="text-sm font-medium text-slate-800">{selectedAppt.breed || '—'}</p></div></div>
                 <div className="flex items-start gap-2 sm:col-span-2"><Stethoscope size={16} className="text-slate-400 mt-0.5" /><div><p className="text-xs font-semibold text-slate-500 uppercase">Appointment Type</p><p className="text-sm font-medium text-slate-800">{selectedAppt.appointmentType || 'Consult'}</p></div></div>
-                <div className="flex items-start gap-2 sm:col-span-2"><MessageSquare size={16} className="text-slate-400 mt-0.5" /><div><p className="text-xs font-semibold text-slate-500 uppercase">Reason</p><p className="text-sm font-medium text-slate-800">{selectedAppt.reason || 'No reason provided'}</p></div></div>
+                <div className="flex items-start gap-2 sm:col-span-2"><MessageSquare size={16} className="text-slate-400 mt-0.5" /><div><p className="text-xs font-semibold text-slate-500 uppercase">Reason / Notes</p><p className="text-sm font-medium text-slate-800">{selectedAppt.reason || 'No reason provided'}</p></div></div>
                 <div className="flex items-start gap-2 sm:col-span-2">
                   <div><p className="text-xs font-semibold text-slate-500 uppercase">Status</p><span className={`inline-block px-3 py-1 rounded-full text-xs font-bold border ${statusColors[selectedAppt.status] || 'bg-slate-50 text-slate-700 border-slate-200'}`}>{selectedAppt.status}</span></div>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-100">
+              {/* Status Update Actions */}
+              <div className="flex flex-wrap items-center gap-2.5 pt-4 border-t border-slate-100">
                 {selectedAppt.status !== 'Completed' && selectedAppt.status !== 'Cancelled' && (
                   <>
-                    <button onClick={openReschedule} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors">
-                      <CalendarClock size={16} /> Reschedule
+                    {selectedAppt.status === 'Pending' && (
+                      <button
+                        onClick={() => handleUpdateStatus('Confirmed')}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
+                      >
+                        <CheckCircle2 size={15} /> Confirm Booking
+                      </button>
+                    )}
+                    {selectedAppt.status !== 'In Progress' && (
+                      <button
+                        onClick={() => handleUpdateStatus('In Progress')}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-purple-100 text-purple-800 hover:bg-purple-200 transition-colors"
+                      >
+                        <Activity size={15} /> Set In Progress
+                      </button>
+                    )}
+                    <button onClick={openReschedule} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors">
+                      <CalendarClock size={15} /> Reschedule
                     </button>
-                    <button onClick={handleComplete} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors">
-                      <CheckCircle2 size={16} /> Complete
+                    <button onClick={handleComplete} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors">
+                      <CheckCircle2 size={15} /> Complete
                     </button>
-                    <button onClick={handleCancel} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-rose-100 text-rose-700 hover:bg-rose-200 transition-colors">
-                      <XCircle size={16} /> Cancel
+                    <button onClick={handleCancel} className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-rose-100 text-rose-700 hover:bg-rose-200 transition-colors">
+                      <XCircle size={15} /> Cancel
                     </button>
                   </>
                 )}
                 {(selectedAppt.status === 'Cancelled' || selectedAppt.status === 'Completed') && (
-                  <button onClick={handleDelete} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-red-100 text-red-700 hover:bg-red-200 transition-colors">
-                    <Trash2 size={16} /> Delete
+                  <button onClick={handleDelete} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 transition-colors">
+                    <Trash2 size={15} /> Delete
                   </button>
                 )}
               </div>

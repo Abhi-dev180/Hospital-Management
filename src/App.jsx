@@ -38,8 +38,10 @@ const AdminTimings = lazy(() => import("./pages/admin/AdminTimings"));
 const AdminTranscriptions = lazy(() => import("./pages/admin/AdminTranscriptions"));
 const SuperAdminManageAdmin = lazy(() => import("./pages/superadmin/SuperAdminManageAdmin"));
 const SuperAdminManageHospitals = lazy(() => import("./pages/superadmin/SuperAdminManageHospitals"));
+const SuperAdminManageServices = lazy(() => import("./pages/superadmin/SuperAdminManageServices"));
 const SuperAdminAppointments = lazy(() => import("./pages/superadmin/SuperAdminAppointments"));
 const UserBookAppointment = lazy(() => import("./pages/user/UserBookAppointment"));
+const UserServices = lazy(() => import("./pages/user/UserServices"));
 const UserMyAppointments = lazy(() => import("./pages/user/UserMyAppointments"));
 const UserExploreHospitals = lazy(() => import("./pages/user/UserExploreHospitals"));
 const UserFeedbacks = lazy(() => import("./pages/user/UserFeedbacks"));
@@ -81,6 +83,7 @@ function AppRoutes() {
 
         {/* ─── User Portal ────────────────────────────────── */}
         <Route path="/dashboard" element={<UserDashboard />} />
+        <Route path="/dashboard/services" element={<UserServices />} />
         <Route path="/dashboard/explore-hospitals" element={<UserExploreHospitals />} />
         <Route path="/dashboard/book-appointment" element={<UserBookAppointment />} />
         <Route path="/dashboard/my-appointments" element={<UserMyAppointments />} />
@@ -91,6 +94,7 @@ function AppRoutes() {
         <Route path="/superadmin/demos" element={<SuperAdminDemos />} />
         <Route path="/superadmin/registrations" element={<SuperAdminRegistrations />} />
         <Route path="/superadmin/users" element={<SuperAdminUsers />} />
+        <Route path="/superadmin/services" element={<SuperAdminManageServices />} />
         <Route path="/superadmin/contacts" element={<SuperAdminContacts />} />
         <Route path="/superadmin/calendar" element={<SuperAdminCalendar />} />
         <Route path="/superadmin/manage-admin" element={<SuperAdminManageAdmin />} />

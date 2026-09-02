@@ -22,7 +22,9 @@ import {
   CalendarPlus,
   HeartPulse,
   Activity,
-  Bed
+  Bed,
+  Droplet,
+  TestTube
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
@@ -370,8 +372,30 @@ export default function UserDashboard() {
         </motion.div>
       )}
 
-      {/* 3 Quick Navigation Feature Banners */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      {/* Quick Navigation Feature Banners */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Diagnostic Lab Tests Card */}
+        <div className="bg-gradient-to-br from-rose-600 via-pink-600 to-indigo-700 text-white rounded-3xl p-6 shadow-lg flex flex-col justify-between group hover:shadow-xl transition-all">
+          <div>
+            <div className="p-3 bg-white/20 rounded-2xl w-fit mb-4">
+              <TestTube className="w-6 h-6 text-white" />
+            </div>
+            <div className="inline-block bg-white/20 text-rose-100 text-[10px] font-black uppercase px-2 py-0.5 rounded-full mb-1">
+              New Services
+            </div>
+            <h3 className="text-xl font-bold">Pet Lab Tests</h3>
+            <p className="text-xs text-rose-100 mt-2 leading-relaxed">
+              Book certified blood tests, urine analysis, digital X-rays, and organ health panels for your pet.
+            </p>
+          </div>
+          <Link
+            to="/dashboard/services"
+            className="mt-6 inline-flex items-center gap-2 text-xs font-bold text-rose-200 group-hover:translate-x-1 transition-transform"
+          >
+            Explore Tests Catalog <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+
         {/* Explore Hospitals Card */}
         <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-3xl p-6 shadow-lg flex flex-col justify-between group hover:shadow-xl transition-all">
           <div>
@@ -397,7 +421,7 @@ export default function UserDashboard() {
             <div className="p-3 bg-white/20 rounded-2xl w-fit mb-4">
               <CalendarPlus className="w-6 h-6 text-white" />
             </div>
-            <h3 className="text-xl font-bold">Book New Appointment</h3>
+            <h3 className="text-xl font-bold">Doctor Consult</h3>
             <p className="text-xs text-teal-100 mt-2 leading-relaxed">
               Choose your preferred hospital and doctor slot with instant confirmation and Google Calendar sync.
             </p>
@@ -416,16 +440,16 @@ export default function UserDashboard() {
             <div className="p-3 bg-white/20 rounded-2xl w-fit mb-4">
               <Star className="w-6 h-6 text-white fill-white" />
             </div>
-            <h3 className="text-xl font-bold">Appointment Reviews</h3>
+            <h3 className="text-xl font-bold">Reviews & Ratings</h3>
             <p className="text-xs text-amber-100 mt-2 leading-relaxed">
-              Share your experience for your booked consultations. Rate doctor expertise, hygiene, and hospitality.
+              Share your experience for your booked consultations and lab tests. Rate doctor expertise and care.
             </p>
           </div>
           <Link
             to="/dashboard/feedbacks"
             className="mt-6 inline-flex items-center gap-2 text-xs font-bold text-yellow-100 group-hover:translate-x-1 transition-transform"
           >
-            Review Appointments <ArrowRight className="w-4 h-4" />
+            Review Visits <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </div>

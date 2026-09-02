@@ -5,6 +5,7 @@ const ROLE_TABS = {
     { name: 'Demo Bookings', to: '/superadmin/demos' },
     { name: 'Registrations', to: '/superadmin/registrations' },
     { name: 'Users', to: '/superadmin/users' },
+    { name: 'Lab & Diagnostics', to: '/superadmin/services' },
     { name: 'Manage Admin', to: '/superadmin/manage-admin' },
     { name: 'Manage Hospitals', to: '/superadmin/manage-hospitals' },
     { name: 'Appointments', to: '/superadmin/appointments' },
@@ -17,6 +18,7 @@ const ROLE_TABS = {
   ],
   user: [
     { name: 'Overview', to: '/dashboard' },
+    { name: 'Lab & Diagnostics', to: '/dashboard/services' },
     { name: 'Explore Hospitals', to: '/dashboard/explore-hospitals' },
     { name: 'Book Appointment', to: '/dashboard/book-appointment' },
     { name: 'My Appointments', to: '/dashboard/my-appointments' },

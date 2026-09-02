@@ -15,7 +15,12 @@ import {
   Trash2,
   CalendarClock,
   Star,
-  MessageSquare
+  MessageSquare,
+  TestTube,
+  PawPrint,
+  Droplet,
+  Activity,
+  AlertTriangle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
@@ -278,30 +283,54 @@ export default function UserMyAppointmentsList() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 flex-wrap">
                       <h3 className="text-lg font-bold text-medical-dark">{app.patientName}</h3>
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusBadge(app.status)}`}>
+                      {app.appointment_number && (
+                        <span className="bg-medical-blue/10 text-medical-blue text-[11px] font-mono font-bold px-2 py-0.5 rounded-full">
+                          #{app.appointment_number}
+                        </span>
+                      )}
+                      {app.appointmentType === 'Lab Test' || app.serviceName ? (
+                        <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded-full text-xs font-bold">
+                          <TestTube className="w-3 h-3 text-rose-600" />
+                          {app.serviceCategory || 'Lab Test'}: {app.serviceName || 'Diagnostic Test'}
+                        </span>
+                      ) : (
+                        <span className="inline-block bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full text-xs font-semibold">
+                          {app.appointmentType || 'Doctor Consultation'}
+                        </span>
+                      )}
+                      <span className={`px-3 py-0.5 rounded-full text-xs font-semibold border ${getStatusBadge(app.status)}`}>
                         {app.status}
                       </span>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 mt-2 text-sm text-gray-600">
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-2 text-sm text-gray-600">
                       <div className="flex items-center gap-2">
-                        <Hospital size={15} className="text-medical-blue" />
-                        <span>{app.hospital}</span>
+                        <Hospital size={15} className="text-medical-blue shrink-0" />
+                        <span className="font-semibold text-slate-800">{app.hospital}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Calendar size={15} className="text-medical-blue" />
+                        <Calendar size={15} className="text-medical-blue shrink-0" />
                         <span>{app.date}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Clock size={15} className="text-medical-blue" />
+                        <Clock size={15} className="text-medical-blue shrink-0" />
                         <span>{app.time}</span>
                       </div>
-                      {app.patientPhone && (
+                      {app.petName && (
                         <div className="flex items-center gap-2">
-                          <Phone size={15} className="text-medical-blue" />
-                          <span>{app.patientPhone}</span>
+                          <PawPrint size={15} className="text-medical-blue shrink-0" />
+                          <span>Pet: <strong>{app.petName}</strong> {app.species ? `(${app.species})` : ''}</span>
                         </div>
                       )}
                     </div>
+
+                    {app.fastingRequired && (
+                      <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold bg-amber-50 text-amber-800 px-2.5 py-1 rounded-xl border border-amber-200">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span>Fasting Notice: {app.fastingDetails || 'Pet must be fasted before sample collection.'}</span>
+                      </div>
+                    )}
+
                     {app.reason && (
                       <p className="text-sm text-gray-500 mt-2 italic">"{app.reason}"</p>
                     )}
