@@ -10,6 +10,7 @@ import {
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
 import Loader, { ListSkeleton, OverlayLoader } from '../../components/Loader';
+import AppointmentPaymentModal from '../AppointmentPaymentModal';
 
 // ─── Constants ────────────────────────────────────────────────
 const initialForm = {
@@ -103,6 +104,11 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
   const [bookedSlots, setBookedSlots] = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+
+  // Payment Modal State
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentBookingDetails, setPaymentBookingDetails] = useState(null);
+  const [pendingForm, setPendingForm] = useState(null);
 
   // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
@@ -251,24 +257,52 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
   return Object.keys(e).length === 0;
 };
 
-  const submit = async (e) => {
+  const submit = (e) => {
     e.preventDefault();
     if (!validate()) return toast.error('Please fix the highlighted fields');
+
+    const hospObj = hospitals.find((h) => String(h.id) === String(form.hospitalId));
+    setPendingForm(form);
+    setPaymentBookingDetails({
+      hospitalName: hospObj ? hospObj.name : 'Selected Hospital',
+      patientName: form.patientName,
+      petName: form.petName,
+      serviceName: form.description || 'Veterinary Consultation',
+      appointmentType: 'Consult',
+      date: form.date,
+      time: form.time,
+      amount: 500,
+      email: form.email || ''
+    });
+
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSuccess = async (paymentInfo) => {
+    setShowPaymentModal(false);
     setSubmitting(true);
     try {
       const token = localStorage.getItem('token');
+      const finalPayload = {
+        ...pendingForm,
+        paymentStatus: 'Paid',
+        paymentId: paymentInfo.paymentId,
+        paymentMethod: paymentInfo.paymentMethod,
+        paymentAmount: paymentInfo.amount
+      };
+
       const res = await fetch(`${API_URL}/api/appointments/public`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
-        body: JSON.stringify(form)
+        body: JSON.stringify(finalPayload)
       });
       const data = await res.json();
       if (!res.ok) return toast.error(data.message || 'Could not book appointment');
       setDone(true);
-      toast.success('Appointment booked! 🐾');
+      toast.success('Appointment booked & paid! 🐾');
     } catch {
       toast.error('Network error. Please try again.');
     } finally {
@@ -607,6 +641,13 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
       <AnimatePresence>
         {submitting && <OverlayLoader label="Booking your appointment…" sub="Reserving the slot and sending confirmations" />}
       </AnimatePresence>
+
+      <AppointmentPaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        bookingDetails={paymentBookingDetails}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
     </>
   );
 }

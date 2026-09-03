@@ -171,8 +171,9 @@ export default function SuperAdminAppointments() {
       const data = await res.json();
       if (!res.ok)
         return toast.error(data.message || "Failed to load appointments");
-      setAppointments(data.appointments || []);
-      setTotal(data.total || 0);
+      const list = Array.isArray(data.appointments) ? data.appointments : (Array.isArray(data) ? data : []);
+      setAppointments(list);
+      setTotal(typeof data.total === 'number' ? data.total : list.length);
     } catch {
       toast.error("Network error");
     } finally {
@@ -595,11 +596,33 @@ export default function SuperAdminAppointments() {
                         </span>
                       </td>
                       <td className="py-3.5 px-3">
-                        <span
-                          className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold border ${statusColors[a.status] || "bg-slate-50 text-slate-700 border-slate-200"}`}
+                        <select
+                          value={a.status}
+                          onChange={async (e) => {
+                            const newStatus = e.target.value;
+                            try {
+                              const res = await fetch(`${API_URL}/api/appointments/${a.id}/status`, {
+                                method: "PUT",
+                                headers: authHeaders(),
+                                body: JSON.stringify({ status: newStatus }),
+                              });
+                              const data = await res.json();
+                              if (res.ok) {
+                                toast.success(`Status updated to ${newStatus}`);
+                                fetchAppointments();
+                              } else {
+                                toast.error(data.message || "Failed to update status");
+                              }
+                            } catch {
+                              toast.error("Network error");
+                            }
+                          }}
+                          className={`px-2.5 py-1 rounded-full text-xs font-bold border cursor-pointer outline-none transition ${statusColors[a.status] || "bg-slate-50 text-slate-700 border-slate-200"}`}
                         >
-                          {a.status}
-                        </span>
+                          {STATUSES.map((s) => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
                       </td>
                       <td className="py-3.5 px-3">
                         {a.feedback ? (
@@ -834,14 +857,37 @@ export default function SuperAdminAppointments() {
                 </div>
                 <div className="flex items-start gap-2 sm:col-span-2">
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase">
+                    <p className="text-xs font-semibold text-slate-500 uppercase mb-1">
                       Status
                     </p>
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-xs font-bold border ${statusColors[selectedAppt.status] || "bg-slate-50 text-slate-700 border-slate-200"}`}
+                    <select
+                      value={selectedAppt.status}
+                      onChange={async (e) => {
+                        const newStatus = e.target.value;
+                        try {
+                          const res = await fetch(`${API_URL}/api/appointments/${selectedAppt.id}/status`, {
+                            method: "PUT",
+                            headers: authHeaders(),
+                            body: JSON.stringify({ status: newStatus }),
+                          });
+                          const data = await res.json();
+                          if (res.ok) {
+                            toast.success(`Status updated to ${newStatus}`);
+                            setSelectedAppt((prev) => prev ? { ...prev, status: newStatus } : null);
+                            fetchAppointments();
+                          } else {
+                            toast.error(data.message || "Failed to update status");
+                          }
+                        } catch {
+                          toast.error("Network error");
+                        }
+                      }}
+                      className={`px-3 py-1 rounded-full text-xs font-bold border cursor-pointer outline-none transition ${statusColors[selectedAppt.status] || "bg-slate-50 text-slate-700 border-slate-200"}`}
                     >
-                      {selectedAppt.status}
-                    </span>
+                      {STATUSES.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>

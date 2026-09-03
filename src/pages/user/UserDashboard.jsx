@@ -33,6 +33,7 @@ import DashboardTabs from '../../components/DashboardTabs';
 import SlotSelector from '../../components/SlotSelector';
 import Pagination from '../../components/Pagination';
 import AppointmentFeedbackModal from '../../components/portal/AppointmentFeedbackModal';
+import AppointmentPaymentModal from '../../components/AppointmentPaymentModal';
 import { ListSkeleton } from '../../components/Loader';
 
 const APPOINTMENTS_PER_PAGE = 4;
@@ -59,6 +60,11 @@ export default function UserDashboard() {
 
   const [bookingLoading, setBookingLoading] = useState(false);
   const [page, setPage] = useState(1);
+
+  // Payment Modal State
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentBookingDetails, setPaymentBookingDetails] = useState(null);
+  const [pendingFormData, setPendingFormData] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -93,12 +99,22 @@ export default function UserDashboard() {
     }
   };
 
+  const handleUnauthorized = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
   const fetchAppointments = async (token) => {
     setLoadingAppointments(true);
     try {
       const res = await fetch(`${API_URL}/api/appointments`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (res.status === 401) {
+        handleUnauthorized();
+        return;
+      }
       const data = await res.json();
       setAppointments(Array.isArray(data) ? data : []);
     } catch {
@@ -113,6 +129,7 @@ export default function UserDashboard() {
       const res = await fetch(`${API_URL}/api/appointment-feedbacks`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (res.status === 401) return handleUnauthorized();
       const data = await res.json();
       setFeedbacks(Array.isArray(data) ? data : []);
     } catch {
@@ -125,6 +142,7 @@ export default function UserDashboard() {
       const res = await fetch(`${API_URL}/api/calls/transcriptions`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (res.status === 401) return handleUnauthorized();
       const data = await res.json();
       setTranscriptions(Array.isArray(data) ? data : []);
     } catch {
@@ -157,24 +175,49 @@ export default function UserDashboard() {
       return toast.error('Please enter a valid email address');
     }
 
+    const hospObj = hospitals.find((h) => String(h.id) === String(formData.hospitalId));
+    setPendingFormData(formData);
+    setPaymentBookingDetails({
+      hospitalName: hospObj ? hospObj.name : 'Selected Hospital',
+      patientName: formData.patientName,
+      serviceName: formData.reason || 'Doctor Consultation',
+      appointmentType: 'Consult',
+      date: formData.date,
+      time: formData.time,
+      amount: 500,
+      email: formData.email || user?.email || ''
+    });
+
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSuccess = async (paymentInfo) => {
+    setShowPaymentModal(false);
     setBookingLoading(true);
+
     try {
       const token = localStorage.getItem('token');
+      const finalPayload = {
+        ...pendingFormData,
+        email: pendingFormData.email || user?.email || '',
+        paymentStatus: 'Paid',
+        paymentId: paymentInfo.paymentId,
+        paymentMethod: paymentInfo.paymentMethod,
+        paymentAmount: paymentInfo.amount
+      };
+
       const res = await fetch(`${API_URL}/api/appointments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({
-          ...formData,
-          email: formData.email || user?.email || ''
-        })
+        body: JSON.stringify(finalPayload)
       });
 
       const data = await res.json();
       if (res.ok) {
-        toast.success(data.message || 'Appointment booked successfully!');
+        toast.success(data.message || 'Appointment booked & paid successfully!');
         fetchAppointments(token);
         setFormData({
           hospitalId: '',
@@ -822,6 +865,13 @@ export default function UserDashboard() {
           const token = localStorage.getItem('token');
           if (token) fetchFeedbacks(token);
         }}
+      />
+
+      <AppointmentPaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        bookingDetails={paymentBookingDetails}
+        onPaymentSuccess={handlePaymentSuccess}
       />
     </DashboardLayout>
   );

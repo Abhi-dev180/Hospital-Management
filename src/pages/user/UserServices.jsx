@@ -31,6 +31,7 @@ import API_URL from '../../config/api';
 import DashboardLayout from '../../components/DashboardLayout';
 import DashboardTabs from '../../components/DashboardTabs';
 import SlotSelector from '../../components/SlotSelector';
+import AppointmentPaymentModal from '../../components/AppointmentPaymentModal';
 import { TableSkeleton } from '../../components/Loader';
 
 const CATEGORY_ICONS = {
@@ -85,6 +86,11 @@ export default function UserServices() {
   });
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(null);
+
+  // Payment Modal State
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentBookingDetails, setPaymentBookingDetails] = useState(null);
+  const [pendingPayload, setPendingPayload] = useState(null);
 
   const navigate = useNavigate();
 
@@ -158,7 +164,7 @@ export default function UserServices() {
     }));
   };
 
-  const handleBookSubmit = async (e) => {
+  const handleBookSubmit = (e) => {
     e.preventDefault();
 
     if (!bookForm.hospitalId || !bookForm.date || !bookForm.time || !bookForm.patientName || !bookForm.patientPhone || !bookForm.petName) {
@@ -169,20 +175,49 @@ export default function UserServices() {
       return toast.error('Mobile number must be exactly 10 digits');
     }
 
+    const payload = {
+      ...bookForm,
+      appointmentType: 'Lab Test',
+      serviceId: bookingService?.id,
+      serviceName: bookingService?.name,
+      serviceCategory: bookingService?.category,
+      servicePrice: bookingService?.price || 500,
+      sampleType: bookingService?.sampleType,
+      fastingRequired: bookingService?.fastingRequired,
+      fastingDetails: bookingService?.fastingDetails,
+      turnaroundTime: bookingService?.turnaroundTime
+    };
+
+    const hospObj = hospitals.find((h) => String(h.id) === String(bookForm.hospitalId));
+
+    setPendingPayload(payload);
+    setPaymentBookingDetails({
+      hospitalName: hospObj ? hospObj.name : 'Selected Hospital',
+      patientName: bookForm.patientName,
+      petName: bookForm.petName,
+      serviceName: bookingService?.name || 'Lab Diagnostic Test',
+      appointmentType: 'Lab Test',
+      date: bookForm.date,
+      time: bookForm.time,
+      amount: bookingService?.price || 500,
+      email: bookForm.email || user?.email || ''
+    });
+
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSuccess = async (paymentInfo) => {
+    setShowPaymentModal(false);
     setBookingLoading(true);
+
     try {
       const token = localStorage.getItem('token');
-      const payload = {
-        ...bookForm,
-        appointmentType: 'Lab Test',
-        serviceId: bookingService?.id,
-        serviceName: bookingService?.name,
-        serviceCategory: bookingService?.category,
-        servicePrice: bookingService?.price,
-        sampleType: bookingService?.sampleType,
-        fastingRequired: bookingService?.fastingRequired,
-        fastingDetails: bookingService?.fastingDetails,
-        turnaroundTime: bookingService?.turnaroundTime
+      const finalPayload = {
+        ...pendingPayload,
+        paymentStatus: 'Paid',
+        paymentId: paymentInfo.paymentId,
+        paymentMethod: paymentInfo.paymentMethod,
+        paymentAmount: paymentInfo.amount
       };
 
       const res = await fetch(`${API_URL}/api/appointments`, {
@@ -191,12 +226,12 @@ export default function UserServices() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(finalPayload)
       });
 
       const data = await res.json();
       if (res.ok) {
-        toast.success(`Lab test appointment booked for ${bookForm.petName}! 🎉`);
+        toast.success(`Lab test appointment booked & paid for ${bookForm.petName}! 🎉`);
         setBookingSuccess(data.appointment);
       } else {
         toast.error(data.message || 'Failed to book test appointment');
@@ -799,6 +834,13 @@ export default function UserServices() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AppointmentPaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        bookingDetails={paymentBookingDetails}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
     </DashboardLayout>
   );
 }

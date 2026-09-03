@@ -20,7 +20,9 @@ import {
   PawPrint,
   Droplet,
   Activity,
-  AlertTriangle
+  AlertTriangle,
+  ShieldCheck,
+  CreditCard
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
@@ -70,6 +72,12 @@ export default function UserMyAppointmentsList() {
       const res = await fetch(`${API_URL}/api/appointments`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : (Array.isArray(data.appointments) ? data.appointments : []);
@@ -83,6 +91,12 @@ export default function UserMyAppointmentsList() {
         const fbRes = await fetch(`${API_URL}/api/appointment-feedbacks`, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        if (fbRes.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/login');
+          return;
+        }
         if (fbRes.ok) {
           const fbData = await fbRes.json();
           const fbList = Array.isArray(fbData) ? fbData : (Array.isArray(fbData.feedbacks) ? fbData.feedbacks : []);
@@ -334,6 +348,26 @@ export default function UserMyAppointmentsList() {
                     {app.reason && (
                       <p className="text-sm text-gray-500 mt-2 italic">"{app.reason}"</p>
                     )}
+
+                    {/* Payment Information & Receipt Details */}
+                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center gap-2.5 text-xs">
+                      <span className="inline-flex items-center gap-1 font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                        {app.paymentStatus || 'Paid'}
+                      </span>
+                      <span className="font-semibold text-slate-700">
+                        Fee Paid: <strong className="text-emerald-700 font-bold">₹{app.paymentAmount || app.servicePrice || 500}</strong>
+                      </span>
+                      <span className="text-slate-500 flex items-center gap-1">
+                        <CreditCard className="w-3 h-3 text-slate-400" />
+                        Method: <strong className="text-slate-800">{app.paymentMethod || 'Free UPI QR'}</strong>
+                      </span>
+                      {app.paymentId && (
+                        <span className="font-mono text-[11px] text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                          Txn: {app.paymentId}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {/* Action buttons */}
                   <div className="flex flex-wrap items-center gap-2">

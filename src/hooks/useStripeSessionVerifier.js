@@ -1,17 +1,33 @@
 import { useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import API_URL from '../config/api';
 
 export default function useStripeSessionVerifier() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const sessionId = searchParams.get('session_id');
+  const type = searchParams.get('type');
+  const appointmentPayment = searchParams.get('appointment_payment');
   const processedRef = useRef(new Set());
 
   useEffect(() => {
     if (!sessionId || processedRef.current.has(sessionId)) return;
 
     processedRef.current.add(sessionId);
+
+    // If this is an appointment payment checkout return, skip subscription activation
+    if (type === 'appointment' || appointmentPayment || location.pathname.includes('/user/my-appointments')) {
+      toast.success('🎉 Appointment Payment Verified! Your appointment is confirmed.', { duration: 5000 });
+      
+      // Clean up params from URL without page reload
+      searchParams.delete('session_id');
+      searchParams.delete('type');
+      searchParams.delete('appointment_payment');
+      searchParams.delete('payment');
+      setSearchParams(searchParams, { replace: true });
+      return;
+    }
 
     const verifyStripeSession = async () => {
       const loadingToast = toast.loading('Verifying payment and activating subscription...');
@@ -63,5 +79,5 @@ export default function useStripeSessionVerifier() {
     };
 
     verifyStripeSession();
-  }, [sessionId, searchParams, setSearchParams]);
+  }, [sessionId, type, appointmentPayment, location.pathname, searchParams, setSearchParams]);
 }
