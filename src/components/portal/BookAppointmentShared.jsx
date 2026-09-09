@@ -264,8 +264,10 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
     const hospObj = hospitals.find((h) => String(h.id) === String(form.hospitalId));
     setPendingForm(form);
     setPaymentBookingDetails({
+      ...form,
       hospitalName: hospObj ? hospObj.name : 'Selected Hospital',
       patientName: form.patientName,
+      patientPhone: form.patientPhone,
       petName: form.petName,
       serviceName: form.description || 'Veterinary Consultation',
       appointmentType: 'Consult',

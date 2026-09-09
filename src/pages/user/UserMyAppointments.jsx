@@ -1,6 +1,5 @@
-
 import { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
@@ -22,7 +21,15 @@ import {
   Activity,
   AlertTriangle,
   ShieldCheck,
-  CreditCard
+  CreditCard,
+  Stethoscope,
+  ClipboardList,
+  Sparkles,
+  Filter,
+  ArrowRight,
+  User,
+  PlusCircle,
+  FileText
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
@@ -35,6 +42,16 @@ import { ListSkeleton } from '../../components/Loader';
 
 const PER_PAGE = 5;
 
+const CATEGORY_COLORS = {
+  'Blood Test': 'bg-rose-50 text-rose-700 border-rose-200',
+  'Urine Test': 'bg-amber-50 text-amber-700 border-amber-200',
+  'Diagnostic Imaging': 'bg-blue-50 text-blue-700 border-blue-200',
+  'Pathology & Biopsy': 'bg-purple-50 text-purple-700 border-purple-200',
+  'Preventive Health Checkup': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  'Microbiology & Culture': 'bg-teal-50 text-teal-700 border-teal-200',
+  'Cardiac & ECG': 'bg-indigo-50 text-indigo-700 border-indigo-200'
+};
+
 export default function UserMyAppointmentsList() {
   const [user, setUser] = useState(null);
   const [appointments, setAppointments] = useState([]);
@@ -44,6 +61,23 @@ export default function UserMyAppointmentsList() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
   const navigate = useNavigate();
+
+  // ─── Master Section Tabs ────────────────────────────────────
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawTab = searchParams.get('tab'); // 'doctor' | 'lab' | 'all'
+  const activeTab = rawTab === 'lab' ? 'lab' : (rawTab === 'all' ? 'all' : 'doctor');
+
+  const handleTabChange = (tabKey) => {
+    setPage(1);
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        p.set('tab', tabKey);
+        return p;
+      },
+      { replace: true }
+    );
+  };
 
   // ─── Modal state for reschedule ─────────────────────────────
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
@@ -63,6 +97,15 @@ export default function UserMyAppointmentsList() {
     } else {
       navigate('/login');
     }
+
+    const handlePaymentVerified = () => {
+      fetchAppointments();
+    };
+
+    window.addEventListener('appointment_payment_verified', handlePaymentVerified);
+    return () => {
+      window.removeEventListener('appointment_payment_verified', handlePaymentVerified);
+    };
   }, [navigate]);
 
   const fetchAppointments = async () => {
@@ -103,7 +146,7 @@ export default function UserMyAppointmentsList() {
           setFeedbacks(fbList);
         }
       }
-    } catch (err) {
+    } catch {
       toast.error('Network error');
     } finally {
       setLoading(false);
@@ -127,7 +170,6 @@ export default function UserMyAppointmentsList() {
 
     try {
       const token = localStorage.getItem('token');
-      // Use the full update endpoint (users can update their own)
       const res = await fetch(`${API_URL}/api/appointments/${appointmentId}`, {
         method: 'PUT',
         headers: {
@@ -166,7 +208,6 @@ export default function UserMyAppointmentsList() {
     setSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-      // Use the full update endpoint
       const res = await fetch(`${API_URL}/api/appointments/${selectedAppointment.id}`, {
         method: 'PUT',
         headers: {
@@ -196,231 +237,483 @@ export default function UserMyAppointmentsList() {
   };
 
   const apptsList = Array.isArray(appointments) ? appointments : [];
-  const filtered = apptsList.filter((app) => {
-    if (!app) return false;
-    const matchStatus = statusFilter === 'all' || app.status === statusFilter;
-    const q = search.trim().toLowerCase();
-    const matchSearch =
-      !q ||
-      (app.patientName || '').toLowerCase().includes(q) ||
-      (app.hospital || '').toLowerCase().includes(q) ||
-      (app.date || '').includes(q);
-    return matchStatus && matchSearch;
-  });
+
+  // ─── Section Counts ──────────────────────────────────────────
+  const doctorCount = useMemo(
+    () => apptsList.filter((a) => a && a.appointmentType !== 'Lab Test' && !a.serviceName).length,
+    [apptsList]
+  );
+  const labCount = useMemo(
+    () => apptsList.filter((a) => a && (a.appointmentType === 'Lab Test' || Boolean(a.serviceName))).length,
+    [apptsList]
+  );
+  const totalCount = apptsList.length;
+
+  // ─── Filtered by Section Tab + Search + Status ───────────────
+  const filtered = useMemo(() => {
+    return apptsList.filter((app) => {
+      if (!app) return false;
+      const isLab = app.appointmentType === 'Lab Test' || Boolean(app.serviceName);
+
+      if (activeTab === 'doctor' && isLab) return false;
+      if (activeTab === 'lab' && !isLab) return false;
+
+      const matchStatus = statusFilter === 'all' || app.status === statusFilter;
+      const q = search.trim().toLowerCase();
+      const matchSearch =
+        !q ||
+        (app.patientName || '').toLowerCase().includes(q) ||
+        (app.hospital || '').toLowerCase().includes(q) ||
+        (app.serviceName || '').toLowerCase().includes(q) ||
+        (app.serviceCategory || '').toLowerCase().includes(q) ||
+        (app.sampleType || '').toLowerCase().includes(q) ||
+        (app.petName || '').toLowerCase().includes(q) ||
+        (app.doctorName || '').toLowerCase().includes(q) ||
+        (app.date || '').includes(q) ||
+        (app.appointment_number && String(app.appointment_number).includes(q));
+
+      return matchStatus && matchSearch;
+    });
+  }, [apptsList, activeTab, statusFilter, search]);
 
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-  useEffect(() => setPage(1), [search, statusFilter]);
+  useEffect(() => setPage(1), [search, statusFilter, activeTab]);
 
   const getStatusBadge = (status) => {
     const map = {
-      Pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      Pending: 'bg-amber-100 text-amber-800 border-amber-200',
       Confirmed: 'bg-blue-100 text-blue-800 border-blue-200',
       'In Progress': 'bg-purple-100 text-purple-800 border-purple-200',
-      Completed: 'bg-green-100 text-green-800 border-green-200',
-      Cancelled: 'bg-red-100 text-red-800 border-red-200',
+      Completed: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      Cancelled: 'bg-rose-100 text-rose-800 border-rose-200',
       Rescheduled: 'bg-cyan-100 text-cyan-800 border-cyan-200'
     };
-    return map[status] || 'bg-gray-100 text-gray-800';
+    return map[status] || 'bg-slate-100 text-slate-800 border-slate-200';
   };
 
   return (
     <DashboardLayout
       title="My Appointments"
-      subtitle="View all your booked appointments and their status."
+      subtitle="View your scheduled consultations and diagnostic lab tests."
       user={user}
       showHeader={false}
     >
       <DashboardTabs role="user" />
 
-      <div className="bg-white p-6 rounded-3xl shadow-lg border border-gray-100">
-        {/* Header with search & filter */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-medical-dark">Your Appointments</h2>
-            <p className="text-sm text-gray-500">{filtered.length} of {appointments.length} records</p>
+      <div className="bg-white p-5 sm:p-7 lg:p-8 rounded-3xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.08)] border border-slate-100">
+        
+        {/* ─── Master Section Switcher Tabs ─────────────────────── */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200/80">
+          <div className="flex items-center gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/80 overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => handleTabChange('doctor')}
+              className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+                activeTab === 'doctor'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 scale-[1.01]'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              }`}
+            >
+              <Stethoscope size={16} />
+              <span>Doctor Appointments</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                  activeTab === 'doctor' ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-700'
+                }`}
+              >
+                {doctorCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleTabChange('lab')}
+              className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+                activeTab === 'lab'
+                  ? 'bg-rose-600 text-white shadow-md shadow-rose-500/20 scale-[1.01]'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              }`}
+            >
+              <TestTube size={16} />
+              <span>Lab Test Appointments</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                  activeTab === 'lab' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-700'
+                }`}
+              >
+                {labCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleTabChange('all')}
+              className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+                activeTab === 'all'
+                  ? 'bg-slate-900 text-white shadow-md shadow-slate-900/20 scale-[1.01]'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              }`}
+            >
+              <ClipboardList size={15} />
+              <span>All Bookings</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                  activeTab === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-700'
+                }`}
+              >
+                {totalCount}
+              </span>
+            </button>
           </div>
-          <div className="flex flex-wrap gap-3 w-full sm:w-auto">
-            <div className="relative flex-1 sm:flex-none">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+
+          <div className="flex items-center gap-2 shrink-0">
+            {activeTab === 'lab' ? (
+              <Link
+                to="/dashboard/services"
+                className="inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm shadow-md shadow-rose-500/20 transition-all duration-200"
+              >
+                <Sparkles size={15} /> Book Lab Test
+              </Link>
+            ) : (
+              <Link
+                to="/dashboard/book-appointment"
+                className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm shadow-md shadow-blue-500/20 transition-all duration-200"
+              >
+                <CalendarClock size={15} /> Book Consultation
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* ─── Active Section Description & Filter Controls ─────── */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+              {activeTab === 'lab' && <TestTube className="text-rose-600" size={24} />}
+              {activeTab === 'doctor' && <Stethoscope className="text-blue-600" size={24} />}
+              {activeTab === 'all' && <ClipboardList className="text-slate-700" size={24} />}
+              {activeTab === 'lab'
+                ? 'Pet Diagnostic Lab Appointments'
+                : activeTab === 'doctor'
+                ? 'Doctor Appointments & Consultations'
+                : 'All Appointments & Diagnostic Bookings'}
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+              {activeTab === 'lab'
+                ? 'Showing diagnostic tests, sample collection slots, and laboratory investigations booked for your pets.'
+                : activeTab === 'doctor'
+                ? 'Showing outpatient consultations and clinical checkups with veterinary doctors.'
+                : 'Combined master view of all doctor visits and laboratory diagnostic tests.'}
+              {' '}
+              <span className="text-blue-600 font-bold">
+                ({filtered.length} of {apptsList.length} records)
+              </span>
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
+            <div className="relative flex-1 sm:w-64 min-w-[200px]">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
               <input
                 type="text"
-                placeholder="Search by patient, hospital..."
+                placeholder={
+                  activeTab === 'lab'
+                    ? 'Search test, sample, pet...'
+                    : 'Search patient, doctor, hospital...'
+                }
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full sm:w-60 pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-medical-blue focus:border-medical-blue outline-none"
+                className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
               />
             </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-full bg-white focus:ring-2 focus:ring-medical-blue focus:border-medical-blue outline-none"
-            >
-              <option value="all">All Status</option>
-              <option value="Pending">Pending</option>
-              <option value="Confirmed">Confirmed</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
-              <option value="Rescheduled">Rescheduled</option>
-            </select>
+
+            <div className="relative flex items-center">
+              <Filter className="absolute left-3.5 text-slate-400 pointer-events-none" size={15} />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="pl-9 pr-8 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-2xl font-semibold text-slate-700 outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all cursor-pointer"
+              >
+                <option value="all">All Status</option>
+                <option value="Pending">Pending</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+                <option value="Rescheduled">Rescheduled</option>
+              </select>
+            </div>
+
             <button
               onClick={fetchAppointments}
               disabled={loading}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-full hover:bg-gray-50 transition disabled:opacity-50"
+              title="Refresh bookings list"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-slate-100 active:scale-95 text-slate-700 border border-slate-200 rounded-2xl text-xs font-bold transition disabled:opacity-50"
             >
-              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-              Refresh
+              <RefreshCw size={15} className={loading ? 'animate-spin text-blue-600' : ''} />
+              <span className="hidden sm:inline">Refresh</span>
             </button>
           </div>
         </div>
 
-        {/* Appointments list */}
+        {/* ─── Appointments List ─────────────────────────────────── */}
         {loading ? (
           <ListSkeleton rows={4} className="py-4" />
         ) : paginated.length === 0 ? (
-          <div className="py-16 text-center text-gray-500">
-            <Calendar className="mx-auto mb-3 h-12 w-12 text-gray-300" />
-            <p className="text-lg font-semibold">No appointments found</p>
-            <p className="text-sm">Book your first appointment from the dashboard.</p>
+          <div className="py-16 text-center border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
+            {activeTab === 'lab' ? (
+              <>
+                <div className="w-16 h-16 bg-rose-50 border border-rose-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                  <TestTube className="h-8 w-8 text-rose-600" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800">No lab test appointments found</h3>
+                <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+                  {search || statusFilter !== 'all'
+                    ? 'Try adjusting your search query or status filter.'
+                    : "You haven't booked any veterinary laboratory diagnostic tests yet."}
+                </p>
+                <Link
+                  to="/dashboard/services"
+                  className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-rose-600 text-white font-bold text-xs shadow-md shadow-rose-600/20 hover:bg-rose-700 transition"
+                >
+                  <Sparkles size={14} /> Explore Lab Catalog
+                </Link>
+              </>
+            ) : activeTab === 'doctor' ? (
+              <>
+                <div className="w-16 h-16 bg-blue-50 border border-blue-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                  <Stethoscope className="h-8 w-8 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800">No doctor appointments found</h3>
+                <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+                  {search || statusFilter !== 'all'
+                    ? 'Try adjusting your search query or status filter.'
+                    : "You haven't scheduled any doctor consultations yet."}
+                </p>
+                <Link
+                  to="/dashboard/book-appointment"
+                  className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-blue-600 text-white font-bold text-xs shadow-md shadow-blue-600/20 hover:bg-blue-700 transition"
+                >
+                  <CalendarClock size={14} /> Book a Consultation
+                </Link>
+              </>
+            ) : (
+              <>
+                <Calendar className="mx-auto mb-3 h-12 w-12 text-slate-300" />
+                <h3 className="text-lg font-bold text-slate-800">No appointments found</h3>
+                <p className="text-sm text-slate-500">Book your first doctor visit or lab test from the dashboard.</p>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
-            {paginated.map((app, idx) => (
-              <motion.div
-                key={app.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                className="p-5 rounded-2xl border border-gray-200 hover:shadow-md transition-shadow bg-white"
-              >
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className="text-lg font-bold text-medical-dark">{app.patientName}</h3>
-                      {app.appointment_number && (
-                        <span className="bg-medical-blue/10 text-medical-blue text-[11px] font-mono font-bold px-2 py-0.5 rounded-full">
-                          #{app.appointment_number}
-                        </span>
-                      )}
-                      {app.appointmentType === 'Lab Test' || app.serviceName ? (
-                        <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded-full text-xs font-bold">
-                          <TestTube className="w-3 h-3 text-rose-600" />
-                          {app.serviceCategory || 'Lab Test'}: {app.serviceName || 'Diagnostic Test'}
-                        </span>
-                      ) : (
-                        <span className="inline-block bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full text-xs font-semibold">
-                          {app.appointmentType || 'Doctor Consultation'}
-                        </span>
-                      )}
-                      <span className={`px-3 py-0.5 rounded-full text-xs font-semibold border ${getStatusBadge(app.status)}`}>
-                        {app.status}
-                      </span>
-                    </div>
+            {paginated.map((app, idx) => {
+              const isLabTest = app.appointmentType === 'Lab Test' || Boolean(app.serviceName);
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-2 text-sm text-gray-600">
-                      <div className="flex items-center gap-2">
-                        <Hospital size={15} className="text-medical-blue shrink-0" />
-                        <span className="font-semibold text-slate-800">{app.hospital}</span>
+              return (
+                <motion.div
+                  key={app.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.04 }}
+                  className={`p-5 rounded-3xl border transition-all ${
+                    isLabTest
+                      ? 'border-rose-100 bg-gradient-to-r from-white via-white to-rose-50/20 hover:border-rose-300 hover:shadow-md'
+                      : 'border-slate-200/80 bg-white hover:border-blue-300 hover:shadow-md'
+                  }`}
+                >
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div className="flex-1 space-y-2.5">
+                      
+                      {/* Top Badges Row */}
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        {/* Type Badge */}
+                        {isLabTest ? (
+                          <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 border border-rose-200 px-3 py-1 rounded-full text-xs font-bold tracking-tight">
+                            <TestTube className="w-3.5 h-3.5 text-rose-600" />
+                            Lab Test: {app.serviceCategory || 'Diagnostic Testing'}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-full text-xs font-bold tracking-tight">
+                            <Stethoscope className="w-3.5 h-3.5 text-blue-600" />
+                            Doctor Consult
+                          </span>
+                        )}
+
+                        {/* Order / Appointment Number */}
+                        {app.appointment_number && (
+                          <span className="bg-slate-100 text-slate-700 text-[11px] font-mono font-extrabold px-2.5 py-0.5 rounded-full border border-slate-200">
+                            #{app.appointment_number}
+                          </span>
+                        )}
+
+                        {/* Status Badge */}
+                        <span className={`px-3 py-0.5 rounded-full text-xs font-bold border ${getStatusBadge(app.status)}`}>
+                          {app.status}
+                        </span>
+
+                        {/* Turnaround time badge for lab test */}
+                        {isLabTest && app.turnaroundTime && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
+                            <Clock className="w-3 h-3 text-slate-500" />
+                            Results in {app.turnaroundTime}
+                          </span>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar size={15} className="text-medical-blue shrink-0" />
-                        <span>{app.date}</span>
+
+                      {/* Main Title: Test Name or Doctor / Reason */}
+                      <div>
+                        <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                          {isLabTest
+                            ? (app.serviceName || app.reason || 'Diagnostic Lab Investigation')
+                            : (app.doctorName ? `Dr. ${app.doctorName}` : (app.reason || 'Outpatient Consultation'))}
+                        </h3>
+                        {!isLabTest && app.reason && app.doctorName && (
+                          <p className="text-xs text-slate-500 italic mt-0.5">
+                            Reason: "{app.reason}"
+                          </p>
+                        )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Clock size={15} className="text-medical-blue shrink-0" />
-                        <span>{app.time}</span>
-                      </div>
-                      {app.petName && (
+
+                      {/* Details Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 text-xs sm:text-sm text-slate-600 pt-1">
                         <div className="flex items-center gap-2">
-                          <PawPrint size={15} className="text-medical-blue shrink-0" />
-                          <span>Pet: <strong>{app.petName}</strong> {app.species ? `(${app.species})` : ''}</span>
+                          <Hospital size={15} className={isLabTest ? "text-rose-600 shrink-0" : "text-blue-600 shrink-0"} />
+                          <span className="font-bold text-slate-800 line-clamp-1">{app.hospital}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Calendar size={15} className={isLabTest ? "text-rose-600 shrink-0" : "text-blue-600 shrink-0"} />
+                          <span className="font-semibold">{app.date}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Clock size={15} className={isLabTest ? "text-rose-600 shrink-0" : "text-blue-600 shrink-0"} />
+                          <span className="font-semibold">{app.time}</span>
+                        </div>
+
+                        {app.petName && (
+                          <div className="flex items-center gap-2">
+                            <PawPrint size={15} className={isLabTest ? "text-rose-600 shrink-0" : "text-blue-600 shrink-0"} />
+                            <span>Pet: <strong className="text-slate-900">{app.petName}</strong> {app.species ? `(${app.species})` : ''}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Diagnostic Lab Test Specifications Card */}
+                      {isLabTest && (
+                        <div className="bg-slate-50/90 rounded-2xl p-3 border border-slate-200/80 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+                          {app.sampleType && (
+                            <div className="inline-flex items-center gap-1.5 text-slate-700">
+                              <Droplet size={13} className="text-rose-500 shrink-0" />
+                              <span>Sample Required: <strong className="text-slate-900">{app.sampleType}</strong></span>
+                            </div>
+                          )}
+
+                          {app.fastingRequired && (
+                            <div className="inline-flex items-center gap-1.5 text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200 font-semibold">
+                              <AlertTriangle size={13} className="text-amber-600 shrink-0" />
+                              <span>Fasting Notice: {app.fastingDetails || 'Pet must be fasted before sample collection.'}</span>
+                            </div>
+                          )}
                         </div>
                       )}
+
+                      {/* Payment & Receipt Metadata Banner */}
+                      <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-3 text-xs">
+                        <span className="inline-flex items-center gap-1 font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                          {app.paymentStatus || 'Paid'}
+                        </span>
+
+                        <span className="font-semibold text-slate-700">
+                          Amount: <strong className="text-emerald-700 font-extrabold text-sm">₹{app.paymentAmount || app.servicePrice || 500}</strong>
+                        </span>
+
+                        <span className="text-slate-500 flex items-center gap-1">
+                          <CreditCard className="w-3 h-3 text-slate-400" />
+                          Method: <strong className="text-slate-800">{app.paymentMethod || 'Online Gateway'}</strong>
+                        </span>
+
+                        {app.paymentId && (
+                          <span className="font-mono text-[11px] text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
+                            Txn: {app.paymentId}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    {app.fastingRequired && (
-                      <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold bg-amber-50 text-amber-800 px-2.5 py-1 rounded-xl border border-amber-200">
-                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                        <span>Fasting Notice: {app.fastingDetails || 'Pet must be fasted before sample collection.'}</span>
-                      </div>
-                    )}
+                    {/* ─── Action Buttons ─────────────────────────────── */}
+                    <div className="flex flex-row lg:flex-col items-center lg:items-end justify-end gap-2 shrink-0 border-t lg:border-t-0 pt-3 lg:pt-0">
+                      
+                      {/* Feedback button */}
+                      {feedbackMap.get(String(app.id)) || feedbackMap.get(String(app.appointment_number)) ? (
+                        <div className="inline-flex items-center gap-1 px-3 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full">
+                          <Star className="w-3.5 h-3.5 fill-emerald-500 text-emerald-500" />
+                          <span>{feedbackMap.get(String(app.id))?.rating || feedbackMap.get(String(app.appointment_number))?.rating || '5'}★ Reviewed</span>
+                        </div>
+                      ) : app.status === 'Completed' ? (
+                        <button
+                          onClick={() => setSelectedApptForFeedback(app)}
+                          className="inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-bold text-amber-900 bg-amber-50 border border-amber-200 rounded-full hover:bg-amber-100 transition shadow-xs"
+                        >
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          Give Feedback
+                        </button>
+                      ) : null}
 
-                    {app.reason && (
-                      <p className="text-sm text-gray-500 mt-2 italic">"{app.reason}"</p>
-                    )}
+                      {/* Reschedule / Cancel actions */}
+                      {app.status !== 'Cancelled' && app.status !== 'Completed' && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openRescheduleModal(app)}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 active:scale-95 transition shadow-xs"
+                          >
+                            <CalendarClock size={13} /> Reschedule
+                          </button>
 
-                    {/* Payment Information & Receipt Details */}
-                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center gap-2.5 text-xs">
-                      <span className="inline-flex items-center gap-1 font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                        {app.paymentStatus || 'Paid'}
-                      </span>
-                      <span className="font-semibold text-slate-700">
-                        Fee Paid: <strong className="text-emerald-700 font-bold">₹{app.paymentAmount || app.servicePrice || 500}</strong>
-                      </span>
-                      <span className="text-slate-500 flex items-center gap-1">
-                        <CreditCard className="w-3 h-3 text-slate-400" />
-                        Method: <strong className="text-slate-800">{app.paymentMethod || 'Free UPI QR'}</strong>
-                      </span>
-                      {app.paymentId && (
-                        <span className="font-mono text-[11px] text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
-                          Txn: {app.paymentId}
-                        </span>
+                          <button
+                            onClick={() => handleCancel(app.id)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 active:scale-95 transition"
+                          >
+                            <Trash2 size={13} /> Cancel
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Quick link to book again */}
+                      {isLabTest ? (
+                        <Link
+                          to="/dashboard/services"
+                          className="hidden xl:inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-800 transition mt-1"
+                        >
+                          Book another test <ArrowRight size={12} />
+                        </Link>
+                      ) : (
+                        <Link
+                          to="/dashboard/book-appointment"
+                          className="hidden xl:inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 transition mt-1"
+                        >
+                          Book consultation <ArrowRight size={12} />
+                        </Link>
                       )}
                     </div>
                   </div>
-                  {/* Action buttons */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    {/* Feedback button */}
-                    {feedbackMap.get(String(app.id)) || feedbackMap.get(String(app.appointment_number)) ? (
-                      <div className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full">
-                        <Star className="w-3.5 h-3.5 fill-emerald-500 text-emerald-500" />
-                        <span>
-                          {feedbackMap.get(String(app.id))?.rating || feedbackMap.get(String(app.appointment_number))?.rating || '5'}★ Reviewed
-                        </span>
-                      </div>
-                    ) : app.status === 'Completed' ? (
-                      <button
-                        onClick={() => setSelectedApptForFeedback(app)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-amber-900 bg-amber-50 border border-amber-200 rounded-full hover:bg-amber-100 transition shadow-sm"
-                      >
-                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                        Give Feedback
-                      </button>
-                    ) : null}
-
-                    {app.status !== 'Cancelled' && app.status !== 'Completed' && (
-                      <>
-                        <button
-                          onClick={() => handleCancel(app.id)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-red-600 border border-red-200 rounded-full hover:bg-red-50 transition"
-                        >
-                          <Trash2 size={13} /> Cancel
-                        </button>
-                        <button
-                          onClick={() => openRescheduleModal(app)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-blue-600 border border-blue-200 rounded-full hover:bg-blue-50 transition"
-                        >
-                          <CalendarClock size={13} /> Reschedule
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </div>
         )}
 
-        {/* Pagination */}
+        {/* ─── Pagination ─────────────────────────────────────────── */}
         {!loading && filtered.length > PER_PAGE && (
-          <div className="mt-6">
+          <div className="mt-8 pt-4 border-t border-slate-100">
             <Pagination page={page} total={filtered.length} perPage={PER_PAGE} onChange={setPage} />
           </div>
         )}
       </div>
 
-      {/* ─── Reschedule Modal with Slot Selector ──────────────── */}
+      {/* ─── Reschedule Modal with Slot Selector ────────────────── */}
       <AnimatePresence>
         {showRescheduleModal && selectedAppointment && (
           <motion.div
@@ -431,59 +724,63 @@ export default function UserMyAppointmentsList() {
             onClick={() => setShowRescheduleModal(false)}
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
+              initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
+              exit={{ scale: 0.95, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto border border-slate-100"
             >
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-medical-dark">Reschedule Appointment</h3>
+                <h3 className="text-xl font-bold text-medical-dark flex items-center gap-2">
+                  <CalendarClock className="text-medical-blue" size={20} />
+                  Reschedule Slot
+                </h3>
                 <button
                   onClick={() => setShowRescheduleModal(false)}
-                  className="p-1 rounded-full hover:bg-gray-100 transition"
+                  className="p-1 rounded-full hover:bg-slate-100 transition text-slate-500"
                 >
                   <X size={20} />
                 </button>
               </div>
 
               <form onSubmit={handleReschedule} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">
-                    Patient: <span className="font-normal">{selectedAppointment.patientName}</span>
-                  </label>
-                  <label className="block text-sm text-gray-500">
-                    Current: {selectedAppointment.date} at {selectedAppointment.time}
-                  </label>
+                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 text-xs space-y-1">
+                  <p className="font-bold text-slate-800">
+                    {selectedAppointment.appointmentType === 'Lab Test' || selectedAppointment.serviceName
+                      ? `🧪 ${selectedAppointment.serviceName || 'Diagnostic Lab Test'}`
+                      : `🩺 Doctor Consultation`}
+                  </p>
+                  <p className="text-slate-600">Patient: <strong className="text-slate-800">{selectedAppointment.patientName}</strong></p>
+                  <p className="text-slate-500">Current Slot: {selectedAppointment.date} at {selectedAppointment.time}</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">New Date *</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">New Date *</label>
                   <input
                     type="date"
                     min={new Date().toISOString().split('T')[0]}
                     value={newDate}
                     onChange={(e) => setNewDate(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-medical-blue focus:border-medical-blue outline-none"
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-medical-blue focus:border-medical-blue outline-none"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">New Time *</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">New Time *</label>
                   <input
                     type="time"
                     value={newTime}
                     onChange={(e) => setNewTime(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-medical-blue outline-none"
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-medical-blue outline-none"
                     required
                   />
                 </div>
 
-                {/* ─── Slot Selector ───────────────────────────── */}
+                {/* Slot Selector */}
                 {newDate && selectedAppointment?.hospitalId && (
                   <div className="mt-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Available Slots</label>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">Available Hospital Slots</label>
                     <SlotSelector
                       date={newDate}
                       hospitalId={selectedAppointment.hospitalId}
@@ -497,17 +794,17 @@ export default function UserMyAppointmentsList() {
                   <button
                     type="button"
                     onClick={() => setShowRescheduleModal(false)}
-                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-full font-semibold text-gray-600 hover:bg-gray-50 transition"
+                    className="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl font-semibold text-slate-600 hover:bg-slate-50 transition"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 px-4 py-2.5 bg-medical-blue text-white rounded-full font-semibold hover:bg-medical-dark transition disabled:opacity-60 flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-2.5 bg-medical-blue text-white rounded-xl font-semibold hover:bg-blue-700 transition disabled:opacity-60 flex items-center justify-center gap-2 shadow-md shadow-blue-500/20"
                   >
                     {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 size={18} />}
-                    {submitting ? 'Saving...' : 'Reschedule'}
+                    {submitting ? 'Saving...' : 'Confirm Reschedule'}
                   </button>
                 </div>
               </form>
@@ -516,7 +813,7 @@ export default function UserMyAppointmentsList() {
         )}
       </AnimatePresence>
 
-      {/* ─── Appointment Feedback Modal ────────────────────────── */}
+      {/* ─── Appointment Feedback Modal ─────────────────────────── */}
       <AppointmentFeedbackModal
         isOpen={Boolean(selectedApptForFeedback)}
         onClose={() => setSelectedApptForFeedback(null)}

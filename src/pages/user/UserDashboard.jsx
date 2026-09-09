@@ -24,7 +24,8 @@ import {
   Activity,
   Bed,
   Droplet,
-  TestTube
+  TestTube,
+  Stethoscope
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
@@ -60,6 +61,7 @@ export default function UserDashboard() {
 
   const [bookingLoading, setBookingLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const [appointmentFilter, setAppointmentFilter] = useState('all');
 
   // Payment Modal State
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -281,6 +283,15 @@ export default function UserDashboard() {
     return map;
   }, [feedbacks]);
 
+  // Split appointments by consultation vs lab test
+  const doctorAppointments = useMemo(() => {
+    return appointments.filter((a) => a && a.appointmentType !== 'Lab Test' && !a.serviceName);
+  }, [appointments]);
+
+  const labAppointments = useMemo(() => {
+    return appointments.filter((a) => a && (a.appointmentType === 'Lab Test' || Boolean(a.serviceName)));
+  }, [appointments]);
+
   // Compute metrics
   const upcomingAppointments = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -300,13 +311,20 @@ export default function UserDashboard() {
     )[0];
   }, [upcomingAppointments]);
 
+  // Active filtered appointments for the recent list
+  const filteredAppointments = useMemo(() => {
+    if (appointmentFilter === 'doctor') return doctorAppointments;
+    if (appointmentFilter === 'lab') return labAppointments;
+    return appointments;
+  }, [appointments, doctorAppointments, labAppointments, appointmentFilter]);
+
   // Paginated appointments
   const paginatedAppointments = useMemo(() => {
     const start = (page - 1) * APPOINTMENTS_PER_PAGE;
-    return appointments.slice(start, start + APPOINTMENTS_PER_PAGE);
-  }, [appointments, page]);
+    return filteredAppointments.slice(start, start + APPOINTMENTS_PER_PAGE);
+  }, [filteredAppointments, page]);
 
-  const totalPages = Math.ceil(appointments.length / APPOINTMENTS_PER_PAGE);
+  const totalPages = Math.ceil(filteredAppointments.length / APPOINTMENTS_PER_PAGE);
 
   return (
     <DashboardLayout
@@ -317,14 +335,24 @@ export default function UserDashboard() {
       <DashboardTabs role="user" />
 
       {/* KPI Overview Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-4">
-          <div className="p-3.5 bg-blue-50 text-medical-blue rounded-2xl">
-            <Calendar className="w-6 h-6" />
+          <div className="p-3.5 bg-blue-50 text-blue-600 rounded-2xl">
+            <Stethoscope className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Bookings</p>
-            <p className="text-2xl font-black text-slate-900 mt-0.5">{appointments.length}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Doctor Visits</p>
+            <p className="text-2xl font-black text-slate-900 mt-0.5">{doctorAppointments.length}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-4">
+          <div className="p-3.5 bg-rose-50 text-rose-600 rounded-2xl">
+            <TestTube className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Lab Tests</p>
+            <p className="text-2xl font-black text-slate-900 mt-0.5">{labAppointments.length}</p>
           </div>
         </div>
 
@@ -348,7 +376,7 @@ export default function UserDashboard() {
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-4">
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-4 col-span-2 sm:col-span-1">
           <div className="p-3.5 bg-teal-50 text-teal-600 rounded-2xl">
             <MessageSquare className="w-6 h-6" />
           </div>
@@ -360,60 +388,82 @@ export default function UserDashboard() {
       </div>
 
       {/* Next Upcoming Appointment Highlight Banner */}
-      {nextAppointment && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-medical-dark via-slate-900 to-medical-blue text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden mb-8"
-        >
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-2 max-w-xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-400/20 text-teal-300 text-xs font-bold">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Next Scheduled Appointment</span>
-              </div>
-              <h3 className="text-2xl font-extrabold text-white">
-                {nextAppointment.hospital || 'Hospital Consultation'}
-              </h3>
-              <p className="text-slate-300 text-sm flex flex-wrap items-center gap-4">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <Calendar className="w-4 h-4 text-teal-300" />
-                  {nextAppointment.date}
-                </span>
-                <span className="flex items-center gap-1.5 font-medium">
-                  <Clock className="w-4 h-4 text-teal-300" />
-                  {nextAppointment.time}
-                </span>
-                <span className="flex items-center gap-1.5 font-medium">
-                  <User className="w-4 h-4 text-teal-300" />
-                  {nextAppointment.patientName}
-                </span>
-              </p>
-              {nextAppointment.reason && (
-                <p className="text-xs text-slate-300 italic">
-                  Purpose: {nextAppointment.reason}
-                </p>
-              )}
-            </div>
+      {nextAppointment && (() => {
+        const isNextLab = nextAppointment.appointmentType === 'Lab Test' || Boolean(nextAppointment.serviceName);
+        const nextUrl = isNextLab ? '/dashboard/my-appointments?tab=lab' : '/dashboard/my-appointments?tab=doctor';
 
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                onClick={() => navigate('/dashboard/my-appointments')}
-                className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs transition"
-              >
-                Manage Booking
-              </button>
-              <button
-                onClick={() => navigate('/dashboard/my-appointments')}
-                className="px-5 py-2.5 rounded-xl bg-teal-400 hover:bg-teal-300 text-slate-950 font-bold text-xs shadow-lg transition inline-flex items-center gap-1.5"
-              >
-                <Calendar className="w-3.5 h-3.5" />
-                View in Schedule
-              </button>
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden mb-8 text-white ${
+              isNextLab
+                ? 'bg-gradient-to-r from-rose-950 via-slate-900 to-indigo-950 border border-rose-800/30'
+                : 'bg-gradient-to-r from-medical-dark via-slate-900 to-medical-blue'
+            }`}
+          >
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="space-y-2 max-w-xl">
+                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold ${
+                  isNextLab ? 'bg-rose-500/20 text-rose-300' : 'bg-teal-400/20 text-teal-300'
+                }`}>
+                  {isNextLab ? <TestTube className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
+                  <span>{isNextLab ? 'Next Scheduled Lab Test' : 'Next Doctor Consultation'}</span>
+                </div>
+                <h3 className="text-2xl font-extrabold text-white">
+                  {isNextLab
+                    ? (nextAppointment.serviceName || 'Diagnostic Lab Investigation')
+                    : (nextAppointment.doctorName ? `Dr. ${nextAppointment.doctorName}` : (nextAppointment.hospital || 'Hospital Consultation'))}
+                </h3>
+                <p className="text-slate-300 text-sm flex flex-wrap items-center gap-4">
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <Calendar className={`w-4 h-4 ${isNextLab ? 'text-rose-300' : 'text-teal-300'}`} />
+                    {nextAppointment.date}
+                  </span>
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <Clock className={`w-4 h-4 ${isNextLab ? 'text-rose-300' : 'text-teal-300'}`} />
+                    {nextAppointment.time}
+                  </span>
+                  <span className="flex items-center gap-1.5 font-medium">
+                    <User className={`w-4 h-4 ${isNextLab ? 'text-rose-300' : 'text-teal-300'}`} />
+                    {nextAppointment.patientName}
+                  </span>
+                  {nextAppointment.petName && (
+                    <span className="flex items-center gap-1.5 font-bold text-amber-300">
+                      🐾 {nextAppointment.petName} {nextAppointment.species ? `(${nextAppointment.species})` : ''}
+                    </span>
+                  )}
+                </p>
+                {nextAppointment.reason && (
+                  <p className="text-xs text-slate-300 italic">
+                    Purpose: {nextAppointment.reason}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => navigate(nextUrl)}
+                  className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs transition"
+                >
+                  Manage Booking
+                </button>
+                <button
+                  onClick={() => navigate(nextUrl)}
+                  className={`px-5 py-2.5 rounded-xl font-bold text-xs shadow-lg transition inline-flex items-center gap-1.5 ${
+                    isNextLab
+                      ? 'bg-rose-500 hover:bg-rose-400 text-white'
+                      : 'bg-teal-400 hover:bg-teal-300 text-slate-950'
+                  }`}
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  View in Schedule
+                </button>
+              </div>
             </div>
-          </div>
-        </motion.div>
-      )}
+          </motion.div>
+        );
+      })()}
 
       {/* Quick Navigation Feature Banners */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -662,7 +712,7 @@ export default function UserDashboard() {
         {/* Right Column (7 cols): My Bookings with Feedback Action */}
         <div className="lg:col-span-7 bg-white p-6 rounded-3xl shadow-lg border border-slate-100 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-2.5">
                 <div className="p-2.5 bg-teal-50 text-teal-600 rounded-xl">
                   <Activity className="w-5 h-5" />
@@ -670,31 +720,95 @@ export default function UserDashboard() {
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">Recent Appointments</h3>
                   <p className="text-xs text-slate-500">
-                    Track your schedule and leave feedback for doctors
+                    Track your consults and diagnostic tests
                   </p>
                 </div>
               </div>
               <Link
-                to="/dashboard/my-appointments"
-                className="text-xs font-semibold text-medical-blue hover:underline"
+                to={
+                  appointmentFilter === 'lab'
+                    ? '/dashboard/my-appointments?tab=lab'
+                    : appointmentFilter === 'doctor'
+                    ? '/dashboard/my-appointments?tab=doctor'
+                    : '/dashboard/my-appointments'
+                }
+                className="text-xs font-semibold text-medical-blue hover:underline shrink-0"
               >
-                View All ({appointments.length}) →
+                View All {appointmentFilter === 'lab' ? `(${labAppointments.length})` : appointmentFilter === 'doctor' ? `(${doctorAppointments.length})` : `(${appointments.length})`} →
               </Link>
+            </div>
+
+            {/* Quick Segment Filter Pills */}
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl w-fit mb-4 border border-slate-200/80">
+              <button
+                type="button"
+                onClick={() => { setAppointmentFilter('all'); setPage(1); }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  appointmentFilter === 'all'
+                    ? 'bg-white text-slate-950 shadow-xs scale-[1.01]'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                All ({appointments.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAppointmentFilter('doctor'); setPage(1); }}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  appointmentFilter === 'doctor'
+                    ? 'bg-blue-600 text-white shadow-xs scale-[1.01]'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Stethoscope className="w-3 h-3" />
+                <span>Doctor ({doctorAppointments.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAppointmentFilter('lab'); setPage(1); }}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  appointmentFilter === 'lab'
+                    ? 'bg-rose-600 text-white shadow-xs scale-[1.01]'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <TestTube className="w-3 h-3" />
+                <span>Lab Tests ({labAppointments.length})</span>
+              </button>
             </div>
 
             {loadingAppointments ? (
               <ListSkeleton rows={3} />
-            ) : appointments.length === 0 ? (
+            ) : filteredAppointments.length === 0 ? (
               <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-2xl">
-                <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-2" />
-                <h4 className="text-sm font-bold text-slate-700">No Appointments Booked Yet</h4>
-                <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
-                  Book your first consultation with any affiliated hospital using the form on the left.
-                </p>
+                {appointmentFilter === 'lab' ? (
+                  <>
+                    <TestTube className="w-10 h-10 text-rose-300 mx-auto mb-2" />
+                    <h4 className="text-sm font-bold text-slate-700">No Lab Tests Booked Yet</h4>
+                    <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto mb-3">
+                      Order certified blood tests, urine tests, or health panels for your pets.
+                    </p>
+                    <Link
+                      to="/dashboard/services"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-xs hover:bg-rose-700 transition"
+                    >
+                      Explore Lab Catalog
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Calendar className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                    <h4 className="text-sm font-bold text-slate-700">No Consultations Booked Yet</h4>
+                    <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
+                      Book your first consultation with any affiliated hospital using the form on the left.
+                    </p>
+                  </>
+                )}
               </div>
             ) : (
               <div className="space-y-3.5">
                 {paginatedAppointments.map((app) => {
+                  const isLabTest = app.appointmentType === 'Lab Test' || Boolean(app.serviceName);
                   const existingFeedback =
                     feedbackMap.get(String(app.id)) ||
                     feedbackMap.get(String(app.appointment_number));
@@ -704,13 +818,32 @@ export default function UserDashboard() {
                       key={app.id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/40 hover:bg-white hover:shadow-md transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                      className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                        isLabTest
+                          ? 'border-rose-100 bg-rose-50/20 hover:bg-white hover:border-rose-300 hover:shadow-md'
+                          : 'border-slate-200/80 bg-slate-50/40 hover:bg-white hover:shadow-md'
+                      }`}
                     >
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
+                          {isLabTest ? (
+                            <span className="bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                              <TestTube className="w-3 h-3 text-rose-600" />
+                              Lab Test
+                            </span>
+                          ) : (
+                            <span className="bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                              <Stethoscope className="w-3 h-3 text-blue-600" />
+                              Doctor Consult
+                            </span>
+                          )}
+
                           <span className="font-bold text-slate-900 text-sm">
-                            {app.hospital || 'Hospital Visit'}
+                            {isLabTest
+                              ? (app.serviceName || app.reason || 'Diagnostic Lab Test')
+                              : (app.doctorName ? `Dr. ${app.doctorName}` : (app.hospital || 'Hospital Visit'))}
                           </span>
+
                           {app.appointment_number && (
                             <span className="bg-medical-blue/10 text-medical-blue text-[11px] font-mono font-bold px-2 py-0.5 rounded-full">
                               #{app.appointment_number}
@@ -732,6 +865,11 @@ export default function UserDashboard() {
                         </div>
 
                         <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
+                          {isLabTest && (
+                            <span className="font-medium text-slate-700 flex items-center gap-1">
+                              <Building2 className="w-3.5 h-3.5 text-slate-400" /> {app.hospital}
+                            </span>
+                          )}
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3.5 h-3.5" /> {app.date}
                           </span>
@@ -741,9 +879,14 @@ export default function UserDashboard() {
                           <span className="flex items-center gap-1">
                             <User className="w-3.5 h-3.5" /> {app.patientName}
                           </span>
+                          {app.petName && (
+                            <span className="font-bold text-amber-700">
+                              🐾 {app.petName}
+                            </span>
+                          )}
                         </div>
 
-                        {app.reason && (
+                        {app.reason && !isLabTest && (
                           <p className="text-xs text-slate-600 italic line-clamp-1">
                             {app.reason}
                           </p>
@@ -784,7 +927,7 @@ export default function UserDashboard() {
             <div className="mt-4 flex justify-center">
               <Pagination
                 page={page}
-                total={appointments.length}
+                total={filteredAppointments.length}
                 perPage={APPOINTMENTS_PER_PAGE}
                 onChange={setPage}
               />

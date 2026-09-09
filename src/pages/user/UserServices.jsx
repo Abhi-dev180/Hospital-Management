@@ -192,15 +192,18 @@ export default function UserServices() {
 
     setPendingPayload(payload);
     setPaymentBookingDetails({
+      ...payload,
       hospitalName: hospObj ? hospObj.name : 'Selected Hospital',
       patientName: bookForm.patientName,
+      patientPhone: bookForm.patientPhone,
       petName: bookForm.petName,
       serviceName: bookingService?.name || 'Lab Diagnostic Test',
       appointmentType: 'Lab Test',
       date: bookForm.date,
       time: bookForm.time,
       amount: bookingService?.price || 500,
-      email: bookForm.email || user?.email || ''
+      email: bookForm.email || user?.email || '',
+      userId: user?.id || null
     });
 
     setShowPaymentModal(true);
@@ -316,7 +319,7 @@ export default function UserServices() {
               <TestTube className="w-4 h-4 text-amber-400" /> Urine Tests
             </button>
             <Link
-              to="/dashboard/my-appointments"
+              to="/dashboard/my-appointments?tab=lab"
               className="px-5 py-2.5 rounded-2xl bg-teal-400 hover:bg-teal-300 text-slate-950 text-xs font-extrabold shadow-lg transition inline-flex items-center gap-1.5"
             >
               <Calendar className="w-4 h-4" /> My Test Bookings
@@ -601,7 +604,7 @@ export default function UserServices() {
                       Book Another Test
                     </button>
                     <button
-                      onClick={() => navigate('/dashboard/my-appointments')}
+                      onClick={() => navigate('/dashboard/my-appointments?tab=lab')}
                       className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition"
                     >
                       View in My Appointments →

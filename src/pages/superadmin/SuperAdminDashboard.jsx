@@ -9,7 +9,8 @@ import {
 import {
   Search, RefreshCw, Edit3, Trash2, Plus, Bell, ShieldCheck,
   AlertCircle, CalendarDays, CalendarClock, CheckCircle2, ClipboardList,
-  ArrowRight, ChevronLeft, ChevronRight, UserPlus, Radio, Hourglass, MessageSquare
+  ArrowRight, ChevronLeft, ChevronRight, UserPlus, Radio, Hourglass, MessageSquare,
+  TestTube, Droplet, Stethoscope, Filter, Activity, PawPrint
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import DashboardLayout from '../../components/DashboardLayout';
@@ -82,6 +83,8 @@ export default function SuperAdminDashboard() {
   const [editingAdmin, setEditingAdmin] = useState(null);
   const [hospitals, setHospitals] = useState([]);
   const [appointments, setAppointments] = useState([]);
+  const [appointmentTypeFilter, setAppointmentTypeFilter] = useState('all'); // 'all' | 'test' | 'consult'
+  const [appointmentSearch, setAppointmentSearch] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', hospital: '' });
   const [demoCounts, setDemoCounts] = useState({ total: 0, requested: 0, scheduled: 0, completed: 0, cancelled: 0 });
@@ -411,8 +414,34 @@ export default function SuperAdminDashboard() {
   const totalAdminPages = Math.ceil(filteredAdmins.length / itemsPerPage) || 1;
   const paginatedAdmins = filteredAdmins.slice((adminPage - 1) * itemsPerPage, adminPage * itemsPerPage);
 
-  const totalAppointmentPages = Math.ceil(appointments.length / itemsPerPage) || 1;
-  const paginatedAppointments = appointments.slice((appointmentPage - 1) * itemsPerPage, appointmentPage * itemsPerPage);
+  const labTestCount = appointments.filter((a) => a.appointmentType === 'Lab Test' || Boolean(a.serviceName)).length;
+  const consultCount = Math.max(0, appointments.length - labTestCount);
+
+  const filteredAppointments = appointments.filter((appt) => {
+    const isLab = appt.appointmentType === 'Lab Test' || Boolean(appt.serviceName);
+    const matchType =
+      appointmentTypeFilter === 'all' ||
+      (appointmentTypeFilter === 'test' && isLab) ||
+      (appointmentTypeFilter === 'consult' && !isLab);
+
+    if (!matchType) return false;
+
+    if (!appointmentSearch.trim()) return true;
+    const q = appointmentSearch.toLowerCase().trim();
+    return (
+      (appt.patientName || '').toLowerCase().includes(q) ||
+      (appt.petName || '').toLowerCase().includes(q) ||
+      (appt.serviceName || '').toLowerCase().includes(q) ||
+      (appt.serviceCategory || '').toLowerCase().includes(q) ||
+      (appt.doctorName || '').toLowerCase().includes(q) ||
+      (appt.hospital || '').toLowerCase().includes(q) ||
+      (appt.hospitalId ? String(appt.hospitalId).toLowerCase().includes(q) : false) ||
+      (appt.appointment_number ? String(appt.appointment_number).includes(q) : false)
+    );
+  });
+
+  const totalAppointmentPages = Math.ceil(filteredAppointments.length / itemsPerPage) || 1;
+  const paginatedAppointments = filteredAppointments.slice((appointmentPage - 1) * itemsPerPage, appointmentPage * itemsPerPage);
 
   return (
     <DashboardLayout
@@ -553,7 +582,48 @@ export default function SuperAdminDashboard() {
                 );
               })}
             </div>
-            <p className="text-xs text-gray-400 mt-4 font-medium">
+            <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-3.5 rounded-2xl bg-blue-50/70 border border-blue-100/80 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <Stethoscope size={16} />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 block">Doctor Consultations</span>
+                    <span className="text-[11px] text-slate-500 font-medium">
+                      {stats.bookings?.consultations?.pending ?? 0} pending review
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-lg font-black text-blue-700 block leading-tight">
+                    <AnimatedCount value={stats.bookings?.consultations?.total ?? consultCount} />
+                  </span>
+                  <span className="text-[10px] uppercase font-bold text-blue-500">Bookings</span>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-rose-50/70 border border-rose-100/80 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <TestTube size={16} />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 block">Lab &amp; Diagnostic Tests</span>
+                    <span className="text-[11px] text-rose-600 font-medium">
+                      {stats.bookings?.labTests?.pending ?? 0} sample collection pending
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-lg font-black text-rose-700 block leading-tight">
+                    <AnimatedCount value={stats.bookings?.labTests?.total ?? labTestCount} />
+                  </span>
+                  <span className="text-[10px] uppercase font-bold text-rose-500">Tests</span>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 mt-3 font-medium">
               {stats.bookings.thisMonth} booking{stats.bookings.thisMonth === 1 ? '' : 's'} this month
             </p>
           </div>
@@ -978,67 +1048,217 @@ export default function SuperAdminDashboard() {
 
       {/* All Appointments Section */}
       <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6 pb-6 border-b border-gray-100">
           <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold mb-2">
+              <span>System Appointments Stream</span>
+            </div>
             <h2 className="text-2xl font-bold text-gray-900">Global System Appointments</h2>
-            <p className="text-sm text-gray-500">Master view of all patient bookings across hospitals.</p>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Showing <span className="font-bold text-blue-600">{filteredAppointments.length}</span> of {appointments.length} total bookings across all hospitals.
+            </p>
           </div>
-          <button
-            type="button"
-            onClick={loadAppointments}
-            disabled={loadingAppointments}
-            className="inline-flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 px-4 py-2 rounded-full font-semibold shadow-xs transition text-sm disabled:opacity-60"
-          >
-            {loadingAppointments ? <Loader size="sm" /> : <RefreshCw size={16} />} Refresh Appointments
-          </button>
+
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
+            {/* Quick Type Filter Tabs */}
+            <div className="inline-flex p-1 bg-slate-100 rounded-2xl border border-slate-200/80">
+              <button
+                type="button"
+                onClick={() => { setAppointmentTypeFilter('all'); setAppointmentPage(1); }}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  appointmentTypeFilter === 'all'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                All ({appointments.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAppointmentTypeFilter('test'); setAppointmentPage(1); }}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  appointmentTypeFilter === 'test'
+                    ? 'bg-rose-600 text-white shadow-xs'
+                    : 'text-rose-700 hover:bg-rose-50'
+                }`}
+              >
+                <TestTube size={13} />
+                Lab Tests ({labTestCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAppointmentTypeFilter('consult'); setAppointmentPage(1); }}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  appointmentTypeFilter === 'consult'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-blue-700 hover:bg-blue-50'
+                }`}
+              >
+                <Stethoscope size={13} />
+                Consults ({consultCount})
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative flex-1 sm:w-64 min-w-[200px]">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                type="text"
+                value={appointmentSearch}
+                onChange={(e) => { setAppointmentSearch(e.target.value); setAppointmentPage(1); }}
+                placeholder="Search patient, pet, test..."
+                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-full focus:ring-medical-blue outline-none text-xs sm:text-sm bg-white"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={loadAppointments}
+              disabled={loadingAppointments}
+              className="inline-flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 px-4 py-2 rounded-full font-semibold shadow-xs transition text-sm disabled:opacity-60 shrink-0"
+            >
+              {loadingAppointments ? <Loader size="sm" /> : <RefreshCw size={16} />} Refresh
+            </button>
+          </div>
         </div>
 
-        {loadingAppointments ? <TableSkeleton rows={5} cols={6} /> : (
+        {loadingAppointments ? <TableSkeleton rows={5} cols={7} /> : (
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-sm">
+          <table className="w-full text-left border-collapse text-sm min-w-[900px]">
             <thead>
               <tr className="bg-medical-blue/10 text-medical-dark">
-                <th className="py-3.5 px-4 font-semibold rounded-tl-lg">Patient Name</th>
-                <th className="py-3.5 px-4 font-semibold">Hospital ID</th>
-                <th className="py-3.5 px-4 font-semibold">Date</th>
-                <th className="py-3.5 px-4 font-semibold">Time</th>
+                <th className="py-3.5 px-4 font-semibold rounded-tl-lg">App # &amp; Type</th>
+                <th className="py-3.5 px-4 font-semibold">Patient &amp; Pet</th>
+                <th className="py-3.5 px-4 font-semibold">Service / Doctor</th>
+                <th className="py-3.5 px-4 font-semibold">Hospital</th>
+                <th className="py-3.5 px-4 font-semibold">Schedule</th>
                 <th className="py-3.5 px-4 font-semibold">Status</th>
                 <th className="py-3.5 px-4 font-semibold text-right rounded-tr-lg">Update Status</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedAppointments.map((appointment) => (
-                <tr key={appointment.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                  <td className="py-4 px-4 font-bold text-gray-900">{appointment.patientName}</td>
-                  <td className="py-4 px-4 text-gray-600">{appointment.hospitalId}</td>
-                  <td className="py-4 px-4 text-gray-600">{appointment.date}</td>
-                  <td className="py-4 px-4 text-gray-600">{appointment.time}</td>
-                  <td className="py-4 px-4">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
-                      appointment.status === 'Pending' ? 'bg-amber-100 text-amber-800' :
-                      appointment.status === 'Confirmed' ? 'bg-blue-100 text-blue-800' :
-                      appointment.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {appointment.status}
-                    </span>
-                  </td>
-                  <td className="py-4 px-4 text-right">
-                    <select
-                      value={appointment.status}
-                      onChange={(e) => changeAppointmentStatus(appointment.id, e.target.value)}
-                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-full bg-white text-xs font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-medical-blue"
-                    >
-                      {appointmentStatusOptions.map((status) => (
-                        <option key={status} value={status}>{status}</option>
-                      ))}
-                    </select>
-                  </td>
-                </tr>
-              ))}
+              {paginatedAppointments.map((appointment) => {
+                const isLabTest = appointment.appointmentType === 'Lab Test' || Boolean(appointment.serviceName);
+                return (
+                  <tr key={appointment.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    {/* App # and Type badge */}
+                    <td className="py-4 px-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-extrabold text-gray-900 text-xs tracking-wider">
+                          #{appointment.appointment_number || appointment.id?.slice(-4)}
+                        </span>
+                        {isLabTest ? (
+                          <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded-full text-xs font-bold w-fit">
+                            <TestTube size={11} className="text-rose-600" />
+                            Lab Test
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full text-xs font-bold w-fit">
+                            <Stethoscope size={11} className="text-blue-600" />
+                            Consult
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Patient & Pet */}
+                    <td className="py-4 px-4">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-gray-900">{appointment.patientName}</span>
+                        {appointment.petName ? (
+                          <span className="text-xs text-slate-500 font-medium flex items-center gap-1 mt-0.5">
+                            <PawPrint size={11} className="text-slate-400" />
+                            {appointment.petName} {appointment.species ? `(${appointment.species})` : ''}
+                          </span>
+                        ) : (
+                          appointment.patientPhone && (
+                            <span className="text-xs text-gray-400 mt-0.5">{appointment.patientPhone}</span>
+                          )
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Service / Doctor */}
+                    <td className="py-4 px-4">
+                      {isLabTest ? (
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-800 text-xs">
+                            {appointment.serviceName || appointment.reason || 'Diagnostic Lab Test'}
+                          </span>
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            {appointment.serviceCategory && (
+                              <span className="text-[10px] font-semibold text-rose-600 bg-rose-100/60 px-1.5 py-0.5 rounded">
+                                {appointment.serviceCategory}
+                              </span>
+                            )}
+                            {appointment.sampleType && (
+                              <span className="text-[10px] text-slate-500">
+                                Sample: <strong>{appointment.sampleType}</strong>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-slate-800 text-xs">
+                            {appointment.doctorName || 'Assigned Doctor'}
+                          </span>
+                          {appointment.reason && (
+                            <span className="text-xs text-slate-400 truncate max-w-[160px] mt-0.5">
+                              {appointment.reason}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Hospital */}
+                    <td className="py-4 px-4 text-gray-600 text-xs font-medium">
+                      {appointment.hospital || appointment.hospitalId || '—'}
+                    </td>
+
+                    {/* Schedule */}
+                    <td className="py-4 px-4 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-800 text-xs">{appointment.date}</span>
+                        <span className="text-xs text-blue-600 font-semibold">{appointment.time}</span>
+                      </div>
+                    </td>
+
+                    {/* Status badge */}
+                    <td className="py-4 px-4">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+                        appointment.status === 'Pending' ? 'bg-amber-100 text-amber-800' :
+                        appointment.status === 'Confirmed' ? 'bg-blue-100 text-blue-800' :
+                        appointment.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {appointment.status}
+                      </span>
+                    </td>
+
+                    {/* Status Update */}
+                    <td className="py-4 px-4 text-right">
+                      <select
+                        value={appointment.status}
+                        onChange={(e) => changeAppointmentStatus(appointment.id, e.target.value)}
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-full bg-white text-xs font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-medical-blue"
+                      >
+                        {appointmentStatusOptions.map((status) => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                );
+              })}
               {paginatedAppointments.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="py-8 text-center text-gray-500 italic">No appointments found.</td>
+                  <td colSpan="7" className="py-10 text-center text-gray-500 italic">
+                    {appointmentSearch || appointmentTypeFilter !== 'all'
+                      ? 'No appointments matched your search/filter criteria.'
+                      : 'No appointments found.'}
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -1047,10 +1267,10 @@ export default function SuperAdminDashboard() {
         )}
 
         {/* Appointments Pagination Controls */}
-        {!loadingAppointments && appointments.length > itemsPerPage && (
+        {!loadingAppointments && filteredAppointments.length > itemsPerPage && (
           <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100 text-sm">
             <span className="text-gray-500 font-medium">
-              Showing <span className="font-bold text-gray-700">{(appointmentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-gray-700">{Math.min(appointmentPage * itemsPerPage, appointments.length)}</span> of <span className="font-bold text-gray-700">{appointments.length}</span> appointments
+              Showing <span className="font-bold text-gray-700">{(appointmentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-gray-700">{Math.min(appointmentPage * itemsPerPage, filteredAppointments.length)}</span> of <span className="font-bold text-gray-700">{filteredAppointments.length}</span> appointments
             </span>
             <div className="flex items-center gap-2">
               <button

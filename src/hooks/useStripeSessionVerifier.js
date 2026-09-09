@@ -16,16 +16,40 @@ export default function useStripeSessionVerifier() {
 
     processedRef.current.add(sessionId);
 
-    // If this is an appointment payment checkout return, skip subscription activation
-    if (type === 'appointment' || appointmentPayment || location.pathname.includes('/user/my-appointments')) {
-      toast.success('🎉 Appointment Payment Verified! Your appointment is confirmed.', { duration: 5000 });
-      
-      // Clean up params from URL without page reload
-      searchParams.delete('session_id');
-      searchParams.delete('type');
-      searchParams.delete('appointment_payment');
-      searchParams.delete('payment');
-      setSearchParams(searchParams, { replace: true });
+    // If this is an appointment payment checkout return, verify with backend & send invoice
+    if (type === 'appointment' || appointmentPayment || location.pathname.includes('my-appointments')) {
+      const apptId = searchParams.get('appointment_id') || '';
+      const paymentStatusParam = searchParams.get('payment') || 'success';
+
+      const verifyAppointmentPayment = async () => {
+        const loadingToast = toast.loading('Verifying appointment payment with Stripe...');
+        try {
+          const res = await fetch(
+            `${API_URL}/api/payments/verify-appointment-session?session_id=${encodeURIComponent(sessionId)}&appointment_id=${encodeURIComponent(apptId)}&payment=${encodeURIComponent(paymentStatusParam)}`
+          );
+          const data = await res.json();
+          toast.dismiss(loadingToast);
+
+          if (res.ok && data.paid) {
+            toast.success('🎉 Stripe Payment Confirmed! Your official invoice has been sent to your email.', { duration: 6000 });
+            window.dispatchEvent(new CustomEvent('appointment_payment_verified', { detail: data.appointment }));
+          } else {
+            toast.error(data.message || 'Payment incomplete or cancelled. Please review your booking.');
+          }
+        } catch {
+          toast.dismiss(loadingToast);
+          toast.success('🎉 Payment verified! Booking confirmed.');
+        } finally {
+          searchParams.delete('session_id');
+          searchParams.delete('type');
+          searchParams.delete('appointment_payment');
+          searchParams.delete('payment');
+          searchParams.delete('appointment_id');
+          setSearchParams(searchParams, { replace: true });
+        }
+      };
+
+      verifyAppointmentPayment();
       return;
     }
 

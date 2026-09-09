@@ -87,6 +87,7 @@ function AppRoutes() {
         <Route path="/dashboard/explore-hospitals" element={<UserExploreHospitals />} />
         <Route path="/dashboard/book-appointment" element={<UserBookAppointment />} />
         <Route path="/dashboard/my-appointments" element={<UserMyAppointments />} />
+        <Route path="/user/my-appointments" element={<Navigate to="/dashboard/my-appointments" replace />} />
         <Route path="/dashboard/feedbacks" element={<UserFeedbacks />} />
 
         {/* ─── Super Admin Dashboard ───────────────────────── */}

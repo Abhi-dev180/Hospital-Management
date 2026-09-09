@@ -1,6 +1,6 @@
 
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -25,6 +25,11 @@ import {
   Stethoscope,
   Hospital,
   User,
+  TestTube,
+  Droplet,
+  Activity,
+  Sparkles,
+  ClipboardList
 } from "lucide-react";
 import toast from "react-hot-toast";
 import API_URL from "../../config/api";
@@ -83,6 +88,13 @@ export default function SuperAdminAppointments() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab"); // 'doctor' | 'lab' | 'all'
+  const initialType = tabParam === "lab" ? "test" : (tabParam === "all" ? "all" : "consult");
+  const [typeFilter, setTypeFilter] = useState(initialType);
+  const [tabCounts, setTabCounts] = useState({ total: 0, doctor: 0, lab: 0 });
+
   const [page, setPage] = useState(1);
   const navigate = useNavigate();
 
@@ -136,7 +148,47 @@ export default function SuperAdminAppointments() {
     }
     setUser(parsed);
     fetchHospitals();
+    fetchTabCounts();
   }, [navigate]);
+
+  useEffect(() => {
+    if (tabParam === "lab") {
+      setTypeFilter("test");
+    } else if (tabParam === "all") {
+      setTypeFilter("all");
+    } else if (tabParam === "doctor") {
+      setTypeFilter("consult");
+    }
+  }, [tabParam]);
+
+  const handleTabChange = (newTab) => {
+    if (newTab === "lab") {
+      setTypeFilter("test");
+      setSearchParams({ tab: "lab" });
+    } else if (newTab === "all") {
+      setTypeFilter("all");
+      setSearchParams({ tab: "all" });
+    } else {
+      setTypeFilter("consult");
+      setSearchParams({ tab: "doctor" });
+    }
+    setPage(1);
+  };
+
+  const fetchTabCounts = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/stats/overview`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setTabCounts({
+        total: data.bookings?.total ?? 0,
+        doctor: data.bookings?.consultations?.total ?? 0,
+        lab: data.bookings?.labTests?.total ?? 0
+      });
+    } catch {}
+  };
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -148,13 +200,14 @@ export default function SuperAdminAppointments() {
 
   useEffect(() => {
     setPage(1);
-  }, [statusFilter]);
+  }, [statusFilter, typeFilter]);
 
   useEffect(() => {
     if (user) {
       fetchAppointments();
+      fetchTabCounts();
     }
-  }, [user, page, statusFilter, debouncedSearch]);
+  }, [user, page, statusFilter, typeFilter, debouncedSearch]);
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -163,6 +216,7 @@ export default function SuperAdminAppointments() {
         page,
         limit: PER_PAGE,
         status: statusFilter,
+        type: typeFilter,
         search: debouncedSearch
       });
       const res = await fetch(`${API_URL}/api/appointments?${queryParams.toString()}`, {
@@ -453,72 +507,208 @@ export default function SuperAdminAppointments() {
         variants={pageVariants}
         className="w-full "
       >
-<div className="bg-white/80 backdrop-blur-xl p-3 sm:p-2 lg:p-5 rounded-3xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.08)] border border-slate-100">          {/* ─── Header ─────────────────────────────────────────── */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-100">
-            <div>
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                All Appointments
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-                Showing{" "}
-                <span className="text-blue-600 font-bold">
-                  {appointments.length}
-                </span>{" "}
-                of {total} total entries
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
-
-              <div className="relative flex-1 sm:w-64 min-w-[200px]">
-                <Search
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                  size={17}
-                />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search patient, pet, hospital..."
-                  className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50/80 border border-slate-200/80 rounded-2xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
-                />
-              </div>
-
-              <div className="relative flex items-center">
-                <Filter
-                  className="absolute left-3.5 text-slate-400 pointer-events-none"
-                  size={15}
-                />
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full sm:w-auto pl-9 pr-8 py-2.5 text-sm bg-slate-50/80 border border-slate-200/80 rounded-2xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-slate-700 appearance-none"
-                >
-                  <option value="all">All Statuses</option>
-                  {STATUSES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <button
-                onClick={fetchAppointments}
-                className="p-2.5 border border-slate-200/80 rounded-2xl text-slate-600 hover:bg-slate-50 active:bg-slate-100 hover:border-slate-300 flex items-center justify-center transition shrink-0"
-                title="Refresh Appointments"
+      <div className="bg-white/80 backdrop-blur-xl p-4 sm:p-6 lg:p-8 rounded-3xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.08)] border border-slate-100">
+        
+        {/* ─── Master Section Tabs ──────────────────────────────── */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200/70">
+          <div className="flex items-center gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/80 overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => handleTabChange("doctor")}
+              className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+                typeFilter === "consult"
+                  ? "bg-blue-600 text-white shadow-md shadow-blue-500/20 scale-[1.01]"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+              }`}
+            >
+              <Stethoscope size={16} />
+              <span>Doctor Appointments</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                  typeFilter === "consult"
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-200/80 text-slate-700"
+                }`}
               >
-                <RefreshCw size={18} />
-              </button>
-            </div>
+                {tabCounts.doctor || 0}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleTabChange("lab")}
+              className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+                typeFilter === "test"
+                  ? "bg-rose-600 text-white shadow-md shadow-rose-500/20 scale-[1.01]"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+              }`}
+            >
+              <TestTube size={16} />
+              <span>Lab Test Appointments</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                  typeFilter === "test"
+                    ? "bg-white/20 text-white"
+                    : "bg-rose-100 text-rose-700"
+                }`}
+              >
+                {tabCounts.lab || 0}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleTabChange("all")}
+              className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+                typeFilter === "all"
+                  ? "bg-slate-900 text-white shadow-md shadow-slate-900/20 scale-[1.01]"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+              }`}
+            >
+              <ClipboardList size={15} />
+              <span>All Bookings</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                  typeFilter === "all"
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-200/80 text-slate-700"
+                }`}
+              >
+                {tabCounts.total || total}
+              </span>
+            </button>
           </div>
 
-          {/* ─── Table ───────────────────────────────────────────── */}
-          {loading ? (
-            <TableSkeleton rows={6} cols={9} />
-          ) : (
-            <div className="overflow-x-auto rounded-2xl border border-slate-200/70 shadow-xs">
-              <table className="w-full text-left border-collapse min-w-[1200px] text-sm">
-                <thead>
+          <div className="flex items-center gap-2 shrink-0">
+            {typeFilter === "test" ? (
+              <Link
+                to="/superadmin/services"
+                className="inline-flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-4 py-2.5 rounded-2xl text-xs font-bold transition shadow-xs"
+              >
+                <Sparkles size={14} /> Manage Lab Catalog
+              </Link>
+            ) : (
+              <button
+                onClick={openBookModal}
+                className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm shadow-md shadow-blue-500/20 transition-all duration-200"
+              >
+                <CalendarPlus size={16} /> Book Appointment
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* ─── Section Header & Filter Controls ───────────────── */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-100">
+          <div>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+              {typeFilter === "test" && <TestTube className="text-rose-600" size={24} />}
+              {typeFilter === "consult" && <Stethoscope className="text-blue-600" size={24} />}
+              {typeFilter === "all" && <ClipboardList className="text-slate-700" size={24} />}
+              {typeFilter === "test"
+                ? "Lab Test Appointments"
+                : typeFilter === "consult"
+                ? "Doctor Appointments"
+                : "All System Appointments"}
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+              {typeFilter === "test"
+                ? "Showing diagnostic orders, animal lab tests, and sample collections booked by users."
+                : typeFilter === "consult"
+                ? "Showing patient doctor consultations booked from the main website portal and user dashboard."
+                : "Combined master view of all doctor consultations and lab diagnostic bookings."}
+              {" "}
+              <span className="text-blue-600 font-bold">
+                ({appointments.length} showing of {total} total)
+              </span>
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
+            <div className="relative flex-1 sm:w-64 min-w-[200px]">
+              <Search
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                size={17}
+              />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={
+                  typeFilter === "test"
+                    ? "Search test, patient, pet..."
+                    : "Search patient, doctor, pet..."
+                }
+                className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50/80 border border-slate-200/80 rounded-2xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+              />
+            </div>
+
+            <div className="relative flex items-center">
+              <Filter
+                className="absolute left-3.5 text-slate-400 pointer-events-none"
+                size={15}
+              />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full sm:w-auto pl-9 pr-8 py-2.5 text-sm bg-slate-50/80 border border-slate-200/80 rounded-2xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-slate-700 appearance-none"
+              >
+                <option value="all">All Statuses</option>
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={() => {
+                fetchAppointments();
+                fetchTabCounts();
+              }}
+              className="p-2.5 border border-slate-200/80 rounded-2xl text-slate-600 hover:bg-slate-50 active:bg-slate-100 hover:border-slate-300 flex items-center justify-center transition shrink-0"
+              title="Refresh Appointments"
+            >
+              <RefreshCw size={18} />
+            </button>
+          </div>
+        </div>
+
+        {/* ─── Table ───────────────────────────────────────────── */}
+        {loading ? (
+          <TableSkeleton rows={6} cols={typeFilter === "test" ? 11 : 10} />
+        ) : (
+          <div className="overflow-x-auto rounded-2xl border border-slate-200/70 shadow-xs">
+            <table className="w-full text-left border-collapse min-w-[1200px] text-sm">
+              <thead>
+                {typeFilter === "test" ? (
+                  <tr className="bg-rose-50/70 text-rose-800 text-xs font-bold uppercase tracking-wider border-b border-rose-200/80">
+                    <th className="py-3.5 px-3">Order #</th>
+                    <th className="py-3.5 px-3">Patient Details</th>
+                    <th className="py-3.5 px-3">Pet Details</th>
+                    <th className="py-3.5 px-3">Diagnostic Test</th>
+                    <th className="py-3.5 px-3">Sample Required</th>
+                    <th className="py-3.5 px-3">Turnaround</th>
+                    <th className="py-3.5 px-3">Fee</th>
+                    <th className="py-3.5 px-3">Hospital</th>
+                    <th className="py-3.5 px-3">Schedule</th>
+                    <th className="py-3.5 px-3">Status</th>
+                    <th className="py-3.5 px-3 text-right">Action</th>
+                  </tr>
+                ) : typeFilter === "consult" ? (
+                  <tr className="bg-blue-50/70 text-blue-800 text-xs font-bold uppercase tracking-wider border-b border-blue-200/80">
+                    <th className="py-3.5 px-3">APP #</th>
+                    <th className="py-3.5 px-3">Patient Details</th>
+                    <th className="py-3.5 px-3">Pet Name</th>
+                    <th className="py-3.5 px-3">Doctor / Reason</th>
+                    <th className="py-3.5 px-3">Hospital</th>
+                    <th className="py-3.5 px-3">Schedule</th>
+                    <th className="py-3.5 px-3">Status</th>
+                    <th className="py-3.5 px-3">Feedback</th>
+                    <th className="py-3.5 px-3">Call Status</th>
+                    <th className="py-3.5 px-3 text-right">Action</th>
+                  </tr>
+                ) : (
                   <tr className="bg-slate-50/80 text-slate-600 text-xs font-bold uppercase tracking-wider border-b border-slate-200/80">
                     <th className="py-3.5 px-3">APP #</th>
                     <th className="py-3.5 px-3">Patient Details</th>
@@ -531,9 +721,278 @@ export default function SuperAdminAppointments() {
                     <th className="py-3.5 px-3">Call Status</th>
                     <th className="py-3.5 px-3 text-right">Action</th>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-sm">
-                  {appointments.map((a, idx) => (
+                )}
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-sm">
+                {appointments.map((a, idx) => {
+                  const isLab = a.appointmentType === "Lab Test" || Boolean(a.serviceName);
+
+                  if (typeFilter === "test") {
+                    return (
+                      <motion.tr
+                        key={a.id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.02 }}
+                        className="hover:bg-rose-50/40 transition-colors group"
+                      >
+                        <td className="py-3.5 px-3 font-extrabold text-rose-950">
+                          #{a.appointment_number}
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-900">{a.patientName}</span>
+                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                              {a.patientPhone && (
+                                <span className="flex items-center gap-1">
+                                  <Phone size={11} /> {a.patientPhone}
+                                </span>
+                              )}
+                              {a.email && (
+                                <span className="flex items-center gap-1">
+                                  <Mail size={11} /> {a.email}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-slate-800 flex items-center gap-1">
+                              <PawPrint size={13} className="text-slate-400" />
+                              {a.petName || "—"}
+                            </span>
+                            {a.species && (
+                              <span className="text-xs text-slate-400 ml-4">
+                                {a.species} {a.breed ? `(${a.breed})` : ""}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-900 text-xs">
+                              {a.serviceName || a.reason || "Diagnostic Lab Test"}
+                            </span>
+                            {a.serviceCategory && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-100/70 px-2 py-0.5 rounded-md w-fit mt-0.5">
+                                <TestTube size={10} className="text-rose-600" />
+                                {a.serviceCategory}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">
+                            <Droplet size={11} className="text-rose-500" />
+                            {a.sampleType || "Specimen"}
+                          </span>
+                          {a.fastingRequired && (
+                            <span className="block text-[10px] text-amber-700 font-bold mt-0.5">
+                              ⚡ Fasting Req
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-3 text-xs text-slate-600 font-medium">
+                          {a.turnaroundTime || "Same Day"}
+                        </td>
+                        <td className="py-3.5 px-3 text-xs font-extrabold text-slate-900">
+                          ₹{a.servicePrice || a.paymentAmount || 500}
+                        </td>
+                        <td className="py-3.5 px-3 text-xs font-medium text-slate-700">
+                          {a.hospital || "—"}
+                        </td>
+                        <td className="py-3.5 px-3 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-blue-700">{a.date || "—"}</span>
+                            <span className="text-xs font-medium text-blue-600">{a.time || "—"}</span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <select
+                            value={a.status}
+                            onChange={async (e) => {
+                              const newStatus = e.target.value;
+                              try {
+                                const res = await fetch(`${API_URL}/api/appointments/${a.id}/status`, {
+                                  method: "PUT",
+                                  headers: authHeaders(),
+                                  body: JSON.stringify({ status: newStatus }),
+                                });
+                                const data = await res.json();
+                                if (res.ok) {
+                                  toast.success(`Status updated to ${newStatus}`);
+                                  fetchAppointments();
+                                } else {
+                                  toast.error(data.message || "Failed to update status");
+                                }
+                              } catch {
+                                toast.error("Network error");
+                              }
+                            }}
+                            className={`px-2.5 py-1 rounded-full text-xs font-bold border cursor-pointer outline-none transition ${statusColors[a.status] || "bg-slate-50 text-slate-700 border-slate-200"}`}
+                          >
+                            {STATUSES.map((s) => (
+                              <option key={s} value={s}>{s}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="py-3.5 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => openDetail(a)}
+                              className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 hover:text-blue-700 transition"
+                              title="View Details"
+                            >
+                              <Eye size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleQuickDelete(a)}
+                              className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition"
+                              title="Delete"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  }
+
+                  if (typeFilter === "consult") {
+                    return (
+                      <motion.tr
+                        key={a.id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.02 }}
+                        className="hover:bg-blue-50/30 transition-colors group"
+                      >
+                        <td className="py-3.5 px-3 font-bold text-slate-800">
+                          #{a.appointment_number}
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-slate-900">{a.patientName}</span>
+                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                              {a.patientPhone && (
+                                <span className="flex items-center gap-1">
+                                  <Phone size={11} /> {a.patientPhone}
+                                </span>
+                              )}
+                              {a.email && (
+                                <span className="flex items-center gap-1">
+                                  <Mail size={11} /> {a.email}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-slate-700">{a.petName || "—"}</span>
+                            {a.species && <span className="text-xs text-slate-400">{a.species}</span>}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-slate-800 text-xs">
+                              {a.doctorName || "Assigned Doctor"}
+                            </span>
+                            {a.reason && (
+                              <span className="text-xs text-slate-400 truncate max-w-[170px] mt-0.5">
+                                {a.reason}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-3 text-xs font-medium text-slate-700">
+                          {a.hospital || "—"}
+                        </td>
+                        <td className="py-3.5 px-3 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-blue-700">{a.date || "—"}</span>
+                            <span className="text-xs font-medium text-blue-600">{a.time || "—"}</span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <select
+                            value={a.status}
+                            onChange={async (e) => {
+                              const newStatus = e.target.value;
+                              try {
+                                const res = await fetch(`${API_URL}/api/appointments/${a.id}/status`, {
+                                  method: "PUT",
+                                  headers: authHeaders(),
+                                  body: JSON.stringify({ status: newStatus }),
+                                });
+                                const data = await res.json();
+                                if (res.ok) {
+                                  toast.success(`Status updated to ${newStatus}`);
+                                  fetchAppointments();
+                                } else {
+                                  toast.error(data.message || "Failed to update status");
+                                }
+                              } catch {
+                                toast.error("Network error");
+                              }
+                            }}
+                            className={`px-2.5 py-1 rounded-full text-xs font-bold border cursor-pointer outline-none transition ${statusColors[a.status] || "bg-slate-50 text-slate-700 border-slate-200"}`}
+                          >
+                            {STATUSES.map((s) => (
+                              <option key={s} value={s}>{s}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="py-3.5 px-3">
+                          {a.feedback ? (
+                            <span className="text-xs font-medium text-emerald-600 flex items-center gap-1">
+                              <Check size={12} /> Given
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => openFeedback(a)}
+                              className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                            >
+                              <FileText size={12} /> Add Feedback
+                            </button>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-3">
+                          {a.callStatus === "called" ? (
+                            <span className="text-xs font-medium text-emerald-600 flex items-center gap-1">
+                              <Check size={12} /> Called
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-400 flex items-center gap-1">
+                              <AlertCircle size={12} /> Not called
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => openDetail(a)}
+                              className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 hover:text-blue-700 transition"
+                              title="View Details"
+                            >
+                              <Eye size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleQuickDelete(a)}
+                              className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition"
+                              title="Delete"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  }
+
+                  // Default 'all' row
+                  return (
                     <motion.tr
                       key={a.id}
                       initial={{ opacity: 0, y: 6 }}
@@ -546,9 +1005,7 @@ export default function SuperAdminAppointments() {
                       </td>
                       <td className="py-3.5 px-3">
                         <div className="flex flex-col">
-                          <span className="font-semibold text-slate-900">
-                            {a.patientName}
-                          </span>
+                          <span className="font-semibold text-slate-900">{a.patientName}</span>
                           <div className="flex items-center gap-2 text-xs text-slate-500">
                             {a.patientPhone && (
                               <span className="flex items-center gap-1">
@@ -565,35 +1022,43 @@ export default function SuperAdminAppointments() {
                       </td>
                       <td className="py-3.5 px-3">
                         <div className="flex flex-col">
-                          <span className="font-medium text-slate-700">
-                            {a.petName || "—"}
-                          </span>
-                          {a.species && (
-                            <span className="text-xs text-slate-400">
-                              {a.species}
-                            </span>
-                          )}
+                          <span className="font-medium text-slate-700">{a.petName || "—"}</span>
+                          {a.species && <span className="text-xs text-slate-400">{a.species}</span>}
                         </div>
                       </td>
                       <td className="py-3.5 px-3">
-                        <span className="inline-block bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-lg text-xs font-semibold">
-                          {a.appointmentType || "Consult"}
-                        </span>
+                        {isLab ? (
+                          <div className="flex flex-col">
+                            <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded-lg text-xs font-bold w-fit">
+                              <TestTube size={11} className="text-rose-600" />
+                              {a.serviceCategory || "Lab Test"}
+                            </span>
+                            <span className="text-[11px] font-semibold text-slate-700 truncate max-w-[170px] mt-0.5">
+                              {a.serviceName || a.reason || "Diagnostic Test"}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col">
+                            <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-lg text-xs font-semibold w-fit">
+                              <Stethoscope size={11} className="text-blue-600" />
+                              {a.appointmentType || "Consult"}
+                            </span>
+                            {a.doctorName && (
+                              <span className="text-[11px] text-slate-500 truncate max-w-[150px] mt-0.5">
+                                {a.doctorName}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="py-3.5 px-3 whitespace-nowrap">
                         <div className="flex flex-col">
-                          <span className="font-bold text-blue-700">
-                            {a.date || "—"}
-                          </span>
-                          <span className="text-xs font-medium text-blue-600">
-                            {a.time || "—"}
-                          </span>
+                          <span className="font-bold text-blue-700">{a.date || "—"}</span>
+                          <span className="text-xs font-medium text-blue-600">{a.time || "—"}</span>
                         </div>
                       </td>
-                      <td className="py-3.5 px-3">
-                        <span className="text-xs font-medium text-slate-700">
-                          {a.hospital || "—"}
-                        </span>
+                      <td className="py-3.5 px-3 text-xs font-medium text-slate-700">
+                        {a.hospital || "—"}
                       </td>
                       <td className="py-3.5 px-3">
                         <select
@@ -668,22 +1133,27 @@ export default function SuperAdminAppointments() {
                         </div>
                       </td>
                     </motion.tr>
-                  ))}
+                  );
+                })}
 
-                  {appointments.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={10}
-                        className="py-12 text-center text-slate-400 font-medium italic"
-                      >
-                        No appointments matching the search criteria.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
+                {appointments.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={typeFilter === "test" ? 11 : 10}
+                      className="py-12 text-center text-slate-400 font-medium italic"
+                    >
+                      {search || statusFilter !== "all"
+                        ? "No appointments matching the search/filter criteria."
+                        : typeFilter === "test"
+                        ? "No lab test appointments found."
+                        : "No appointments found."}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
 
           <div className="mt-6">
             <Pagination
@@ -732,6 +1202,45 @@ export default function SuperAdminAppointments() {
                   <XCircle size={20} />
                 </button>
               </div>
+
+              {/* Lab Test Notice Banner */}
+              {(selectedAppt.serviceName || selectedAppt.appointmentType === "Lab Test") && (
+                <div className="mb-5 p-4 rounded-2xl bg-rose-50/90 border border-rose-200 flex items-start gap-3">
+                  <TestTube className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="text-xs space-y-1 w-full">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-rose-900 text-sm">
+                          {selectedAppt.serviceName || "Diagnostic Test"}
+                        </span>
+                        <span className="bg-rose-200/80 text-rose-800 font-bold px-2 py-0.5 rounded-full text-[10px]">
+                          {selectedAppt.serviceCategory || "Lab Diagnostic Test"}
+                        </span>
+                      </div>
+                      {selectedAppt.servicePrice && (
+                        <span className="font-extrabold text-rose-950 text-sm">
+                          ₹{selectedAppt.servicePrice}
+                        </span>
+                      )}
+                    </div>
+                    {selectedAppt.sampleType && (
+                      <p className="text-rose-800">
+                        <strong>Required Sample:</strong> {selectedAppt.sampleType}
+                      </p>
+                    )}
+                    {selectedAppt.turnaroundTime && (
+                      <p className="text-rose-800">
+                        <strong>Turnaround Time:</strong> {selectedAppt.turnaroundTime}
+                      </p>
+                    )}
+                    {selectedAppt.fastingRequired && (
+                      <p className="text-amber-800 bg-amber-100/80 px-2.5 py-1 rounded-lg font-semibold mt-1">
+                        ⚡ {selectedAppt.fastingDetails || "Fasting required before sample collection."}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                 <div className="flex items-start gap-2">
