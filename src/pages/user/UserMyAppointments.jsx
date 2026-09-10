@@ -29,7 +29,13 @@ import {
   ArrowRight,
   User,
   PlusCircle,
-  FileText
+  FileText,
+  Banknote,
+  Undo2,
+  BadgePercent,
+  Receipt,
+  Info,
+  RotateCcw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
@@ -64,8 +70,8 @@ export default function UserMyAppointmentsList() {
 
   // ─── Master Section Tabs ────────────────────────────────────
   const [searchParams, setSearchParams] = useSearchParams();
-  const rawTab = searchParams.get('tab'); // 'doctor' | 'lab' | 'all'
-  const activeTab = rawTab === 'lab' ? 'lab' : (rawTab === 'all' ? 'all' : 'doctor');
+  const rawTab = searchParams.get('tab'); // 'doctor' | 'lab' | 'refunds' | 'all'
+  const activeTab = rawTab === 'lab' ? 'lab' : (rawTab === 'refunds' ? 'refunds' : (rawTab === 'all' ? 'all' : 'doctor'));
 
   const handleTabChange = (tabKey) => {
     setPage(1);
@@ -164,29 +170,51 @@ export default function UserMyAppointmentsList() {
     return map;
   }, [feedbacks]);
 
-  // ─── Cancel appointment ──────────────────────────────────────
-  const handleCancel = async (appointmentId) => {
-    if (!window.confirm('Are you sure you want to cancel this appointment?')) return;
+  // ─── Modal state for cancel & refund ────────────────────────
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedApptForCancel, setSelectedApptForCancel] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelSubmitting, setCancelSubmitting] = useState(false);
 
+  // ─── Open cancel modal ──────────────────────────────────────
+  const openCancelModal = (appointment) => {
+    setSelectedApptForCancel(appointment);
+    setCancelReason('');
+    setShowCancelModal(true);
+  };
+
+  // ─── Confirm cancel appointment with Stripe refund ──────────
+  const handleConfirmCancellation = async (e) => {
+    e?.preventDefault();
+    if (!selectedApptForCancel) return;
+
+    setCancelSubmitting(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${API_URL}/api/appointments/${appointmentId}`, {
-        method: 'PUT',
+      const res = await fetch(`${API_URL}/api/appointments/${selectedApptForCancel.id}/cancel`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ status: 'Cancelled' })
+        body: JSON.stringify({ reason: cancelReason || 'Cancelled by patient' })
       });
       const data = await res.json();
       if (res.ok) {
-        toast.success('Appointment cancelled successfully');
+        const refundMsg = data.appointment?.refundAmount > 0 
+          ? ` Refund of ₹${data.appointment.refundAmount} initiated.`
+          : '';
+        toast.success(`Appointment #${data.appointment?.appointment_number || ''} cancelled.${refundMsg}`);
+        setShowCancelModal(false);
+        setSelectedApptForCancel(null);
         fetchAppointments();
       } else {
         toast.error(data.message || 'Failed to cancel appointment');
       }
     } catch {
-      toast.error('Network error');
+      toast.error('Network error while cancelling appointment');
+    } finally {
+      setCancelSubmitting(false);
     }
   };
 
@@ -247,6 +275,10 @@ export default function UserMyAppointmentsList() {
     () => apptsList.filter((a) => a && (a.appointmentType === 'Lab Test' || Boolean(a.serviceName))).length,
     [apptsList]
   );
+  const refundCount = useMemo(
+    () => apptsList.filter((a) => a && (a.status === 'Cancelled' || Number(a.refundAmount) > 0 || Boolean(a.refundStatus) || Boolean(a.refundId))).length,
+    [apptsList]
+  );
   const totalCount = apptsList.length;
 
   // ─── Filtered by Section Tab + Search + Status ───────────────
@@ -257,6 +289,7 @@ export default function UserMyAppointmentsList() {
 
       if (activeTab === 'doctor' && isLab) return false;
       if (activeTab === 'lab' && !isLab) return false;
+      if (activeTab === 'refunds' && !(app.status === 'Cancelled' || Number(app.refundAmount) > 0 || Boolean(app.refundStatus) || Boolean(app.refundId))) return false;
 
       const matchStatus = statusFilter === 'all' || app.status === statusFilter;
       const q = search.trim().toLowerCase();
@@ -347,6 +380,26 @@ export default function UserMyAppointmentsList() {
 
             <button
               type="button"
+              onClick={() => handleTabChange('refunds')}
+              className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+                activeTab === 'refunds'
+                  ? 'bg-amber-600 text-white shadow-md shadow-amber-500/20 scale-[1.01]'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              }`}
+            >
+              <Undo2 size={16} />
+              <span>Refunds &amp; Cancellations</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                  activeTab === 'refunds' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
+                }`}
+              >
+                {refundCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => handleTabChange('all')}
               className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
                 activeTab === 'all'
@@ -391,11 +444,13 @@ export default function UserMyAppointmentsList() {
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               {activeTab === 'lab' && <TestTube className="text-rose-600" size={24} />}
               {activeTab === 'doctor' && <Stethoscope className="text-blue-600" size={24} />}
-              {activeTab === 'all' && <ClipboardList className="text-slate-700" size={24} />}
+              {activeTab === 'refunds' && <RotateCcw className="text-emerald-600" size={24} />}
               {activeTab === 'lab'
-                ? 'Pet Diagnostic Lab Appointments'
+                ? 'Laboratory & Diagnostic Bookings'
                 : activeTab === 'doctor'
-                ? 'Doctor Appointments & Consultations'
+                ? 'Doctor Consultations'
+                : activeTab === 'refunds'
+                ? 'Refunds & Payment Settlements'
                 : 'All Appointments & Diagnostic Bookings'}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
@@ -403,6 +458,8 @@ export default function UserMyAppointmentsList() {
                 ? 'Showing diagnostic tests, sample collection slots, and laboratory investigations booked for your pets.'
                 : activeTab === 'doctor'
                 ? 'Showing outpatient consultations and clinical checkups with veterinary doctors.'
+                : activeTab === 'refunds'
+                ? 'Showing all cancelled appointments with Stripe / Razorpay refunds, 10% fee deductions, and settlement records.'
                 : 'Combined master view of all doctor visits and laboratory diagnostic tests.'}
               {' '}
               <span className="text-blue-600 font-bold">
@@ -619,7 +676,20 @@ export default function UserMyAppointmentsList() {
                         </div>
                       )}
 
-                      {/* Payment & Receipt Metadata Banner */}
+                      {/* Cancellation reason banner if cancelled */}
+                      {app.status === 'Cancelled' && (
+                        <div className="p-3 rounded-2xl bg-rose-50/90 border border-rose-200/80 text-xs text-rose-900 flex items-start gap-2.5">
+                          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                          <div className="space-y-0.5">
+                            <span className="font-extrabold text-rose-800">Booking Cancelled:</span>
+                            <span className="text-rose-700 ml-1">
+                              {app.cancellationReason || 'Cancelled upon customer request.'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Payment & Refund Metadata Banner */}
                       <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-3 text-xs">
                         <span className="inline-flex items-center gap-1 font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
@@ -630,12 +700,29 @@ export default function UserMyAppointmentsList() {
                           Amount: <strong className="text-emerald-700 font-extrabold text-sm">₹{app.paymentAmount || app.servicePrice || 500}</strong>
                         </span>
 
+                        {/* Refund badge if cancelled with refund */}
+                        {app.status === 'Cancelled' && (Number(app.refundAmount) > 0 || app.refundStatus) && (
+                          <span className="inline-flex items-center gap-1.5 font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 shadow-xs">
+                            <Undo2 className="w-3.5 h-3.5 text-rose-600" />
+                            <span>
+                              {app.refundStatus || 'Refunded'}: ₹{Number(app.refundAmount || 0).toFixed(2)}
+                              {app.cancellationFee ? ` (₹${Number(app.cancellationFee).toFixed(2)} fee)` : ''}
+                            </span>
+                          </span>
+                        )}
+
                         <span className="text-slate-500 flex items-center gap-1">
                           <CreditCard className="w-3 h-3 text-slate-400" />
                           Method: <strong className="text-slate-800">{app.paymentMethod || 'Online Gateway'}</strong>
                         </span>
 
-                        {app.paymentId && (
+                        {app.refundId && (
+                          <span className="font-mono text-[11px] text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200" title="Stripe / Gateway Refund Reference">
+                            Ref: {app.refundId}
+                          </span>
+                        )}
+
+                        {app.paymentId && !app.refundId && (
                           <span className="font-mono text-[11px] text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
                             Txn: {app.paymentId}
                           </span>
@@ -673,7 +760,7 @@ export default function UserMyAppointmentsList() {
                           </button>
 
                           <button
-                            onClick={() => handleCancel(app.id)}
+                            onClick={() => openCancelModal(app)}
                             className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 active:scale-95 transition"
                           >
                             <Trash2 size={13} /> Cancel
@@ -811,6 +898,175 @@ export default function UserMyAppointmentsList() {
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      {/* ─── Cancel Appointment & Refund Modal ──────────────────── */}
+      <AnimatePresence>
+        {showCancelModal && selectedApptForCancel && (() => {
+          const isLab = selectedApptForCancel.appointmentType === 'Lab Test' || Boolean(selectedApptForCancel.serviceName);
+          const amountPaid = Number(selectedApptForCancel.paymentAmount || selectedApptForCancel.servicePrice || 500);
+          const isPaid = String(selectedApptForCancel.paymentStatus || '').toLowerCase() === 'paid';
+          const cancelFee = isPaid ? Math.round(amountPaid * 0.10 * 100) / 100 : 0;
+          const netRefund = isPaid ? Math.max(0, Math.round((amountPaid - cancelFee) * 100) / 100) : 0;
+
+          const quickReasons = [
+            'Change of schedule / plans',
+            'Found alternative doctor or lab',
+            'Booked wrong date/time slot',
+            'Pet feeling better / recovered',
+            'Emergency / personal conflict'
+          ];
+
+          return (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+              onClick={() => !cancelSubmitting && setShowCancelModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.95, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 sm:p-7 border border-slate-100 my-8 overflow-hidden"
+              >
+                {/* Header */}
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shadow-sm">
+                      <Trash2 size={22} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                        Cancel {isLab ? 'Lab Test' : 'Appointment'}
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Appointment #{selectedApptForCancel.appointment_number} • {selectedApptForCancel.hospital}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowCancelModal(false)}
+                    disabled={cancelSubmitting}
+                    className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleConfirmCancellation} className="space-y-4">
+                  {/* Service Card Summary */}
+                  <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 text-xs space-y-1">
+                    <p className="font-extrabold text-slate-900 text-sm">
+                      {isLab
+                        ? `🧪 ${selectedApptForCancel.serviceName || 'Diagnostic Lab Investigation'}`
+                        : `🩺 ${selectedApptForCancel.doctorName ? `Dr. ${selectedApptForCancel.doctorName}` : 'Doctor Consultation'}`}
+                    </p>
+                    <p className="text-slate-600">
+                      Patient: <strong className="text-slate-800">{selectedApptForCancel.patientName}</strong>
+                      {selectedApptForCancel.petName ? ` (Pet: ${selectedApptForCancel.petName})` : ''}
+                    </p>
+                    <p className="text-slate-500">
+                      Slot: {selectedApptForCancel.date} at {selectedApptForCancel.time}
+                    </p>
+                  </div>
+
+                  {/* Financial & Refund Breakdown */}
+                  {isPaid ? (
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50/40 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-rose-900 uppercase tracking-wider flex items-center gap-1.5">
+                          <Receipt size={14} className="text-rose-600" /> Refund & Fee Statement
+                        </span>
+                        <span className="text-[11px] font-bold text-rose-700 bg-rose-100/80 px-2 py-0.5 rounded-full">
+                          10% Cancellation Fee
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between text-slate-600">
+                          <span>Amount Paid</span>
+                          <span className="font-bold text-slate-900">₹{amountPaid.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-rose-600">
+                          <span>Cancellation Charge (10%)</span>
+                          <span className="font-bold">-₹{cancelFee.toFixed(2)}</span>
+                        </div>
+                        <div className="pt-2 border-t border-rose-200 flex justify-between text-sm font-black text-emerald-800 bg-emerald-50/70 p-2 rounded-xl">
+                          <span>Estimated Refund to Card</span>
+                          <span className="text-base text-emerald-700">₹{netRefund.toFixed(2)}</span>
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        💡 The refund of <strong>₹{netRefund.toFixed(2)}</strong> will be automatically credited to your original payment card / method via <strong>Stripe Gateway</strong> within <strong>5–7 business days</strong>.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-600">
+                      ℹ️ This booking is not pre-paid. No cancellation fee or refund will be charged.
+                    </div>
+                  )}
+
+                  {/* Reason for Cancellation */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                      Reason for Cancellation
+                    </label>
+
+                    {/* Quick chips */}
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {quickReasons.map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => setCancelReason(r)}
+                          className={`text-[11px] px-2.5 py-1 rounded-lg border font-medium transition ${
+                            cancelReason === r
+                              ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {r}
+                        </button>
+                      ))}
+                    </div>
+
+                    <textarea
+                      rows={2}
+                      value={cancelReason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      placeholder="Please specify your reason for cancelling (optional)..."
+                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none resize-none"
+                    />
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      disabled={cancelSubmitting}
+                      onClick={() => setShowCancelModal(false)}
+                      className="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl font-bold text-xs text-slate-700 hover:bg-slate-50 transition"
+                    >
+                      Keep Booking
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={cancelSubmitting}
+                      className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-xl font-bold text-xs hover:bg-rose-700 active:scale-95 transition disabled:opacity-60 flex items-center justify-center gap-2 shadow-md shadow-rose-600/20"
+                    >
+                      {cancelSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 size={15} />}
+                      {cancelSubmitting ? 'Processing Refund...' : 'Confirm Cancellation'}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
       </AnimatePresence>
 
       {/* ─── Appointment Feedback Modal ─────────────────────────── */}

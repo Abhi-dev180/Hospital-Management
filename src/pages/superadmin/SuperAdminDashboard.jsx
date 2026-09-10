@@ -10,7 +10,8 @@ import {
   Search, RefreshCw, Edit3, Trash2, Plus, Bell, ShieldCheck,
   AlertCircle, CalendarDays, CalendarClock, CheckCircle2, ClipboardList,
   ArrowRight, ChevronLeft, ChevronRight, UserPlus, Radio, Hourglass, MessageSquare,
-  TestTube, Droplet, Stethoscope, Filter, Activity, PawPrint
+  TestTube, Droplet, Stethoscope, Filter, Activity, PawPrint,
+  RotateCcw, Receipt, CreditCard, BadgePercent
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import DashboardLayout from '../../components/DashboardLayout';
@@ -93,6 +94,8 @@ export default function SuperAdminDashboard() {
   // Pagination States
   const [adminPage, setAdminPage] = useState(1);
   const [appointmentPage, setAppointmentPage] = useState(1);
+  const [refundPage, setRefundPage] = useState(1);
+  const [refundSearch, setRefundSearch] = useState('');
   const itemsPerPage = 5;
 
   // ─── Live counters (polled) ───────────────────────────────
@@ -443,6 +446,34 @@ export default function SuperAdminDashboard() {
   const totalAppointmentPages = Math.ceil(filteredAppointments.length / itemsPerPage) || 1;
   const paginatedAppointments = filteredAppointments.slice((appointmentPage - 1) * itemsPerPage, appointmentPage * itemsPerPage);
 
+  // System-wide Refunds calculations
+  const allRefunds = appointments.filter((a) =>
+    a && (a.status === 'Cancelled' || (a.refundAmount && a.refundAmount > 0) || a.refundStatus === 'Refunded')
+  );
+  const totalSystemRefundAmount = allRefunds.reduce((sum, a) => sum + (Number(a.refundAmount) || 0), 0);
+  const totalSystemRetainedFees = allRefunds.reduce((sum, a) => sum + (Number(a.cancellationFee) || 0), 0);
+
+  const filteredRefunds = allRefunds.filter((appt) => {
+    if (!refundSearch.trim()) return true;
+    const q = refundSearch.toLowerCase().trim();
+    return (
+      (appt.patientName || '').toLowerCase().includes(q) ||
+      (appt.patientPhone || '').toLowerCase().includes(q) ||
+      (appt.email || '').toLowerCase().includes(q) ||
+      (appt.hospital || '').toLowerCase().includes(q) ||
+      (appt.serviceName || '').toLowerCase().includes(q) ||
+      (appt.doctorName || '').toLowerCase().includes(q) ||
+      (appt.refundId || '').toLowerCase().includes(q) ||
+      (appt.refundStatus || '').toLowerCase().includes(q) ||
+      (appt.cancellationReason || '').toLowerCase().includes(q) ||
+      (appt.paymentMethod || '').toLowerCase().includes(q) ||
+      (appt.appointment_number ? String(appt.appointment_number).includes(q) : false)
+    );
+  });
+
+  const totalRefundPages = Math.ceil(filteredRefunds.length / itemsPerPage) || 1;
+  const paginatedRefunds = filteredRefunds.slice((refundPage - 1) * itemsPerPage, refundPage * itemsPerPage);
+
   return (
     <DashboardLayout
       title="Super Admin Master Control Center"
@@ -488,9 +519,9 @@ export default function SuperAdminDashboard() {
       </div>
 
       {statsLoading && !stats ? (
-        <StatSkeleton count={4} className="mb-8" />
+        <StatSkeleton count={5} className="mb-8" />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           {[
             {
               title: 'Total Registrations',
@@ -520,6 +551,15 @@ export default function SuperAdminDashboard() {
               to: '/superadmin/manage-admin'
             },
             {
+              title: 'Refunds & Settlements',
+              value: stats?.refunds?.totalCount ?? allRefunds.length,
+              trend: `₹${(stats?.refunds?.totalAmount ?? totalSystemRefundAmount).toLocaleString()} net refunded`,
+              color: 'text-teal-600',
+              bg: 'bg-teal-50',
+              icon: RotateCcw,
+              to: '/superadmin/appointments?tab=refunds'
+            },
+            {
               title: 'New Enquiries',
               value: stats?.contacts?.new ?? 0,
               trend: `${stats?.contacts?.total ?? 0} contact messages in total`,
@@ -534,17 +574,17 @@ export default function SuperAdminDashboard() {
               <Link
                 key={kpi.title}
                 to={kpi.to}
-                className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between transition hover:shadow-md hover:-translate-y-0.5"
+                className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between transition hover:shadow-md hover:-translate-y-0.5"
               >
-                <div>
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{kpi.title}</h3>
-                  <p className={`text-3xl font-extrabold ${kpi.color}`}>
+                <div className="min-w-0 pr-2">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1 truncate">{kpi.title}</h3>
+                  <p className={`text-2xl font-extrabold ${kpi.color}`}>
                     <AnimatedCount value={kpi.value} />
                   </p>
-                  <span className="text-xs font-bold text-gray-400 mt-1 block">{kpi.trend}</span>
+                  <span className="text-[11px] font-bold text-gray-400 mt-1 block truncate">{kpi.trend}</span>
                 </div>
-                <div className={`p-3.5 rounded-2xl border border-gray-100 ${kpi.bg} ${kpi.color}`}>
-                  <IconComp size={22} />
+                <div className={`p-3 rounded-2xl border border-gray-100 shrink-0 ${kpi.bg} ${kpi.color}`}>
+                  <IconComp size={20} />
                 </div>
               </Link>
             );
@@ -1284,6 +1324,248 @@ export default function SuperAdminDashboard() {
               <button
                 disabled={appointmentPage === totalAppointmentPages}
                 onClick={() => setAppointmentPage(p => Math.min(p + 1, totalAppointmentPages))}
+                className="p-2 border border-gray-200 rounded-full disabled:opacity-40 hover:bg-gray-50 transition"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ─── Global Refunds & Payment Settlements Audit Center ──── */}
+      <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100 mt-10">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6 pb-6 border-b border-gray-100">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold mb-2 border border-emerald-200/60">
+              <RotateCcw size={13} />
+              <span>Financial Settlements Audit</span>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">System Refunds &amp; Payment Settlements</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Live audit records of all Stripe and Razorpay refunds with 10% cancellation fee retention across all hospitals.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
+            {/* Search Input */}
+            <div className="relative flex-1 sm:w-72 min-w-[220px]">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                type="text"
+                value={refundSearch}
+                onChange={(e) => { setRefundSearch(e.target.value); setRefundPage(1); }}
+                placeholder="Search refund ID, patient, reason..."
+                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-full focus:ring-medical-blue outline-none text-xs sm:text-sm bg-white"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={loadAppointments}
+              disabled={loadingAppointments}
+              className="inline-flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-800 hover:bg-gray-50 px-4 py-2 rounded-full font-semibold shadow-xs transition text-sm disabled:opacity-60 shrink-0"
+            >
+              {loadingAppointments ? <Loader size="sm" /> : <RefreshCw size={16} />} Refresh
+            </button>
+          </div>
+        </div>
+
+        {/* Financial KPI Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50/80 to-teal-50/50 border border-emerald-100 flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider block">Total Net Refunded</span>
+              <p className="text-2xl font-extrabold text-emerald-950 mt-1">₹{totalSystemRefundAmount.toLocaleString()}</p>
+              <span className="text-[11px] text-emerald-700/80 font-medium">Returned to patient payment methods</span>
+            </div>
+            <div className="p-3 bg-emerald-600 text-white rounded-2xl shadow-sm">
+              <RotateCcw size={20} />
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50/80 to-orange-50/50 border border-amber-100 flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-amber-800 uppercase tracking-wider block">Retained Platform Fees (10%)</span>
+              <p className="text-2xl font-extrabold text-amber-950 mt-1">₹{totalSystemRetainedFees.toLocaleString()}</p>
+              <span className="text-[11px] text-amber-700/80 font-medium">Standard cancellation platform revenue</span>
+            </div>
+            <div className="p-3 bg-amber-600 text-white rounded-2xl shadow-sm">
+              <BadgePercent size={20} />
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/70 border border-slate-200 flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider block">Refund Audit Records</span>
+              <p className="text-2xl font-extrabold text-slate-900 mt-1">{allRefunds.length}</p>
+              <span className="text-[11px] text-slate-500 font-medium">Processed cancellations to date</span>
+            </div>
+            <div className="p-3 bg-slate-800 text-white rounded-2xl shadow-sm">
+              <Receipt size={20} />
+            </div>
+          </div>
+        </div>
+
+        {loadingAppointments ? (
+          <TableSkeleton rows={4} cols={7} />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-sm min-w-[950px]">
+              <thead>
+                <tr className="bg-emerald-50/80 text-emerald-950">
+                  <th className="py-3.5 px-4 font-semibold rounded-tl-lg">App # &amp; Ref ID</th>
+                  <th className="py-3.5 px-4 font-semibold">Patient &amp; Contact</th>
+                  <th className="py-3.5 px-4 font-semibold">Service / Consultation</th>
+                  <th className="py-3.5 px-4 font-semibold">Hospital</th>
+                  <th className="py-3.5 px-4 font-semibold">Itemized Financial Breakdown</th>
+                  <th className="py-3.5 px-4 font-semibold">Cancellation Reason</th>
+                  <th className="py-3.5 px-4 font-semibold text-right rounded-tr-lg">Settlement Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedRefunds.map((appt) => {
+                  const isLabTest = appt.appointmentType === 'Lab Test' || Boolean(appt.serviceName);
+                  const paidAmt = Number(appt.paymentAmount || appt.servicePrice || 0);
+                  const feeAmt = Number(appt.cancellationFee || (paidAmt * 0.10) || 0);
+                  const netRefund = Number(appt.refundAmount || (paidAmt - feeAmt) || 0);
+                  const isRazorpay = String(appt.paymentMethod || '').toLowerCase().includes('razorpay') ||
+                                    (appt.paymentId && String(appt.paymentId).startsWith('pay_'));
+
+                  return (
+                    <tr key={appt.id} className="border-b border-gray-100 hover:bg-gray-50/80 transition-colors">
+                      {/* App # & Ref ID */}
+                      <td className="py-4 px-4">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-extrabold text-gray-900 text-xs">
+                              #{appt.appointment_number || appt.id?.slice(-4)}
+                            </span>
+                            {isLabTest ? (
+                              <span className="bg-rose-50 text-rose-700 text-[10px] font-bold px-1.5 py-0.5 rounded">Lab</span>
+                            ) : (
+                              <span className="bg-blue-50 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded">Consult</span>
+                            )}
+                          </div>
+                          {appt.refundId ? (
+                            <span className="text-[11px] font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60 w-fit">
+                              {appt.refundId}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-gray-400 italic">No Ref ID</span>
+                          )}
+                          <span className="text-[10px] text-gray-400 font-medium">
+                            Gateway: <strong className="text-gray-600">{isRazorpay ? 'Razorpay' : 'Stripe'}</strong>
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Patient & Contact */}
+                      <td className="py-4 px-4">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-gray-900">{appt.patientName}</span>
+                          {appt.email && <span className="text-xs text-gray-500 truncate max-w-[170px]">{appt.email}</span>}
+                          {appt.patientPhone && <span className="text-xs text-gray-400">{appt.patientPhone}</span>}
+                        </div>
+                      </td>
+
+                      {/* Service / Consultation */}
+                      <td className="py-4 px-4">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-800 text-xs">
+                            {isLabTest ? (appt.serviceName || 'Diagnostic Investigation') : (appt.doctorName ? `Dr. ${appt.doctorName}` : 'Consultation')}
+                          </span>
+                          <span className="text-[11px] text-slate-400">
+                            Booked for: {appt.date} ({appt.time})
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Hospital */}
+                      <td className="py-4 px-4 text-gray-600 text-xs font-medium">
+                        {appt.hospital || '—'}
+                      </td>
+
+                      {/* Itemized Financial Breakdown */}
+                      <td className="py-4 px-4">
+                        <div className="flex flex-col gap-1 text-xs">
+                          <div className="flex items-center justify-between gap-3 text-slate-600">
+                            <span>Gross Paid:</span>
+                            <strong className="text-slate-900">₹{paidAmt}</strong>
+                          </div>
+                          <div className="flex items-center justify-between gap-3 text-amber-700">
+                            <span>10% Fee Retained:</span>
+                            <strong>-₹{feeAmt}</strong>
+                          </div>
+                          <div className="flex items-center justify-between gap-3 pt-1 border-t border-slate-100 text-emerald-700 font-bold">
+                            <span>Net Refund:</span>
+                            <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-extrabold">
+                              ₹{netRefund}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Cancellation Reason */}
+                      <td className="py-4 px-4 max-w-[200px]">
+                        <p className="text-xs text-slate-600 italic bg-slate-50 p-2 rounded-xl border border-slate-100 line-clamp-2">
+                          {appt.cancellationReason || 'Cancelled by user/admin'}
+                        </p>
+                        {appt.cancelledAt && (
+                          <span className="text-[10px] text-gray-400 block mt-1">
+                            {new Date(appt.cancelledAt).toLocaleString()}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Settlement Status */}
+                      <td className="py-4 px-4 text-right">
+                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${
+                          appt.refundStatus === 'Refunded' || netRefund > 0
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : appt.refundStatus === 'No Refund' || paidAmt === 0
+                            ? 'bg-gray-100 text-gray-700'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          <CheckCircle2 size={13} />
+                          {appt.refundStatus || (netRefund > 0 ? 'Refunded' : 'No Refund')}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {paginatedRefunds.length === 0 && (
+                  <tr>
+                    <td colSpan="7" className="py-10 text-center text-gray-500 italic">
+                      {refundSearch
+                        ? 'No refund records matched your search query.'
+                        : 'No cancellation refunds processed yet in the system.'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Refunds Pagination Controls */}
+        {!loadingAppointments && filteredRefunds.length > itemsPerPage && (
+          <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100 text-sm">
+            <span className="text-gray-500 font-medium">
+              Showing <span className="font-bold text-gray-700">{(refundPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-gray-700">{Math.min(refundPage * itemsPerPage, filteredRefunds.length)}</span> of <span className="font-bold text-gray-700">{filteredRefunds.length}</span> refunds
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={refundPage === 1}
+                onClick={() => setRefundPage(p => Math.max(p - 1, 1))}
+                className="p-2 border border-gray-200 rounded-full disabled:opacity-40 hover:bg-gray-50 transition"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span className="px-3 font-bold text-gray-700">Page {refundPage} of {totalRefundPages}</span>
+              <button
+                disabled={refundPage === totalRefundPages}
+                onClick={() => setRefundPage(p => Math.min(p + 1, totalRefundPages))}
                 className="p-2 border border-gray-200 rounded-full disabled:opacity-40 hover:bg-gray-50 transition"
               >
                 <ChevronRight size={16} />

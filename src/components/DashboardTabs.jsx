@@ -10,12 +10,17 @@ const ROLE_TABS = {
     { name: 'Manage Hospitals', to: '/superadmin/manage-hospitals' },
     { name: 'Appointments', to: '/superadmin/appointments' },
     { name: 'Lab Bookings', to: '/superadmin/appointments?tab=lab' },
+    { name: 'Refunds & Settlements', to: '/superadmin/appointments?tab=refunds' },
     { name: 'Calendar', to: '/superadmin/calendar' },
     { name: 'Contacts', to: '/superadmin/contacts' }
   ],
   admin: [
+    { name: 'Overview', to: '/admin/overview' },
     { name: 'Appointments', to: '/admin/appointments' },
-    { name: 'Calendar', to: '/admin/calendar' }
+    { name: 'Lab Bookings', to: '/admin/appointments?tab=lab' },
+    { name: 'Refunds & Settlements', to: '/admin/appointments?tab=refunds' },
+    { name: 'Calendar', to: '/admin/calendar' },
+    { name: 'Feedbacks', to: '/admin/feedbacks' }
   ],
   user: [
     { name: 'Overview', to: '/dashboard' },
@@ -23,6 +28,7 @@ const ROLE_TABS = {
     { name: 'Book Consult', to: '/dashboard/book-appointment' },
     { name: 'Doctor Appointments', to: '/dashboard/my-appointments?tab=doctor' },
     { name: 'Lab Bookings', to: '/dashboard/my-appointments?tab=lab' },
+    { name: 'Refunds & Settlements', to: '/dashboard/my-appointments?tab=refunds' },
     { name: 'Explore Hospitals', to: '/dashboard/explore-hospitals' },
     { name: 'Feedback & Reviews', to: '/dashboard/feedbacks' }
   ]
@@ -33,23 +39,51 @@ export default function DashboardTabs({ role }) {
   const location = useLocation();
 
   const isTabActive = (to) => {
+    if (to.includes('?tab=refunds')) {
+      return (
+        (location.pathname === '/superadmin/appointments' ||
+          location.pathname === '/admin/appointments' ||
+          location.pathname === '/dashboard/my-appointments') &&
+        location.search.includes('tab=refunds')
+      );
+    }
     if (to.includes('?tab=lab')) {
       return (
-        (location.pathname === '/superadmin/appointments' || location.pathname === '/dashboard/my-appointments') &&
+        (location.pathname === '/superadmin/appointments' ||
+          location.pathname === '/admin/appointments' ||
+          location.pathname === '/dashboard/my-appointments') &&
         location.search.includes('tab=lab')
       );
     }
     if (to.includes('?tab=doctor')) {
       return (
         location.pathname === '/dashboard/my-appointments' &&
-        (location.search.includes('tab=doctor') || (!location.search.includes('tab=lab') && !location.search.includes('tab=all')))
+        (location.search.includes('tab=doctor') ||
+          (!location.search.includes('tab=lab') &&
+            !location.search.includes('tab=refunds') &&
+            !location.search.includes('tab=all')))
       );
     }
     if (to === '/superadmin/appointments') {
-      return location.pathname === '/superadmin/appointments' && !location.search.includes('tab=lab');
+      return (
+        location.pathname === '/superadmin/appointments' &&
+        !location.search.includes('tab=lab') &&
+        !location.search.includes('tab=refunds')
+      );
+    }
+    if (to === '/admin/appointments') {
+      return (
+        location.pathname === '/admin/appointments' &&
+        !location.search.includes('tab=lab') &&
+        !location.search.includes('tab=refunds')
+      );
     }
     if (to === '/dashboard/my-appointments') {
-      return location.pathname === '/dashboard/my-appointments' && !location.search.includes('tab=lab');
+      return (
+        location.pathname === '/dashboard/my-appointments' &&
+        !location.search.includes('tab=lab') &&
+        !location.search.includes('tab=refunds')
+      );
     }
     return location.pathname === to;
   };

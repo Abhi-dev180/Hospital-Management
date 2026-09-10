@@ -25,7 +25,11 @@ import {
   Bed,
   Droplet,
   TestTube,
-  Stethoscope
+  Stethoscope,
+  RotateCcw,
+  Receipt,
+  CreditCard,
+  ShieldAlert
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
@@ -292,6 +296,21 @@ export default function UserDashboard() {
     return appointments.filter((a) => a && (a.appointmentType === 'Lab Test' || Boolean(a.serviceName)));
   }, [appointments]);
 
+  // Refunded appointments
+  const refundedAppointments = useMemo(() => {
+    return appointments.filter(
+      (a) => a && (a.status === 'Cancelled' || (a.refundAmount && a.refundAmount > 0) || a.refundStatus === 'Refunded')
+    );
+  }, [appointments]);
+
+  const totalRefundAmount = useMemo(() => {
+    return refundedAppointments.reduce((sum, a) => sum + (Number(a.refundAmount) || 0), 0);
+  }, [refundedAppointments]);
+
+  const totalFeesDeducted = useMemo(() => {
+    return refundedAppointments.reduce((sum, a) => sum + (Number(a.cancellationFee) || 0), 0);
+  }, [refundedAppointments]);
+
   // Compute metrics
   const upcomingAppointments = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -335,56 +354,71 @@ export default function UserDashboard() {
       <DashboardTabs role="user" />
 
       {/* KPI Overview Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-4">
-          <div className="p-3.5 bg-blue-50 text-blue-600 rounded-2xl">
-            <Stethoscope className="w-6 h-6" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3">
+          <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl shrink-0">
+            <Stethoscope className="w-5 h-5" />
           </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Doctor Visits</p>
-            <p className="text-2xl font-black text-slate-900 mt-0.5">{doctorAppointments.length}</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-4">
-          <div className="p-3.5 bg-rose-50 text-rose-600 rounded-2xl">
-            <TestTube className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Lab Tests</p>
-            <p className="text-2xl font-black text-slate-900 mt-0.5">{labAppointments.length}</p>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Doctor Visits</p>
+            <p className="text-xl font-black text-slate-900 mt-0.5">{doctorAppointments.length}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-4">
-          <div className="p-3.5 bg-amber-50 text-amber-600 rounded-2xl">
-            <Clock className="w-6 h-6" />
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3">
+          <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl shrink-0">
+            <TestTube className="w-5 h-5" />
           </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Upcoming Visits</p>
-            <p className="text-2xl font-black text-slate-900 mt-0.5">{upcomingAppointments.length}</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-4">
-          <div className="p-3.5 bg-emerald-50 text-emerald-600 rounded-2xl">
-            <Building2 className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Hospitals</p>
-            <p className="text-2xl font-black text-slate-900 mt-0.5">{hospitals.length}</p>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Lab Tests</p>
+            <p className="text-xl font-black text-slate-900 mt-0.5">{labAppointments.length}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-4 col-span-2 sm:col-span-1">
-          <div className="p-3.5 bg-teal-50 text-teal-600 rounded-2xl">
-            <MessageSquare className="w-6 h-6" />
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3">
+          <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl shrink-0">
+            <Clock className="w-5 h-5" />
           </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Feedbacks Given</p>
-            <p className="text-2xl font-black text-slate-900 mt-0.5">{feedbacks.length}</p>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Upcoming</p>
+            <p className="text-xl font-black text-slate-900 mt-0.5">{upcomingAppointments.length}</p>
           </div>
         </div>
+
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3">
+          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl shrink-0">
+            <Building2 className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Hospitals</p>
+            <p className="text-xl font-black text-slate-900 mt-0.5">{hospitals.length}</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3">
+          <div className="p-3 bg-teal-50 text-teal-600 rounded-2xl shrink-0">
+            <MessageSquare className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Feedbacks</p>
+            <p className="text-xl font-black text-slate-900 mt-0.5">{feedbacks.length}</p>
+          </div>
+        </div>
+
+        <Link
+          to="/dashboard/my-appointments?tab=refunds"
+          className="bg-gradient-to-br from-emerald-50/70 to-teal-50/70 hover:from-emerald-100/80 hover:to-teal-100/80 rounded-3xl p-5 border border-emerald-200/80 shadow-md flex items-center gap-3 transition-all hover:scale-[1.02] group"
+        >
+          <div className="p-3 bg-emerald-600 text-white rounded-2xl shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+            <RotateCcw className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 truncate">Refunds (₹)</p>
+            <p className="text-xl font-black text-emerald-900 mt-0.5">
+              ₹{totalRefundAmount.toLocaleString()}
+            </p>
+          </div>
+        </Link>
       </div>
 
       {/* Next Upcoming Appointment Highlight Banner */}
@@ -934,6 +968,152 @@ export default function UserDashboard() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* ─── My Refunds & Cancellation Settlements Section ─────── */}
+      <div className="mt-10 bg-white p-6 sm:p-8 rounded-3xl shadow-lg border border-slate-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold mb-1.5 border border-emerald-200/60">
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Direct Payment Settlements</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              My Refunds &amp; Cancellation Settlements
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+              Track your processed Stripe &amp; Razorpay refunds (with standard 10% cancellation fee deduction).
+            </p>
+          </div>
+
+          <Link
+            to="/dashboard/my-appointments?tab=refunds"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-bold text-xs shadow-md shadow-emerald-500/20 transition-all self-start sm:self-auto shrink-0"
+          >
+            <Receipt className="w-4 h-4" />
+            <span>View All Refunds ({refundedAppointments.length})</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {/* Refund Financial Summary Pills */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50/50 border border-emerald-100">
+            <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider block">Total Net Refunded</span>
+            <p className="text-2xl font-black text-emerald-900 mt-1">₹{totalRefundAmount.toLocaleString()}</p>
+            <span className="text-[11px] text-emerald-600/90 font-medium">Credited back to your card / UPI</span>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50/50 border border-amber-100">
+            <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider block">Cancellation Fees (10%)</span>
+            <p className="text-2xl font-black text-amber-900 mt-1">₹{totalFeesDeducted.toLocaleString()}</p>
+            <span className="text-[11px] text-amber-700/90 font-medium">Platform processing charges retained</span>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/60 border border-slate-200">
+            <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">Refunded Bookings</span>
+            <p className="text-2xl font-black text-slate-900 mt-1">{refundedAppointments.length}</p>
+            <span className="text-[11px] text-slate-500 font-medium">Cancelled consults &amp; lab tests</span>
+          </div>
+        </div>
+
+        {refundedAppointments.length === 0 ? (
+          <div className="text-center py-10 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/40">
+            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-2">
+              <RotateCcw className="w-6 h-6" />
+            </div>
+            <h4 className="text-sm font-bold text-slate-800">No Refunds or Cancelled Bookings</h4>
+            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+              You do not have any cancelled appointments. If you ever cancel a paid booking, your 90% net refund will appear here automatically.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {refundedAppointments.slice(0, 4).map((app) => {
+              const isLabTest = app.appointmentType === 'Lab Test' || Boolean(app.serviceName);
+              const paidAmt = Number(app.paymentAmount || app.servicePrice || 0);
+              const feeAmt = Number(app.cancellationFee || (paidAmt * 0.10) || 0);
+              const netRefund = Number(app.refundAmount || (paidAmt - feeAmt) || 0);
+
+              return (
+                <div
+                  key={app.id}
+                  className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between group"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {isLabTest ? (
+                          <span className="bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                            <TestTube className="w-3 h-3 text-rose-600" />
+                            Lab Test
+                          </span>
+                        ) : (
+                          <span className="bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                            <Stethoscope className="w-3 h-3 text-blue-600" />
+                            Doctor Consult
+                          </span>
+                        )}
+                        {app.appointment_number && (
+                          <span className="bg-slate-200 text-slate-700 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full">
+                            #{app.appointment_number}
+                          </span>
+                        )}
+                      </div>
+
+                      <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                        app.refundStatus === 'Refunded' || netRefund > 0
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-slate-200 text-slate-700'
+                      }`}>
+                        <CheckCircle2 className="w-3 h-3" />
+                        {app.refundStatus || (netRefund > 0 ? 'Refunded' : 'No Refund')}
+                      </span>
+                    </div>
+
+                    <h4 className="font-bold text-slate-900 text-sm group-hover:text-emerald-700 transition">
+                      {isLabTest
+                        ? (app.serviceName || app.reason || 'Diagnostic Lab Investigation')
+                        : (app.doctorName ? `Dr. ${app.doctorName}` : (app.hospital || 'Hospital Consultation'))}
+                    </h4>
+
+                    <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-2 flex-wrap">
+                      <span>{app.hospital}</span>
+                      <span>•</span>
+                      <span>Scheduled: {app.date} at {app.time}</span>
+                    </p>
+
+                    {app.cancellationReason && (
+                      <p className="text-xs text-rose-700 bg-rose-50 p-2 rounded-xl mt-2 italic border border-rose-100">
+                        <strong>Reason:</strong> {app.cancellationReason}
+                      </p>
+                    )}
+
+                    {app.refundId && (
+                      <p className="text-[11px] text-slate-500 font-mono mt-2 flex items-center gap-1">
+                        <CreditCard className="w-3 h-3 text-slate-400" />
+                        Ref ID: <span className="font-bold text-slate-700">{app.refundId}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Financial itemized box */}
+                  <div className="mt-3 pt-3 border-t border-slate-200/80 flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-3 text-slate-600">
+                      <span>Paid: <strong className="text-slate-800">₹{paidAmt}</strong></span>
+                      <span>Fee (10%): <strong className="text-amber-700">₹{feeAmt}</strong></span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-200 inline-block">
+                        Refunded: ₹{netRefund}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Featured Hospitals Spotlight */}

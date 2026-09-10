@@ -29,7 +29,11 @@ import {
   Droplet,
   Activity,
   Sparkles,
-  ClipboardList
+  ClipboardList,
+  RotateCcw,
+  Receipt,
+  CreditCard,
+  BadgePercent
 } from "lucide-react";
 import toast from "react-hot-toast";
 import API_URL from "../../config/api";
@@ -90,10 +94,10 @@ export default function SuperAdminAppointments() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get("tab"); // 'doctor' | 'lab' | 'all'
-  const initialType = tabParam === "lab" ? "test" : (tabParam === "all" ? "all" : "consult");
+  const tabParam = searchParams.get("tab"); // 'doctor' | 'lab' | 'all' | 'refunds'
+  const initialType = tabParam === "lab" ? "test" : (tabParam === "refunds" ? "refunds" : (tabParam === "all" ? "all" : "consult"));
   const [typeFilter, setTypeFilter] = useState(initialType);
-  const [tabCounts, setTabCounts] = useState({ total: 0, doctor: 0, lab: 0 });
+  const [tabCounts, setTabCounts] = useState({ total: 0, doctor: 0, lab: 0, refunds: 0 });
 
   const [page, setPage] = useState(1);
   const navigate = useNavigate();
@@ -154,6 +158,8 @@ export default function SuperAdminAppointments() {
   useEffect(() => {
     if (tabParam === "lab") {
       setTypeFilter("test");
+    } else if (tabParam === "refunds") {
+      setTypeFilter("refunds");
     } else if (tabParam === "all") {
       setTypeFilter("all");
     } else if (tabParam === "doctor") {
@@ -165,6 +171,9 @@ export default function SuperAdminAppointments() {
     if (newTab === "lab") {
       setTypeFilter("test");
       setSearchParams({ tab: "lab" });
+    } else if (newTab === "refunds") {
+      setTypeFilter("refunds");
+      setSearchParams({ tab: "refunds" });
     } else if (newTab === "all") {
       setTypeFilter("all");
       setSearchParams({ tab: "all" });
@@ -185,7 +194,8 @@ export default function SuperAdminAppointments() {
       setTabCounts({
         total: data.bookings?.total ?? 0,
         doctor: data.bookings?.consultations?.total ?? 0,
-        lab: data.bookings?.labTests?.total ?? 0
+        lab: data.bookings?.labTests?.total ?? 0,
+        refunds: data.refunds?.totalCount ?? 0
       });
     } catch {}
   };
@@ -558,6 +568,28 @@ export default function SuperAdminAppointments() {
 
             <button
               type="button"
+              onClick={() => handleTabChange("refunds")}
+              className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+                typeFilter === "refunds"
+                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20 scale-[1.01]"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+              }`}
+            >
+              <RotateCcw size={16} />
+              <span>Refunds &amp; Settlements</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                  typeFilter === "refunds"
+                    ? "bg-white/20 text-white"
+                    : "bg-emerald-100 text-emerald-800"
+                }`}
+              >
+                {tabCounts.refunds || 0}
+              </span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => handleTabChange("all")}
               className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
                 typeFilter === "all"
@@ -587,6 +619,10 @@ export default function SuperAdminAppointments() {
               >
                 <Sparkles size={14} /> Manage Lab Catalog
               </Link>
+            ) : typeFilter === "refunds" ? (
+              <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3.5 py-2 rounded-2xl text-xs font-bold">
+                <Receipt size={14} /> 10% Fee Deductions Active
+              </div>
             ) : (
               <button
                 onClick={openBookModal}
@@ -604,11 +640,14 @@ export default function SuperAdminAppointments() {
             <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               {typeFilter === "test" && <TestTube className="text-rose-600" size={24} />}
               {typeFilter === "consult" && <Stethoscope className="text-blue-600" size={24} />}
+              {typeFilter === "refunds" && <RotateCcw className="text-emerald-600" size={24} />}
               {typeFilter === "all" && <ClipboardList className="text-slate-700" size={24} />}
               {typeFilter === "test"
                 ? "Lab Test Appointments"
                 : typeFilter === "consult"
                 ? "Doctor Appointments"
+                : typeFilter === "refunds"
+                ? "System Refunds & Settlements"
                 : "All System Appointments"}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
@@ -616,6 +655,8 @@ export default function SuperAdminAppointments() {
                 ? "Showing diagnostic orders, animal lab tests, and sample collections booked by users."
                 : typeFilter === "consult"
                 ? "Showing patient doctor consultations booked from the main website portal and user dashboard."
+                : typeFilter === "refunds"
+                ? "Showing all cancelled bookings with processed Stripe / Razorpay refunds and 10% fee deductions."
                 : "Combined master view of all doctor consultations and lab diagnostic bookings."}
               {" "}
               <span className="text-blue-600 font-bold">
@@ -636,6 +677,8 @@ export default function SuperAdminAppointments() {
                 placeholder={
                   typeFilter === "test"
                     ? "Search test, patient, pet..."
+                    : typeFilter === "refunds"
+                    ? "Search refund ID, patient, reason..."
                     : "Search patient, doctor, pet..."
                 }
                 className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50/80 border border-slate-200/80 rounded-2xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
@@ -695,6 +738,19 @@ export default function SuperAdminAppointments() {
                     <th className="py-3.5 px-3">Status</th>
                     <th className="py-3.5 px-3 text-right">Action</th>
                   </tr>
+                ) : typeFilter === "refunds" ? (
+                  <tr className="bg-emerald-50/80 text-emerald-900 text-xs font-bold uppercase tracking-wider border-b border-emerald-200/80">
+                    <th className="py-3.5 px-3">APP # &amp; REF ID</th>
+                    <th className="py-3.5 px-3">Patient &amp; Contact</th>
+                    <th className="py-3.5 px-3">Service / Test</th>
+                    <th className="py-3.5 px-3">Hospital</th>
+                    <th className="py-3.5 px-3">Paid Amount</th>
+                    <th className="py-3.5 px-3">10% Fee Retained</th>
+                    <th className="py-3.5 px-3">Net Refund</th>
+                    <th className="py-3.5 px-3">Cancellation Reason</th>
+                    <th className="py-3.5 px-3">Status</th>
+                    <th className="py-3.5 px-3 text-right">Action</th>
+                  </tr>
                 ) : typeFilter === "consult" ? (
                   <tr className="bg-blue-50/70 text-blue-800 text-xs font-bold uppercase tracking-wider border-b border-blue-200/80">
                     <th className="py-3.5 px-3">APP #</th>
@@ -726,6 +782,108 @@ export default function SuperAdminAppointments() {
               <tbody className="divide-y divide-slate-100 text-sm">
                 {appointments.map((a, idx) => {
                   const isLab = a.appointmentType === "Lab Test" || Boolean(a.serviceName);
+
+                  if (typeFilter === "refunds") {
+                    const paidAmt = Number(a.paymentAmount || a.servicePrice || 0);
+                    const feeAmt = Number(a.cancellationFee || (paidAmt * 0.10) || 0);
+                    const netRefund = Number(a.refundAmount || (paidAmt - feeAmt) || 0);
+                    const isRazorpay = String(a.paymentMethod || '').toLowerCase().includes('razorpay') ||
+                                      (a.paymentId && String(a.paymentId).startsWith('pay_'));
+
+                    return (
+                      <motion.tr
+                        key={a.id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.02 }}
+                        className="hover:bg-emerald-50/40 transition-colors group"
+                      >
+                        <td className="py-3.5 px-3">
+                          <div className="flex flex-col gap-1">
+                            <span className="font-extrabold text-slate-900 text-xs">
+                              #{a.appointment_number}
+                            </span>
+                            {a.refundId ? (
+                              <span className="text-[11px] font-mono text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded border border-emerald-200/80 w-fit">
+                                {a.refundId}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-slate-400 italic">No Ref ID</span>
+                            )}
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              Via {isRazorpay ? "Razorpay" : "Stripe"}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-900">{a.patientName}</span>
+                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                              {a.patientPhone && <span>{a.patientPhone}</span>}
+                              {a.email && <span className="truncate max-w-[130px]">{a.email}</span>}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-800 text-xs">
+                              {isLab ? (a.serviceName || "Diagnostic Test") : (a.doctorName ? `Dr. ${a.doctorName}` : "Consultation")}
+                            </span>
+                            <span className="text-[11px] text-slate-400">
+                              Scheduled: {a.date} ({a.time})
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-3 text-xs text-slate-600 font-medium">
+                          {a.hospital || "—"}
+                        </td>
+                        <td className="py-3.5 px-3 text-xs font-bold text-slate-800">
+                          ₹{paidAmt}
+                        </td>
+                        <td className="py-3.5 px-3 text-xs font-bold text-amber-700">
+                          -₹{feeAmt}
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <span className="inline-block text-xs font-black text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-xl border border-emerald-200">
+                            ₹{netRefund}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-3 max-w-[160px]">
+                          <p className="text-xs text-slate-600 italic bg-slate-50 p-1.5 rounded-lg line-clamp-2">
+                            {a.cancellationReason || "Cancelled"}
+                          </p>
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                            a.refundStatus === "Refunded" || netRefund > 0
+                              ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                              : "bg-slate-200 text-slate-700"
+                          }`}>
+                            <CheckCircle2 size={11} />
+                            {a.refundStatus || (netRefund > 0 ? "Refunded" : "No Refund")}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => openDetail(a)}
+                              className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 hover:text-emerald-800 transition"
+                              title="View Settlement Details"
+                            >
+                              <Eye size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleQuickDelete(a)}
+                              className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition"
+                              title="Delete Record"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  }
 
                   if (typeFilter === "test") {
                     return (
@@ -1364,6 +1522,28 @@ export default function SuperAdminAppointments() {
                     </p>
                   </div>
                 </div>
+
+                {selectedAppt.status === "Cancelled" && (
+                  <div className="sm:col-span-2 p-3.5 bg-rose-50/80 border border-rose-200 rounded-2xl text-xs space-y-1">
+                    <p className="font-extrabold text-rose-900">🚫 Cancellation & Refund Record</p>
+                    {selectedAppt.cancellationReason && (
+                      <p className="text-rose-800">
+                        <strong>Reason:</strong> {selectedAppt.cancellationReason}
+                      </p>
+                    )}
+                    {Number(selectedAppt.refundAmount) > 0 && (
+                      <p className="text-emerald-800 font-bold">
+                        Net Refund: ₹{Number(selectedAppt.refundAmount).toFixed(2)} (10% Fee: ₹{Number(selectedAppt.cancellationFee || 0).toFixed(2)}) • {selectedAppt.refundStatus || "Refunded"}
+                      </p>
+                    )}
+                    {selectedAppt.refundId && (
+                      <p className="text-slate-600 font-mono text-[11px]">
+                        Stripe/Ref ID: {selectedAppt.refundId}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-start gap-2 sm:col-span-2">
                   <div>
                     <p className="text-xs font-semibold text-slate-500 uppercase mb-1">

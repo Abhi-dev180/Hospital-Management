@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
+import DashboardTabs from '../../components/DashboardTabs';
 import {
   PhoneCall,
   MessageSquare,
@@ -14,7 +16,13 @@ import {
   Calendar,
   Users,
   CheckCircle,
-  Clock
+  Clock,
+  RotateCcw,
+  Receipt,
+  CreditCard,
+  TestTube,
+  Stethoscope,
+  ArrowRight
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -165,43 +173,67 @@ export default function AdminOverview() {
     }
   };
 
+  // Segment appointments
+  const doctorAppointments = useMemo(() => {
+    return appointments.filter(a => a.appointmentType !== 'Lab Test' && !a.serviceName);
+  }, [appointments]);
+
+  const labAppointments = useMemo(() => {
+    return appointments.filter(a => a.appointmentType === 'Lab Test' || Boolean(a.serviceName));
+  }, [appointments]);
+
+  const refundedAppointments = useMemo(() => {
+    return appointments.filter(a => a.status === 'Cancelled' || (a.refundAmount && a.refundAmount > 0) || a.refundStatus === 'Refunded');
+  }, [appointments]);
+
+  const totalRefundAmount = useMemo(() => {
+    return refundedAppointments.reduce((sum, a) => sum + (Number(a.refundAmount) || 0), 0);
+  }, [refundedAppointments]);
+
   const stats = useMemo(
     () => [
-       {
-        title: 'Appointments',
-        value: appointments.length,
-        icon: ClipboardList,
-        color: 'from-purple-500 to-indigo-600',
-        iconBg: 'bg-gradient-to-br from-purple-400 to-indigo-500',
-        iconText: 'text-white'
+      {
+        title: 'Doctor Visits',
+        value: doctorAppointments.length,
+        sub: 'Consultation Bookings',
+        icon: Stethoscope,
+        color: 'from-blue-500 to-indigo-600',
+        iconBg: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+        iconText: 'text-white',
+        to: '/admin/appointments?tab=doctor'
       },
       {
-        title: 'Total Feedbacks',
-        value: feedbacks.length,
-        icon: MessageSquare,
-        color: 'from-green-500 to-emerald-600',
-        iconBg: 'bg-gradient-to-br from-green-400 to-emerald-500',
-        iconText: 'text-white'
+        title: 'Lab & Diagnostic Tests',
+        value: labAppointments.length,
+        sub: 'Diagnostic investigations',
+        icon: TestTube,
+        color: 'from-rose-500 to-pink-600',
+        iconBg: 'bg-gradient-to-br from-rose-500 to-pink-600',
+        iconText: 'text-white',
+        to: '/admin/appointments?tab=lab'
       },
-     
-      // {
-      //   title: 'Total Calls',
-      //   value: calls.length,
-      //   icon: PhoneCall,
-      //   color: 'from-blue-500 to-cyan-600',
-      //   iconBg: 'bg-gradient-to-br from-blue-400 to-cyan-500',
-      //   iconText: 'text-white'
-      // },
-      // {
-      //   title: 'Transcriptions',
-      //   value: transcriptions.length,
-      //   icon: FileText,
-      //   color: 'from-orange-500 to-red-600',
-      //   iconBg: 'bg-gradient-to-br from-orange-400 to-red-500',
-      //   iconText: 'text-white'
-      // }
+      {
+        title: 'Refunds & Settlements',
+        value: refundedAppointments.length,
+        sub: `₹${totalRefundAmount.toLocaleString()} net refunded`,
+        icon: RotateCcw,
+        color: 'from-emerald-500 to-teal-600',
+        iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-600',
+        iconText: 'text-white',
+        to: '/admin/appointments?tab=refunds'
+      },
+      {
+        title: 'Patient Feedbacks',
+        value: feedbacks.length,
+        sub: 'Reviews & Ratings',
+        icon: MessageSquare,
+        color: 'from-amber-500 to-orange-600',
+        iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600',
+        iconText: 'text-white',
+        to: '/admin/feedbacks'
+      }
     ],
-    [calls.length, feedbacks.length, transcriptions.length, appointments.length]
+    [doctorAppointments.length, labAppointments.length, refundedAppointments.length, totalRefundAmount, feedbacks.length]
   );
 
   const appointmentStatusCount = useMemo(() => {

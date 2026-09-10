@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, RefreshCw, CalendarClock, CheckCircle2, XCircle, Loader2,
   CalendarPlus, Mail, Phone, Filter, User, PawPrint, Calendar,
   Clock, MessageSquare, Stethoscope, Eye, Hospital, Trash2,
   FileText, Check, AlertCircle, ChevronLeft, ChevronRight,
-  TestTube, Droplet, Activity, AlertTriangle
+  TestTube, Droplet, Activity, AlertTriangle,
+  RotateCcw, Receipt, CreditCard, BadgePercent, ClipboardList
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
+import DashboardTabs from '../../components/DashboardTabs';
 import Pagination from '../../components/Pagination';
 import SlotSelector from '../../components/SlotSelector';
 import { TableSkeleton } from '../../components/Loader';
@@ -60,9 +62,37 @@ export default function AdminAppointments() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all'); // 'all', 'consult', 'test'
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab'); // 'doctor' | 'lab' | 'refunds' | 'all'
+  const initialType = tabParam === 'lab' ? 'test' : tabParam === 'refunds' ? 'refunds' : tabParam === 'all' ? 'all' : 'consult';
+  const [typeFilter, setTypeFilter] = useState(initialType);
   const [page, setPage] = useState(1);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (tabParam === 'lab') setTypeFilter('test');
+    else if (tabParam === 'refunds') setTypeFilter('refunds');
+    else if (tabParam === 'all') setTypeFilter('all');
+    else if (tabParam === 'doctor') setTypeFilter('consult');
+  }, [tabParam]);
+
+  const handleTabChange = (newTab) => {
+    if (newTab === 'lab') {
+      setTypeFilter('test');
+      setSearchParams({ tab: 'lab' });
+    } else if (newTab === 'refunds') {
+      setTypeFilter('refunds');
+      setSearchParams({ tab: 'refunds' });
+    } else if (newTab === 'all') {
+      setTypeFilter('all');
+      setSearchParams({ tab: 'all' });
+    } else {
+      setTypeFilter('consult');
+      setSearchParams({ tab: 'doctor' });
+    }
+    setPage(1);
+  };
 
   // ─── Detail Modal ───────────────────────────────────────────
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -509,20 +539,26 @@ export default function AdminAppointments() {
     setBookErrors(e => ({ ...e, date: undefined }));
   };
 
-  // ─── Filtering ─────────────────────────────────────────────
+  // ─── Filtering & Tab Counts ────────────────────────────────
+  const doctorCount = useMemo(() => appointments.filter(a => a.appointmentType !== 'Lab Test' && !a.serviceName).length, [appointments]);
+  const labCount = useMemo(() => appointments.filter(a => a.appointmentType === 'Lab Test' || Boolean(a.serviceName)).length, [appointments]);
+  const refundCount = useMemo(() => appointments.filter(a => a.status === 'Cancelled' || (a.refundAmount && a.refundAmount > 0) || a.refundStatus === 'Refunded').length, [appointments]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return appointments.filter(a => {
       const matchStatus = statusFilter === 'all' || a.status === statusFilter;
       const isLabTest = a.appointmentType === 'Lab Test' || Boolean(a.serviceName);
+      const isRefunded = a.status === 'Cancelled' || (a.refundAmount && a.refundAmount > 0) || a.refundStatus === 'Refunded';
       const matchType =
         typeFilter === 'all' ||
         (typeFilter === 'test' && isLabTest) ||
+        (typeFilter === 'refunds' && isRefunded) ||
         (typeFilter === 'consult' && !isLabTest);
 
       const matchSearch =
         !q ||
-        [a.patientName, a.petName, a.appointmentType, a.serviceName, a.serviceCategory, a.email, a.patientPhone]
+        [a.patientName, a.petName, a.appointmentType, a.serviceName, a.serviceCategory, a.email, a.patientPhone, a.refundId, a.cancellationReason, a.refundStatus]
           .filter(Boolean)
           .join(' ')
           .toLowerCase()
@@ -542,45 +578,142 @@ export default function AdminAppointments() {
       variants={pageVariants}
       className="w-full py-2"
     >
+      <DashboardTabs role="admin" />
+
       <div className="bg-white/80 backdrop-blur-xl p-4 sm:p-6 lg:p-8 rounded-3xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.08)] border border-slate-100">
         
+        {/* ─── Master Section Tabs ──────────────────────────────── */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200/70">
+          <div className="flex items-center gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/80 overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => handleTabChange("doctor")}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+                typeFilter === "consult"
+                  ? "bg-blue-600 text-white shadow-md shadow-blue-500/20 scale-[1.01]"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+              }`}
+            >
+              <Stethoscope size={16} />
+              <span>Doctor Appointments</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                  typeFilter === "consult"
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-200/80 text-slate-700"
+                }`}
+              >
+                {doctorCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleTabChange("lab")}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+                typeFilter === "test"
+                  ? "bg-rose-600 text-white shadow-md shadow-rose-500/20 scale-[1.01]"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+              }`}
+            >
+              <TestTube size={16} />
+              <span>Lab Test Appointments</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                  typeFilter === "test"
+                    ? "bg-white/20 text-white"
+                    : "bg-rose-100 text-rose-700"
+                }`}
+              >
+                {labCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleTabChange("refunds")}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+                typeFilter === "refunds"
+                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20 scale-[1.01]"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+              }`}
+            >
+              <RotateCcw size={16} />
+              <span>Refunds &amp; Settlements</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                  typeFilter === "refunds"
+                    ? "bg-white/20 text-white"
+                    : "bg-emerald-100 text-emerald-800"
+                }`}
+              >
+                {refundCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleTabChange("all")}
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+                typeFilter === "all"
+                  ? "bg-slate-900 text-white shadow-md shadow-slate-900/20 scale-[1.01]"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+              }`}
+            >
+              <ClipboardList size={15} />
+              <span>All Bookings</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                  typeFilter === "all"
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-200/80 text-slate-700"
+                }`}
+              >
+                {appointments.length}
+              </span>
+            </button>
+          </div>
+
+          <button
+            onClick={openBookModal}
+            className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm shadow-md shadow-blue-500/20 transition-all duration-200 shrink-0"
+          >
+            <CalendarPlus size={16} /> Book Appointment
+          </button>
+        </div>
+
         {/* ─── Header ─────────────────────────────────────────── */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-100">
           <div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Appointments & Tests</h2>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+              {typeFilter === "test" && <TestTube className="text-rose-600" size={24} />}
+              {typeFilter === "consult" && <Stethoscope className="text-blue-600" size={24} />}
+              {typeFilter === "refunds" && <RotateCcw className="text-emerald-600" size={24} />}
+              {typeFilter === "all" && <ClipboardList className="text-slate-700" size={24} />}
+              {typeFilter === "test"
+                ? "Hospital Diagnostic & Lab Tests"
+                : typeFilter === "consult"
+                ? "Doctor Consultations"
+                : typeFilter === "refunds"
+                ? "Hospital Refunds & Settlements"
+                : "All Hospital Appointments"}
+            </h2>
             <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-              Showing <span className="text-blue-600 font-bold">{filtered.length}</span> of {appointments.length} total entries
+              {typeFilter === "refunds"
+                ? "Showing cancelled bookings with Stripe & Razorpay refunds and 10% fee deductions."
+                : `Showing ${filtered.length} of ${appointments.length} total entries`}
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
-            <button
-              onClick={openBookModal}
-              className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white px-5 py-2.5 rounded-2xl font-bold text-sm shadow-md shadow-blue-500/20 transition-all duration-200 shrink-0"
-            >
-              <CalendarPlus size={18} /> Book Appointment
-            </button>
-
             <div className="relative flex-1 sm:w-56 min-w-[180px]">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="Search patient, pet, test..."
+                placeholder={typeFilter === 'refunds' ? 'Search refund ID, patient...' : 'Search patient, pet, test...'}
                 className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50/80 border border-slate-200/80 rounded-2xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
               />
-            </div>
-
-            <div className="relative flex items-center">
-              <select
-                value={typeFilter}
-                onChange={e => setTypeFilter(e.target.value)}
-                className="w-full sm:w-auto px-3.5 py-2.5 text-sm bg-slate-50/80 border border-slate-200/80 rounded-2xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-slate-700 appearance-none"
-              >
-                <option value="all">All Types</option>
-                <option value="test">🧪 Lab & Tests Only</option>
-                <option value="consult">🩺 Consultations</option>
-              </select>
             </div>
 
             <div className="relative flex items-center">
@@ -612,107 +745,222 @@ export default function AdminAppointments() {
           <div className="overflow-x-auto rounded-2xl border border-slate-200/70 shadow-xs">
             <table className="w-full text-left border-collapse min-w-[1100px] text-sm">
               <thead>
-                <tr className="bg-slate-50/80 text-slate-600 text-xs font-bold uppercase tracking-wider border-b border-slate-200/80">
-                  <th className="py-3.5 px-3">APP #</th>
-                  <th className="py-3.5 px-3">Patient Details</th>
-                  <th className="py-3.5 px-3">Pet Name</th>
-                  <th className="py-3.5 px-3">Type</th>
-                  <th className="py-3.5 px-3">Schedule</th>
-                  <th className="py-3.5 px-3">Status</th>
-                  <th className="py-3.5 px-3">Feedback</th>
-                  <th className="py-3.5 px-3">Call Status</th>
-                  <th className="py-3.5 px-3 text-right">Action</th>
-                </tr>
+                {typeFilter === 'refunds' ? (
+                  <tr className="bg-emerald-50/80 text-emerald-900 text-xs font-bold uppercase tracking-wider border-b border-emerald-200/80">
+                    <th className="py-3.5 px-3">APP # &amp; REF ID</th>
+                    <th className="py-3.5 px-3">Patient &amp; Contact</th>
+                    <th className="py-3.5 px-3">Service / Test</th>
+                    <th className="py-3.5 px-3">Schedule</th>
+                    <th className="py-3.5 px-3">Gross Paid</th>
+                    <th className="py-3.5 px-3">10% Fee Retained</th>
+                    <th className="py-3.5 px-3">Net Refund</th>
+                    <th className="py-3.5 px-3">Reason</th>
+                    <th className="py-3.5 px-3">Status</th>
+                    <th className="py-3.5 px-3 text-right">Action</th>
+                  </tr>
+                ) : (
+                  <tr className="bg-slate-50/80 text-slate-600 text-xs font-bold uppercase tracking-wider border-b border-slate-200/80">
+                    <th className="py-3.5 px-3">APP #</th>
+                    <th className="py-3.5 px-3">Patient Details</th>
+                    <th className="py-3.5 px-3">Pet Name</th>
+                    <th className="py-3.5 px-3">Type</th>
+                    <th className="py-3.5 px-3">Schedule</th>
+                    <th className="py-3.5 px-3">Status</th>
+                    <th className="py-3.5 px-3">Feedback</th>
+                    <th className="py-3.5 px-3">Call Status</th>
+                    <th className="py-3.5 px-3 text-right">Action</th>
+                  </tr>
+                )}
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
-                {paginated.map((a, idx) => (
-                  <motion.tr
-                    key={a.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.02 }}
-                    className="hover:bg-slate-50/80 transition-colors group"
-                  >
-                    <td className="py-3.5 px-3 font-bold text-slate-800">
-                      #{a.appointment_number}
-                    </td>
-                    <td className="py-3.5 px-3">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-slate-900">{a.patientName}</span>
-                        <div className="flex items-center gap-2 text-xs text-slate-500">
-                          {a.patientPhone && (
-                            <span className="flex items-center gap-1"><Phone size={11} /> {a.patientPhone}</span>
-                          )}
-                          {a.email && (
-                            <span className="flex items-center gap-1"><Mail size={11} /> {a.email}</span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-3">
-                      <div className="flex flex-col">
-                        <span className="font-medium text-slate-700">{a.petName || '—'}</span>
-                        {a.species && <span className="text-xs text-slate-400">{a.species}</span>}
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-3">
-                      {a.appointmentType === 'Lab Test' || a.serviceName ? (
+                {paginated.map((a, idx) => {
+                  if (typeFilter === 'refunds') {
+                    const isLabTest = a.appointmentType === 'Lab Test' || Boolean(a.serviceName);
+                    const paidAmt = Number(a.paymentAmount || a.servicePrice || 0);
+                    const feeAmt = Number(a.cancellationFee || (paidAmt * 0.10) || 0);
+                    const netRefund = Number(a.refundAmount || (paidAmt - feeAmt) || 0);
+                    const isRazorpay = String(a.paymentMethod || '').toLowerCase().includes('razorpay') ||
+                                      (a.paymentId && String(a.paymentId).startsWith('pay_'));
+
+                    return (
+                      <motion.tr
+                        key={a.id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.02 }}
+                        className="hover:bg-emerald-50/40 transition-colors group"
+                      >
+                        <td className="py-3.5 px-3">
+                          <div className="flex flex-col gap-1">
+                            <span className="font-bold text-slate-900 text-xs">
+                              #{a.appointment_number}
+                            </span>
+                            {a.refundId ? (
+                              <span className="text-[11px] font-mono text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded border border-emerald-200/80 w-fit">
+                                {a.refundId}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-slate-400 italic">No Ref ID</span>
+                            )}
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              Via {isRazorpay ? 'Razorpay' : 'Stripe'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-slate-900">{a.patientName}</span>
+                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                              {a.patientPhone && <span>{a.patientPhone}</span>}
+                              {a.email && <span className="truncate max-w-[130px]">{a.email}</span>}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-800 text-xs">
+                              {isLabTest ? (a.serviceName || 'Diagnostic Test') : (a.doctorName ? `Dr. ${a.doctorName}` : 'Consultation')}
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              {isLabTest ? 'Lab Investigation' : 'Clinical Consult'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-3 whitespace-nowrap">
+                          <div className="flex flex-col bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+                            <span className="font-bold text-slate-700 text-xs">{a.date || '—'}</span>
+                            <span className="text-xs font-medium text-slate-500">{a.time || '—'}</span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-3 text-xs font-bold text-slate-800">
+                          ₹{paidAmt}
+                        </td>
+                        <td className="py-3.5 px-3 text-xs font-bold text-amber-700">
+                          -₹{feeAmt}
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <span className="inline-block text-xs font-black text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-xl border border-emerald-200">
+                            ₹{netRefund}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-3 max-w-[160px]">
+                          <p className="text-xs text-slate-600 italic bg-slate-50 p-1.5 rounded-lg line-clamp-2">
+                            {a.cancellationReason || 'Cancelled'}
+                          </p>
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                            a.refundStatus === 'Refunded' || netRefund > 0
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                              : 'bg-slate-200 text-slate-700'
+                          }`}>
+                            <CheckCircle2 size={11} />
+                            {a.refundStatus || (netRefund > 0 ? 'Refunded' : 'No Refund')}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button onClick={() => openDetail(a)} className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 hover:text-emerald-800 transition" title="View Details">
+                              <Eye size={16} />
+                            </button>
+                            <button onClick={() => handleQuickDelete(a)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition" title="Delete">
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  }
+
+                  return (
+                    <motion.tr
+                      key={a.id}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.02 }}
+                      className="hover:bg-slate-50/80 transition-colors group"
+                    >
+                      <td className="py-3.5 px-3 font-bold text-slate-800">
+                        #{a.appointment_number}
+                      </td>
+                      <td className="py-3.5 px-3">
                         <div className="flex flex-col">
-                          <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded-lg text-xs font-bold w-fit">
-                            <TestTube size={11} className="text-rose-600" />
-                            {a.serviceCategory || 'Lab Test'}
-                          </span>
-                          <span className="text-[11px] font-semibold text-slate-600 truncate max-w-[150px] mt-0.5">
-                            {a.serviceName || 'Diagnostic Test'}
-                          </span>
+                          <span className="font-semibold text-slate-900">{a.patientName}</span>
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                            {a.patientPhone && (
+                              <span className="flex items-center gap-1"><Phone size={11} /> {a.patientPhone}</span>
+                            )}
+                            {a.email && (
+                              <span className="flex items-center gap-1"><Mail size={11} /> {a.email}</span>
+                            )}
+                          </div>
                         </div>
-                      ) : (
-                        <span className="inline-block bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-lg text-xs font-semibold">
-                          {a.appointmentType || 'Consult'}
+                      </td>
+                      <td className="py-3.5 px-3">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-slate-700">{a.petName || '—'}</span>
+                          {a.species && <span className="text-xs text-slate-400">{a.species}</span>}
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-3">
+                        {a.appointmentType === 'Lab Test' || a.serviceName ? (
+                          <div className="flex flex-col">
+                            <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded-lg text-xs font-bold w-fit">
+                              <TestTube size={11} className="text-rose-600" />
+                              {a.serviceCategory || 'Lab Test'}
+                            </span>
+                            <span className="text-[11px] font-semibold text-slate-600 truncate max-w-[150px] mt-0.5">
+                              {a.serviceName || 'Diagnostic Test'}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="inline-block bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-lg text-xs font-semibold">
+                            {a.appointmentType || 'Consult'}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-3 whitespace-nowrap">
+                        <div className="flex flex-col bg-blue-50/50 px-2 py-1 rounded-md border border-blue-100/50">
+                          <span className="font-bold text-blue-700">{a.date || '—'}</span>
+                          <span className="text-xs font-medium text-blue-600">{a.time || '—'}</span>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-3">
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold border ${statusColors[a.status] || 'bg-slate-50 text-slate-700 border-slate-200'}`}>
+                          {a.status}
                         </span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-3 whitespace-nowrap">
-                      <div className="flex flex-col bg-blue-50/50 px-2 py-1 rounded-md border border-blue-100/50">
-                        <span className="font-bold text-blue-700">{a.date || '—'}</span>
-                        <span className="text-xs font-medium text-blue-600">{a.time || '—'}</span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-3">
-                      <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold border ${statusColors[a.status] || 'bg-slate-50 text-slate-700 border-slate-200'}`}>
-                        {a.status}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-3">
-                      {a.feedback ? (
-                        <span className="text-xs font-medium text-emerald-600 flex items-center gap-1"><Check size={12} /> Given</span>
-                      ) : (
-                        <button onClick={() => openFeedback(a)} className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
-                          <FileText size={12} /> Add Feedback
-                        </button>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-3">
-                      {a.callStatus === 'called' ? (
-                        <span className="text-xs font-medium text-emerald-600 flex items-center gap-1"><Check size={12} /> Called</span>
-                      ) : (
-                        <span className="text-xs text-slate-400 flex items-center gap-1"><AlertCircle size={12} /> Not called</span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => openDetail(a)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 hover:text-blue-700 transition" title="View Details">
-                          <Eye size={16} />
-                        </button>
-                        <button onClick={() => handleQuickDelete(a)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition" title="Delete">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
+                      </td>
+                      <td className="py-3.5 px-3">
+                        {a.feedback ? (
+                          <span className="text-xs font-medium text-emerald-600 flex items-center gap-1"><Check size={12} /> Given</span>
+                        ) : (
+                          <button onClick={() => openFeedback(a)} className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
+                            <FileText size={12} /> Add Feedback
+                          </button>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-3">
+                        {a.callStatus === 'called' ? (
+                          <span className="text-xs font-medium text-emerald-600 flex items-center gap-1"><Check size={12} /> Called</span>
+                        ) : (
+                          <span className="text-xs text-slate-400 flex items-center gap-1"><AlertCircle size={12} /> Not called</span>
+                        )}
+                      </td>
+                      <td className="py-3.5 px-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => openDetail(a)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 hover:text-blue-700 transition" title="View Details">
+                            <Eye size={16} />
+                          </button>
+                          <button onClick={() => handleQuickDelete(a)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 hover:text-red-600 transition" title="Delete">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={9} className="py-12 text-center text-slate-400 font-medium italic">No appointments matching the search criteria.</td></tr>
+                  <tr><td colSpan={10} className="py-12 text-center text-slate-400 font-medium italic">No appointments matching the search criteria.</td></tr>
                 )}
               </tbody>
             </table>
