@@ -1,42 +1,57 @@
 import { Link, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import {
+  LayoutDashboard, Video, ClipboardCheck, Users,
+  FlaskConical, ShieldCheck, Building2, CalendarCheck, Calendar,
+  Mail, Star, Clock, DollarSign, Stethoscope
+} from 'lucide-react';
+import useSuperAdminBadges from '../hooks/useSuperAdminBadges';
+import useAdminBadges from '../hooks/useAdminBadges';
 
 const ROLE_TABS = {
   superadmin: [
-    { name: 'Demo Bookings', to: '/superadmin/demos' },
-    { name: 'Registrations', to: '/superadmin/registrations' },
-    { name: 'Users', to: '/superadmin/users' },
-    { name: 'Lab Catalog', to: '/superadmin/services' },
-    { name: 'Manage Admin', to: '/superadmin/manage-admin' },
-    { name: 'Manage Hospitals', to: '/superadmin/manage-hospitals' },
-    { name: 'Appointments', to: '/superadmin/appointments' },
-    { name: 'Lab Bookings', to: '/superadmin/appointments?tab=lab' },
-    { name: 'Refunds & Settlements', to: '/superadmin/appointments?tab=refunds' },
-    { name: 'Calendar', to: '/superadmin/calendar' },
-    { name: 'Contacts', to: '/superadmin/contacts' }
+    { name: 'Demo Bookings', to: '/superadmin/demos', badge: 'demos', icon: Video },
+    { name: 'Registrations', to: '/superadmin/registrations', badge: 'registrations', icon: ClipboardCheck },
+    { name: 'Users', to: '/superadmin/users', icon: Users },
+    { name: 'Lab Catalog', to: '/superadmin/services', icon: FlaskConical },
+    { name: 'Manage Admin', to: '/superadmin/manage-admin', icon: ShieldCheck },
+    { name: 'Manage Hospitals', to: '/superadmin/manage-hospitals', icon: Building2 },
+    { name: 'Appointments', to: '/superadmin/appointments', badge: 'appointments', icon: CalendarCheck },
+    { name: 'Lab Bookings', to: '/superadmin/appointments?tab=lab', icon: FlaskConical },
+    { name: 'Refunds & Settlements', to: '/superadmin/appointments?tab=refunds', icon: DollarSign },
+    { name: 'Calendar', to: '/superadmin/calendar', icon: Calendar },
+    { name: 'Contacts', to: '/superadmin/contacts', badge: 'contacts', icon: Mail }
   ],
   admin: [
-    { name: 'Overview', to: '/admin/overview' },
-    { name: 'Appointments', to: '/admin/appointments' },
-    { name: 'Lab Bookings', to: '/admin/appointments?tab=lab' },
-    { name: 'Refunds & Settlements', to: '/admin/appointments?tab=refunds' },
-    { name: 'Calendar', to: '/admin/calendar' },
-    { name: 'Feedbacks', to: '/admin/feedbacks' }
+    { name: 'Overview', to: '/admin', icon: LayoutDashboard },
+    { name: 'Appointments', to: '/admin/appointments', badge: 'appointments', icon: CalendarCheck },
+    { name: 'Lab Bookings', to: '/admin/appointments?tab=lab', icon: FlaskConical },
+    { name: 'Refunds & Settlements', to: '/admin/appointments?tab=refunds', icon: DollarSign },
+    { name: 'Calendar', to: '/admin/calendar', icon: Calendar },
+    { name: 'Timings', to: '/admin/timings', icon: Clock },
+    { name: 'Feedbacks', to: '/admin/appointment-feedback', badge: 'feedback', icon: Star }
   ],
   user: [
-    { name: 'Overview', to: '/dashboard' },
-    { name: 'Lab Catalog', to: '/dashboard/services' },
-    { name: 'Book Consult', to: '/dashboard/book-appointment' },
-    { name: 'Doctor Appointments', to: '/dashboard/my-appointments?tab=doctor' },
-    { name: 'Lab Bookings', to: '/dashboard/my-appointments?tab=lab' },
-    { name: 'Refunds & Settlements', to: '/dashboard/my-appointments?tab=refunds' },
-    { name: 'Explore Hospitals', to: '/dashboard/explore-hospitals' },
-    { name: 'Feedback & Reviews', to: '/dashboard/feedbacks' }
+    { name: 'Overview', to: '/dashboard', icon: LayoutDashboard },
+    { name: 'Lab Catalog', to: '/dashboard/services', icon: FlaskConical },
+    { name: 'Book Consult', to: '/dashboard/book-appointment', icon: Stethoscope },
+    { name: 'Doctor Appointments', to: '/dashboard/my-appointments?tab=doctor', icon: CalendarCheck },
+    { name: 'Lab Bookings', to: '/dashboard/my-appointments?tab=lab', icon: FlaskConical },
+    { name: 'Refunds & Settlements', to: '/dashboard/my-appointments?tab=refunds', icon: DollarSign },
+    { name: 'Explore Hospitals', to: '/dashboard/explore-hospitals', icon: Building2 },
+    { name: 'Feedback & Reviews', to: '/dashboard/feedbacks', icon: Star }
   ]
 };
 
 export default function DashboardTabs({ role }) {
   const tabs = ROLE_TABS[role] || [];
   const location = useLocation();
+
+  const isSuperAdmin = role === 'superadmin';
+  const isAdmin = role === 'admin';
+  const { badges: superBadges } = useSuperAdminBadges(isSuperAdmin);
+  const { badges: adminBadges } = useAdminBadges(isAdmin);
+  const badges = isSuperAdmin ? superBadges : (isAdmin ? adminBadges : {});
 
   const isTabActive = (to) => {
     if (to.includes('?tab=refunds')) {
@@ -89,23 +104,49 @@ export default function DashboardTabs({ role }) {
   };
 
   return (
-    <div className="mb-8 flex flex-wrap gap-3">
-      {tabs.map((tab) => {
-        const active = isTabActive(tab.to);
-        return (
-          <Link
-            key={tab.name}
-            to={tab.to}
-            className={`inline-flex items-center px-5 py-2 rounded-full border ${
-              active
-                ? 'bg-medical-blue text-white border-medical-blue shadow-xs font-bold'
-                : 'bg-white text-gray-700 border-gray-200 hover:border-medical-blue hover:text-medical-blue font-semibold'
-            } transition`}
-          >
-            {tab.name}
-          </Link>
-        );
-      })}
+    <div className="mb-6 w-full overflow-x-auto no-scrollbar py-1">
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="inline-flex items-center gap-1.5 p-1.5 bg-slate-100/90 backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-2xs whitespace-nowrap"
+      >
+        {tabs.map((tab) => {
+          const active = isTabActive(tab.to);
+          const Icon = tab.icon;
+          const badgeCount = tab.badge ? badges[tab.badge] : 0;
+          return (
+            <Link
+              key={tab.name}
+              to={tab.to}
+              className={`relative inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-colors shrink-0 z-10 ${
+                active
+                  ? 'text-white'
+                  : 'text-slate-600 hover:text-medical-blue hover:bg-white/50'
+              }`}
+            >
+              {active && (
+                <motion.div
+                  layoutId={`activeTabPill-${role}`}
+                  transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                  className="absolute inset-0 bg-medical-blue rounded-xl shadow-md shadow-blue-500/25 -z-10"
+                />
+              )}
+              {Icon && <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />}
+              <span>{tab.name}</span>
+              {badgeCount > 0 && (
+                <span
+                  className={`inline-flex items-center justify-center px-1.5 py-0.2 text-[10px] font-black rounded-full leading-tight transition-colors ${
+                    active ? 'bg-white text-blue-700' : 'bg-rose-500 text-white shadow-2xs'
+                  }`}
+                >
+                  {badgeCount > 99 ? '99+' : badgeCount}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </motion.div>
     </div>
   );
 }

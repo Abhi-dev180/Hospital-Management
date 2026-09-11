@@ -11,6 +11,7 @@ import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
 import Loader, { ListSkeleton, OverlayLoader } from '../../components/Loader';
 import AppointmentPaymentModal from '../AppointmentPaymentModal';
+import SlotSelector from '../SlotSelector';
 
 // ─── Constants ────────────────────────────────────────────────
 const initialForm = {
@@ -26,6 +27,11 @@ const initialForm = {
   breed: '',
   description: ''
 };
+
+const ALL_BUSINESS_SLOTS = [
+  '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
+  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'
+];
 
 const STATUS_PILL = {
   Pending: 'bg-amber-100 text-amber-800',
@@ -612,7 +618,7 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
                 </span>
                 <SlotGrid
                   date={form.date}
-                  slots={availableSlots}
+                  slots={ALL_BUSINESS_SLOTS}
                   booked={bookedSlots}
                   selected={form.time}
                   onSelect={(slot) => {
@@ -981,28 +987,25 @@ function ManageTab({ onBook }) {
                           </Field>
                         </div>
 
-                        <Field icon={Clock} label="New time *">
-                          <input
-                            type="time"
-                            value={draft.time}
-                            onChange={(e) => setDraft((d) => ({ ...d, time: e.target.value }))}
-                            className="portal-input mb-2"
-                          />
-                          {draft.date && (
-                            <div className="mt-2">
-                              <span className="text-xs font-semibold text-gray-500 flex items-center gap-2 mb-1.5">
-                                Available Slots {loadingSlots && <Loader size="xs" label="checking…" />}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-semibold text-gray-700 flex items-center justify-between">
+                            <span className="flex items-center gap-1.5"><Clock className="w-4 h-4 text-medical-blue" /> New time *</span>
+                            {draft.time && (
+                              <span className="text-blue-600 font-bold text-xs bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                                Selected: {draft.time}
                               </span>
-                              <SlotGrid
-                                date={draft.date}
-                                slots={availableSlots}
-                                booked={slots}
-                                selected={draft.time}
-                                onSelect={(slot) => setDraft((d) => ({ ...d, time: slot }))}
-                              />
-                            </div>
-                          )}
-                        </Field>
+                            )}
+                          </label>
+                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+                            <SlotSelector
+                              date={draft.date}
+                              hospitalId={activeAppt?.hospitalId}
+                              selectedTime={draft.time || '10:00'}
+                              onSelectTime={(slot) => setDraft((d) => ({ ...d, time: slot }))}
+                              showClock={true}
+                            />
+                          </div>
+                        </div>
 
                         <Field icon={MessageSquare} label="Reason / description">
                           <textarea
@@ -1052,67 +1055,9 @@ function ManageTab({ onBook }) {
 }
 
 // ─── Slot Grid ───────────────────────────────────────────────
-// function SlotGrid({ slots, booked, selected, onSelect }) {
-//   return (
-//     <div className="flex flex-wrap gap-1.5">
-//       {slots.map((slot) => {
-//         const isBooked = booked.includes(slot);
-//         const isSelected = selected === slot;
-//         return (
-//           <button
-//             key={slot}
-//             type="button"
-//             disabled={isBooked}
-//             onClick={() => onSelect(slot)}
-//             className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${
-//               isBooked
-//                 ? 'bg-red-100 text-red-400 border-red-200 cursor-not-allowed line-through'
-//                 : isSelected
-//                 ? 'bg-green-600 text-white border-green-600 shadow-md'
-//                 : 'bg-white text-gray-700 border-gray-300 hover:border-green-500 hover:bg-green-50'
-//             }`}
-//             title={isBooked ? 'Slot not available (Already booked)' : 'Click to select slot'}
-//           >
-//             {slot}
-//           </button>
-//         );
-//       })}
-//     </div>
-//   );
-// }
+function SlotGrid({ slots, booked = [], selected, onSelect, date }) {
+  const effectiveSlots = Array.isArray(slots) && slots.length > 0 ? slots : ALL_BUSINESS_SLOTS;
 
-// function SlotGrid({ slots, booked, selected, onSelect }) {
-//   return (
-//     <div className="grid grid-cols-5 sm:grid-cols-3 lg:grid-cols-4 gap-1.5">
-//       {slots.map((slot) => {
-//         const isBooked = booked.includes(slot);
-//         const isSelected = selected === slot;
-//         return (
-//           <button
-//             key={slot}
-//             type="button"
-//             disabled={isBooked}
-//             onClick={() => onSelect(slot)}
-//             className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${
-//               isBooked
-//                 ? 'bg-red-100 text-red-400 border-red-200 cursor-not-allowed line-through'
-//                 : isSelected
-//                 ? 'bg-green-600 text-white border-green-600 shadow-md'
-//                 : 'bg-white text-gray-700 border-gray-300 hover:border-green-500 hover:bg-green-50'
-//             }`}
-//             title={isBooked ? 'Slot not available (Already booked)' : 'Click to select slot'}
-//           >
-//             {slot}
-//           </button>
-//         );
-//       })}
-//     </div>
-//   );
-// }
-
-
-// ─── Slot Grid ───────────────────────────────────────────────
-function SlotGrid({ slots, booked, selected, onSelect, date }) {
   const isPastSlot = (slot) => {
     if (!date) return false;
     const todayStr = new Date().toISOString().split('T')[0];
@@ -1129,33 +1074,79 @@ function SlotGrid({ slots, booked, selected, onSelect, date }) {
     return false;
   };
 
+  const isSlotBooked = (slot) => {
+    if (!booked || !Array.isArray(booked)) return false;
+    const s = String(slot).trim().slice(0, 5);
+    return booked.some((b) => String(b).trim().slice(0, 5) === s);
+  };
+
+  const availableCount = effectiveSlots.filter((s) => !isPastSlot(s) && !isSlotBooked(s)).length;
+
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-5 gap-1.5 w-full">
-      {slots.map((slot) => {
-        const isPast = isPastSlot(slot);
-        const isBooked = (booked && booked.includes(slot)) || isPast;
-        const isSelected = selected === slot;
-        return (
-          <button
-            key={slot}
-            type="button"
-            disabled={isBooked}
-            onClick={() => onSelect(slot)}
-            className={`px-1.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium border transition whitespace-nowrap ${
-              isPast
-                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through opacity-50'
-                : isBooked
-                ? 'bg-red-100 text-red-400 border-red-200 cursor-not-allowed line-through'
-                : isSelected
-                ? 'bg-green-600 text-white border-green-600 shadow-md'
-                : 'bg-white text-gray-700 border-gray-300 hover:border-green-500 hover:bg-green-50'
-            }`}
-            title={isPast ? 'Slot has already passed' : isBooked ? 'Slot not available (Already booked)' : 'Click to select slot'}
-          >
-            {slot}
-          </button>
-        );
-      })}
+    <div className="w-full space-y-2.5">
+      {/* Legend & Availability counter */}
+      <div className="flex flex-wrap items-center justify-between gap-1.5 text-[11px] text-slate-500 font-medium px-0.5">
+        <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-semibold border border-emerald-200 text-[10px]">
+          {availableCount} {availableCount === 1 ? 'slot' : 'slots'} open
+        </span>
+        <div className="flex items-center gap-2 text-[10px]">
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" /> Open</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" /> Booked</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-300 inline-block" /> Past</span>
+        </div>
+      </div>
+
+      {/* Grid of Slots */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5 sm:gap-2 w-full">
+        {effectiveSlots.map((slot) => {
+          const isPast = isPastSlot(slot);
+          const bookedMatch = isSlotBooked(slot);
+          const isUnavailable = bookedMatch || isPast;
+          const isSelected = selected === slot;
+
+          return (
+            <button
+              key={slot}
+              type="button"
+              disabled={isUnavailable}
+              onClick={() => onSelect(slot)}
+              className={`group flex flex-col items-center justify-center py-1.5 px-1 rounded-xl border transition-all text-center min-h-[44px] ${
+                isPast
+                  ? 'bg-slate-50 text-slate-400 border-slate-200 cursor-not-allowed opacity-60'
+                  : bookedMatch
+                  ? 'bg-red-50 text-red-700 border-red-200 cursor-not-allowed opacity-90 shadow-xs'
+                  : isSelected
+                  ? 'bg-gradient-to-br from-medical-blue to-blue-700 text-white border-blue-600 shadow-md ring-2 ring-blue-300/60 font-bold scale-[1.02]'
+                  : 'bg-white text-slate-700 border-slate-200 hover:border-medical-blue hover:bg-blue-50/60 hover:shadow-xs hover:text-medical-blue'
+              }`}
+              title={
+                isPast
+                  ? 'Time slot has already passed'
+                  : bookedMatch
+                  ? 'This slot is already booked in the hospital calendar'
+                  : `Click to select ${slot}`
+              }
+            >
+              <span className={`text-xs sm:text-sm leading-tight font-bold ${
+                isPast ? 'line-through text-slate-400' : bookedMatch ? 'line-through text-red-600' : ''
+              }`}>
+                {slot}
+              </span>
+              <span className={`text-[9px] font-semibold mt-0.5 uppercase tracking-wider leading-none ${
+                isPast
+                  ? 'text-slate-400'
+                  : bookedMatch
+                  ? 'text-red-500 font-extrabold'
+                  : isSelected
+                  ? 'text-blue-100 font-bold'
+                  : 'text-slate-400 group-hover:text-medical-blue'
+              }`}>
+                {isPast ? 'Past' : bookedMatch ? 'Booked' : isSelected ? 'Selected' : 'Open'}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -1,15 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Slabo+13px&display=swap');
 @import "tailwindcss";
 
 /* ============================================================
    GLOBAL STYLESHEET
-   1. Design tokens (@theme)  — colors used across the app
-   2. Base                    — element defaults
-   3. Components              — reusable classes (buttons, cards, forms…)
-   Use these classes anywhere instead of repeating utility strings.
+   1. Typography & Font Tokens
+   2. Design tokens (@theme)  — colors used across the app
+   3. Base                    — element defaults
+   4. Components              — reusable classes (buttons, cards, forms…)
    ============================================================ */
+
+.slabo-13px-regular {
+  font-family: "Slabo 13px", serif;
+  font-weight: 400;
+  font-style: normal;
+}
 
 /* ── 1. Design tokens ─────────────────────────────────────── */
 @theme {
+  --font-sans: "Slabo 13px", serif;
+  --font-serif: "Slabo 13px", serif;
   --color-medical-blue: #1E40AF;
   --color-medical-light: #DBEAFE;
   --color-medical-dark: #1E3A8A;
@@ -19,8 +28,18 @@
 
 /* ── 2. Base ──────────────────────────────────────────────── */
 @layer base {
+  *, *::before, *::after {
+    font-family: "Slabo 13px", serif;
+  }
+  html, body, #root, input, button, select, textarea, optgroup {
+    font-family: "Slabo 13px", serif !important;
+  }
   body {
     @apply bg-medical-gray text-gray-900 antialiased;
+    font-family: "Slabo 13px", serif !important;
+  }
+  h1, h2, h3, h4, h5, h6, p, span, a, label, button, input, select, textarea {
+    font-family: "Slabo 13px", serif !important;
   }
   h1, h2, h3 {
     @apply tracking-tight;

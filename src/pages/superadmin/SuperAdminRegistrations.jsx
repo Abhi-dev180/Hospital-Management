@@ -107,7 +107,7 @@ export default function SuperAdminRegistrations() {
   });
 
   useWebSocket("registration_updated", (updatedReg) => {
-    setRows((prev) => prev.map(r => r.id === updatedReg.id ? updatedReg : r));
+    setRows((prev) => prev.map(r => r.id === updatedReg.id ? { ...r, ...updatedReg } : r));
   });
 
   useWebSocket("registration_deleted", ({ id }) => {
@@ -280,16 +280,11 @@ export default function SuperAdminRegistrations() {
                     <td className="py-4 px-4">
                       <div className="font-semibold text-medical-dark">{r.hospitalName}</div>
                       <div className="text-gray-500 text-xs">{[r.city, r.beds ? `${r.beds} beds` : null].filter(Boolean).join(' · ') || '—'}</div>
-                      {r.payment && (
+                      {(r.payment || r.subscription || r.planKey) && (
                         <div className="text-xs text-gray-500 mt-1">
-                          <span className="font-semibold">Plan:</span> {r.payment.plan_key || r.subscription?.plan_key || '—'}
-                          {/* {r.subscription?.start_date && (
-                            <span className="ml-2">• Starts: {fmt(r.subscription.start_date)}</span>
-                          )}
-                          {r.subscription?.expiry_date && (
-                            <span className="ml-2">• Ends: {fmt(r.subscription.expiry_date)}</span>
-                          )} */}
-                          {r.payment.stripe_session_id && (
+                          <span className="font-semibold">Plan:</span>{' '}
+                          <span className="capitalize font-medium text-slate-700">{r.subscription?.plan_key || r.payment?.plan_key || r.planKey || '—'}</span>
+                          {r.payment?.stripe_session_id && (
                             <TxnDisplay txn={r.payment.stripe_session_id} />
                           )}
                         </div>
@@ -301,9 +296,15 @@ export default function SuperAdminRegistrations() {
                       {r.phone && <div className="text-gray-500 text-xs">{r.phone}</div>}
                     </td>
                     <td className="py-4 px-4 text-gray-600 whitespace-nowrap">{fmt(r.createdAt)}</td>
-                    <td className="py-4 px-4 text-sm text-gray-700">{r.subscription?.plan_key || r.payment?.plan_key || '—'}</td>
-                    <td className="py-4 px-4 text-sm text-gray-600 whitespace-nowrap">{r.subscription?.start_date ? fmt(r.subscription.start_date) : '—'}</td>
-                    <td className="py-4 px-4 text-sm text-gray-600 whitespace-nowrap">{r.subscription?.expiry_date ? fmt(r.subscription.expiry_date) : '—'}</td>
+                    <td className="py-4 px-4 text-sm font-semibold text-slate-700 capitalize">
+                      {r.subscription?.plan_key || r.payment?.plan_key || r.planKey || '—'}
+                    </td>
+                    <td className="py-4 px-4 text-sm text-gray-600 whitespace-nowrap font-medium">
+                      {fmt(r.subscription?.start_date || r.planStart || r.plan_start || r.payment?.created_at || (r.subscription?.expiry_date || r.planEnd ? r.createdAt : null))}
+                    </td>
+                    <td className="py-4 px-4 text-sm text-gray-600 whitespace-nowrap font-medium">
+                      {fmt(r.subscription?.expiry_date || r.planEnd || r.plan_end)}
+                    </td>
                     <td className="py-4 px-4">
                       {r.hospitalId
                         ? <span className="inline-flex items-center gap-1 text-green-700 text-xs font-medium"><Building2 size={14} /> {hospitalName(r.hospitalId) || r.hospitalId}</span>
@@ -398,7 +399,7 @@ export default function SuperAdminRegistrations() {
                   </motion.tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan="6" className="py-12 text-center text-gray-500 italic">No registrations found.</td></tr>
+                  <tr><td colSpan="9" className="py-12 text-center text-gray-500 italic">No registrations found.</td></tr>
                 )}
               </tbody>
             </table>

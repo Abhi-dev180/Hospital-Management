@@ -11,7 +11,7 @@ export default function DashboardLayout({ title, subtitle, children, showHeader 
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
             className="mb-1"
           >
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -23,7 +23,14 @@ export default function DashboardLayout({ title, subtitle, children, showHeader 
           </motion.div>
         )}
 
-        <div className="space-y-8">{children}</div>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.08, ease: 'easeOut' }}
+          className="space-y-8"
+        >
+          {children}
+        </motion.div>
       </div>
     </div>
   );

@@ -13,6 +13,7 @@ import ProfilePage from "./pages/profile/ProfilePage";
 import FeedbackPage from "./pages/Feedback/FeedbackPage";        // wrapper that renders PublicFeedbackForm
 import PublicFeedbackForm from "./components/portal/PublicFeedbackForm";
 import ScrollToTop from "./components/ScrollToTop";
+import FloatingScrollTop from "./components/FloatingScrollTop";
 import PlanExpiredModal from "./components/PlanExpiredModal";
 import useStripeSessionVerifier from "./hooks/useStripeSessionVerifier";
 
@@ -188,6 +189,7 @@ function AppContent() {
           <AppRoutes />
         </main>
         <Footer />
+        <FloatingScrollTop />
       </div>
 
       <PlanExpiredModal

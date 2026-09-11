@@ -114,6 +114,48 @@ export default function UserMyAppointmentsList() {
     };
   }, [navigate]);
 
+  // ─── Handle Stripe return callback ──────────────────────────
+  useEffect(() => {
+    const sessionId = searchParams.get('session_id');
+    const payment = searchParams.get('payment');
+    const appointmentId = searchParams.get('appointment_id');
+
+    if (sessionId && payment === 'success') {
+      (async () => {
+        const toastId = toast.loading('Verifying payment with Stripe...');
+        try {
+          const res = await fetch(
+            `${API_URL}/api/payments/verify-appointment-session?session_id=${sessionId}&appointment_id=${appointmentId || ''}&payment=success`
+          );
+          const data = await res.json();
+          if (res.ok) {
+            toast.success('🎉 Official Stripe Payment Verified & Confirmed!', { id: toastId });
+          } else {
+            toast.error(data.message || 'Payment verification complete', { id: toastId });
+          }
+          fetchAppointments();
+          const cleanParams = new URLSearchParams(searchParams);
+          cleanParams.delete('session_id');
+          cleanParams.delete('payment');
+          cleanParams.delete('appointment_id');
+          cleanParams.delete('type');
+          setSearchParams(cleanParams, { replace: true });
+        } catch (e) {
+          console.error('Stripe verify error:', e);
+          toast.error('Could not verify Stripe payment session', { id: toastId });
+        }
+      })();
+    } else if (payment === 'cancelled') {
+      toast.error('Payment cancelled on Stripe.');
+      const cleanParams = new URLSearchParams(searchParams);
+      cleanParams.delete('session_id');
+      cleanParams.delete('payment');
+      cleanParams.delete('appointment_id');
+      cleanParams.delete('type');
+      setSearchParams(cleanParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   const fetchAppointments = async () => {
     setLoading(true);
     try {
@@ -722,9 +764,9 @@ export default function UserMyAppointmentsList() {
                           </span>
                         )}
 
-                        {app.paymentId && !app.refundId && (
-                          <span className="font-mono text-[11px] text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-200">
-                            Txn: {app.paymentId}
+                        {(app.paymentId || app.stripe_session_id) && !app.refundId && (
+                          <span className="font-mono text-[11px] text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-200" title={app.paymentId || app.stripe_session_id}>
+                            Txn: {app.paymentId || app.stripe_session_id}
                           </span>
                         )}
                       </div>
@@ -854,28 +896,24 @@ export default function UserMyAppointmentsList() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">New Time *</label>
-                  <input
-                    type="time"
-                    value={newTime}
-                    onChange={(e) => setNewTime(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-medical-blue outline-none"
-                    required
-                  />
-                </div>
-
-                {/* Slot Selector */}
-                {newDate && selectedAppointment?.hospitalId && (
-                  <div className="mt-2">
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">Available Hospital Slots</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>New Time Slot *</span>
+                    {newTime && (
+                      <span className="text-blue-600 font-extrabold text-xs bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                        Selected: {newTime}
+                      </span>
+                    )}
+                  </label>
+                  <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
                     <SlotSelector
                       date={newDate}
-                      hospitalId={selectedAppointment.hospitalId}
-                      selectedTime={newTime}
+                      hospitalId={selectedAppointment?.hospitalId}
+                      selectedTime={newTime || '10:00'}
                       onSelectTime={(slot) => setNewTime(slot)}
+                      showClock={true}
                     />
                   </div>
-                )}
+                </div>
 
                 <div className="flex gap-3 pt-2">
                   <button

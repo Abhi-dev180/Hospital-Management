@@ -881,7 +881,17 @@ export default function AdminAppointments() {
                       className="hover:bg-slate-50/80 transition-colors group"
                     >
                       <td className="py-3.5 px-3 font-bold text-slate-800">
-                        #{a.appointment_number}
+                        <div>#{a.appointment_number}</div>
+                        {(a.paymentId || a.stripe_session_id || a.paymentMethod) && (
+                          <div className="text-[10px] text-slate-500 font-normal mt-1">
+                            <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                              <CreditCard size={10} /> {a.paymentMethod || 'Paid'}
+                            </span>
+                            <span className="block font-mono text-[9px] text-slate-400 truncate max-w-[120px] mt-0.5" title={a.paymentId || a.stripe_session_id}>
+                              Txn: {a.paymentId || a.stripe_session_id}
+                            </span>
+                          </div>
+                        )}
                       </td>
                       <td className="py-3.5 px-3">
                         <div className="flex flex-col">
@@ -1010,7 +1020,7 @@ export default function AdminAppointments() {
                   <div className="text-xs space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-rose-900 text-sm">{selectedAppt.serviceName || 'Diagnostic Test'}</span>
-                      <span className="bg-rose-200/80 text-rose-800 font-bold px-2 py-0.5 rounded-full text-[10px]">
+                      <span className="bg-rose-200/80 text-rose-800 font-bold px-2.5 py-0.5 rounded-full text-[10px]">
                         {selectedAppt.serviceCategory || 'Lab Test'}
                       </span>
                       {selectedAppt.servicePrice && (
@@ -1041,6 +1051,52 @@ export default function AdminAppointments() {
                 <div className="flex items-start gap-2"><PawPrint size={16} className="text-slate-400 mt-0.5" /><div><p className="text-xs font-semibold text-slate-500 uppercase">Breed</p><p className="text-sm font-medium text-slate-800">{selectedAppt.breed || '—'}</p></div></div>
                 <div className="flex items-start gap-2 sm:col-span-2"><Stethoscope size={16} className="text-slate-400 mt-0.5" /><div><p className="text-xs font-semibold text-slate-500 uppercase">Appointment Type</p><p className="text-sm font-medium text-slate-800">{selectedAppt.appointmentType || 'Consult'}</p></div></div>
                 <div className="flex items-start gap-2 sm:col-span-2"><MessageSquare size={16} className="text-slate-400 mt-0.5" /><div><p className="text-xs font-semibold text-slate-500 uppercase">Reason / Notes</p><p className="text-sm font-medium text-slate-800">{selectedAppt.reason || 'No reason provided'}</p></div></div>
+
+                {/* 💳 Payment & Stripe Transaction Details */}
+                <div className="sm:col-span-2 p-4 bg-slate-50/90 rounded-2xl border border-slate-200 text-xs space-y-2.5">
+                  <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-200/80">
+                    <div className="flex items-center gap-2">
+                      <CreditCard size={16} className="text-blue-600" />
+                      <span className="font-bold text-slate-800 text-sm">Payment &amp; Transaction Details</span>
+                    </div>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-extrabold ${
+                      String(selectedAppt.paymentStatus).toLowerCase() === 'paid'
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                        : 'bg-amber-100 text-amber-800 border border-amber-300'
+                    }`}>
+                      {selectedAppt.paymentStatus || 'Paid'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">Amount Paid</p>
+                      <p className="text-sm font-extrabold text-slate-900">
+                        ₹{selectedAppt.paymentAmount || selectedAppt.servicePrice || 500}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">Payment Method</p>
+                      <p className="text-xs font-semibold text-slate-800">
+                        {selectedAppt.paymentMethod || 'Stripe Card / Online Gateway'}
+                      </p>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">Gateway Transaction / Payment ID</p>
+                      <p className="text-xs font-mono bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 select-all break-all mt-0.5">
+                        {selectedAppt.paymentId || selectedAppt.stripe_session_id || `ST_${selectedAppt.id}`}
+                      </p>
+                    </div>
+                    {selectedAppt.stripe_session_id && selectedAppt.stripe_session_id !== selectedAppt.paymentId && (
+                      <div className="sm:col-span-2">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Stripe Checkout Session ID</p>
+                        <p className="text-xs font-mono bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-700 select-all break-all mt-0.5">
+                          {selectedAppt.stripe_session_id}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div className="flex items-start gap-2 sm:col-span-2">
                   <div><p className="text-xs font-semibold text-slate-500 uppercase">Status</p><span className={`inline-block px-3 py-1 rounded-full text-xs font-bold border ${statusColors[selectedAppt.status] || 'bg-slate-50 text-slate-700 border-slate-200'}`}>{selectedAppt.status}</span></div>
                 </div>
@@ -1113,12 +1169,24 @@ export default function AdminAppointments() {
               </div>
               <form onSubmit={submitReschedule} className="space-y-4">
                 <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">New Date *</label><input type="date" value={rescheduleForm.date} onChange={e => setRescheduleForm(f => ({ ...f, date: e.target.value }))} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition" required /></div>
-                <div><label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">New Time *</label><input type="time" value={rescheduleForm.time} onChange={e => setRescheduleForm(f => ({ ...f, time: e.target.value }))} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition" required />
-                  {rescheduleForm.date && selectedAppt?.hospitalId && (
-                    <div className="mt-3 rounded-2xl bg-slate-50 p-4 border border-slate-200/80">
-                      <SlotSelector date={rescheduleForm.date} hospitalId={selectedAppt.hospitalId} selectedTime={rescheduleForm.time} onSelectTime={(slot) => setRescheduleForm(f => ({ ...f, time: slot }))} />
-                    </div>
-                  )}
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1 flex items-center justify-between">
+                    <span>New Time Slot *</span>
+                    {rescheduleForm.time && (
+                      <span className="text-blue-600 font-bold text-xs bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                        Selected: {rescheduleForm.time}
+                      </span>
+                    )}
+                  </label>
+                  <div className="mt-1 rounded-2xl bg-slate-50 p-3.5 border border-slate-200/80">
+                    <SlotSelector
+                      date={rescheduleForm.date}
+                      hospitalId={selectedAppt?.hospitalId}
+                      selectedTime={rescheduleForm.time || '10:00'}
+                      onSelectTime={(slot) => setRescheduleForm((f) => ({ ...f, time: slot }))}
+                      showClock={true}
+                    />
+                  </div>
                 </div>
                 <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                   <button type="button" onClick={() => setShowRescheduleModal(false)} className="px-5 py-2 rounded-xl font-semibold text-slate-600 hover:bg-slate-100 transition">Cancel</button>

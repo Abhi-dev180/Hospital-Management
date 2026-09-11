@@ -149,11 +149,12 @@ export default function UserServices() {
 
     const defaultHospitalId = availableHospitals.length > 0 ? String(availableHospitals[0].id) : '';
 
+    const todayStr = new Date().toISOString().split('T')[0];
     setBookForm((prev) => ({
       ...prev,
       hospitalId: defaultHospitalId,
-      date: '',
-      time: '',
+      date: prev.date || todayStr,
+      time: prev.time || '10:00',
       patientName: user?.name || '',
       patientPhone: user?.mobile || user?.phone || '',
       email: user?.email || '',
@@ -718,47 +719,41 @@ export default function UserServices() {
                       </div>
                     </div>
 
-                    {/* Date & Time Slot */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Test Date *
-                        </label>
-                        <input
-                          type="date"
-                          min={new Date().toISOString().split('T')[0]}
-                          value={bookForm.date}
-                          onChange={(e) => setBookForm({ ...bookForm, date: e.target.value })}
-                          required
-                          className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm outline-none focus:border-blue-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Time Slot *
-                        </label>
-                        <input
-                          type="time"
-                          value={bookForm.time}
-                          onChange={(e) => setBookForm({ ...bookForm, time: e.target.value })}
-                          required
-                          className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm outline-none focus:border-blue-500"
-                        />
-                      </div>
+                    {/* Date Selection */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Test Date *
+                      </label>
+                      <input
+                        type="date"
+                        min={new Date().toISOString().split('T')[0]}
+                        value={bookForm.date}
+                        onChange={(e) => setBookForm({ ...bookForm, date: e.target.value })}
+                        required
+                        className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm outline-none focus:border-blue-500 font-medium bg-white"
+                      />
                     </div>
 
-                    {/* Slot Selector Helper */}
-                    {bookForm.date && bookForm.hospitalId && (
-                      <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+                    {/* Interactive Clock & Time Slot Selector */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                        <span>Time Slot *</span>
+                        {bookForm.time && (
+                          <span className="text-blue-600 font-extrabold text-[11px] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                            Selected: {bookForm.time}
+                          </span>
+                        )}
+                      </label>
+                      <div className="bg-slate-50/90 p-3 rounded-2xl border border-slate-200/80">
                         <SlotSelector
                           date={bookForm.date}
                           hospitalId={bookForm.hospitalId}
-                          selectedTime={bookForm.time}
+                          selectedTime={bookForm.time || '10:00'}
                           onSelectTime={(slot) => setBookForm((f) => ({ ...f, time: slot }))}
+                          showClock={true}
                         />
                       </div>
-                    )}
+                    </div>
 
                     {/* Owner Contact */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

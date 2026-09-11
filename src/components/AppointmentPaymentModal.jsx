@@ -134,8 +134,8 @@ export default function AppointmentPaymentModal({ isOpen, onClose, bookingDetail
       }
 
       const options = {
-        key: process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_test_dummy_key',
-        amount: amountInr * 100,
+        key: orderData?.key_id || 'rzp_test_TPVMWd7O5vXwzA',
+        amount: orderData?.amount || amountInr * 100,
         currency: 'INR',
         name: payeeName,
         description: `Appointment Fee for ${serviceTitle}`,
@@ -162,7 +162,8 @@ export default function AppointmentPaymentModal({ isOpen, onClose, bookingDetail
         setSubmitting(false);
       });
       rzp.open();
-    } catch {
+    } catch (err) {
+      console.warn('[Razorpay checkout fallback]:', err);
       toast.success('🎉 Razorpay Payment Verified (Test Simulation)!', { id: toastId });
       onPaymentSuccess({
         paymentId: `RZP_TEST_${Date.now()}`,
@@ -337,14 +338,14 @@ export default function AppointmentPaymentModal({ isOpen, onClose, bookingDetail
           <div className="grid grid-cols-3 gap-1.5 bg-slate-100 p-1 rounded-2xl">
             <button
               type="button"
-              onClick={() => setActiveTab('free_upi')}
+              onClick={() => setActiveTab('stripe')}
               className={`py-2 px-2 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1 transition ${
-                activeTab === 'free_upi'
-                  ? 'bg-white text-blue-700 shadow-md'
+                activeTab === 'stripe'
+                  ? 'bg-white text-indigo-700 shadow-md ring-1 ring-indigo-200'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <QrCode className="w-3.5 h-3.5" /> Scan UPI
+              <Lock className="w-3.5 h-3.5 text-indigo-600" /> Stripe Card
             </button>
             <button
               type="button"
@@ -359,18 +360,202 @@ export default function AppointmentPaymentModal({ isOpen, onClose, bookingDetail
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('stripe')}
+              onClick={() => setActiveTab('free_upi')}
               className={`py-2 px-2 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1 transition ${
-                activeTab === 'stripe'
-                  ? 'bg-white text-indigo-700 shadow-md'
+                activeTab === 'free_upi'
+                  ? 'bg-white text-blue-700 shadow-md'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Lock className="w-3.5 h-3.5 text-indigo-600" /> Stripe Card
+              <QrCode className="w-3.5 h-3.5" /> Scan UPI
             </button>
           </div>
 
-          {/* TAB 1: FREE UPI QR CODE */}
+          {/* TAB 1: STRIPE OFFICIAL GATEWAY */}
+          {activeTab === 'stripe' && (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-br from-indigo-50/90 to-blue-50/70 p-4 rounded-2xl border border-indigo-200/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-indigo-600 text-white rounded-xl shadow-xs">
+                      <CreditCard className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-900">Stripe Official Checkout</h4>
+                      <p className="text-[11px] text-slate-500">
+                        PCI-DSS Level 1 Certified • 256-Bit SSL Encrypted
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md border border-emerald-300">
+                    Official Gateway
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-600">
+                  Pay securely using Credit Cards, Debit Cards, Apple Pay, Google Pay, or International Cards via Stripe.
+                </p>
+
+                {/* Primary Button: Official Stripe Checkout */}
+                <button
+                  type="button"
+                  onClick={handleStripeHostedRedirect}
+                  disabled={submitting}
+                  className="w-full py-3.5 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-700 hover:to-blue-800 text-white rounded-xl font-bold text-xs shadow-md shadow-indigo-600/20 hover:shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                >
+                  {submitting ? (
+                    'Connecting to Stripe...'
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4" /> Pay ₹{amountInr} via Official Stripe Checkout <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* In-Modal Direct Card Form (For instant sandbox/offline demo testing) */}
+              <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/70 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700">Or Pay Direct In-Modal (Sandbox Card)</span>
+                  <button
+                    type="button"
+                    onClick={handleAutoFillTestCard}
+                    className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-white px-2 py-0.5 rounded-lg border border-indigo-200 shadow-2xs inline-flex items-center gap-1 transition"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-500" /> Auto-fill 4242
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmitCardPayment} className="space-y-2.5">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-0.5">
+                      Cardholder Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Full name on card"
+                      value={cardData.name}
+                      onChange={(e) => setCardData({ ...cardData, name: e.target.value })}
+                      required
+                      className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs outline-none bg-white focus:border-indigo-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-0.5">
+                      Card Number
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="4242 4242 4242 4242"
+                        value={cardData.number}
+                        onChange={handleCardNumberChange}
+                        maxLength={19}
+                        required
+                        className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl text-xs font-mono outline-none bg-white focus:border-indigo-600 tracking-wider"
+                      />
+                      <CreditCard className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-0.5">
+                        Expires
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="MM/YY"
+                        value={cardData.expiry}
+                        onChange={handleExpiryChange}
+                        maxLength={5}
+                        required
+                        className="w-full px-2 py-2 border border-slate-300 rounded-xl text-xs font-mono text-center outline-none bg-white focus:border-indigo-600"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-0.5">
+                        CVC
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="123"
+                        value={cardData.cvc}
+                        onChange={handleCvcChange}
+                        maxLength={4}
+                        required
+                        className="w-full px-2 py-2 border border-slate-300 rounded-xl text-xs font-mono text-center outline-none bg-white focus:border-indigo-600"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-0.5">
+                        ZIP Code
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="110001"
+                        value={cardData.zip}
+                        onChange={(e) => setCardData({ ...cardData, zip: e.target.value })}
+                        className="w-full px-2 py-2 border border-slate-300 rounded-xl text-xs font-mono text-center outline-none bg-white focus:border-indigo-600"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 disabled:opacity-50 mt-1 cursor-pointer"
+                  >
+                    {submitting ? 'Processing...' : `Submit In-Modal Test Card (₹${amountInr})`}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: RAZORPAY ONLINE */}
+          {activeTab === 'razorpay' && (
+            <div className="space-y-4 text-center">
+              <div className="bg-blue-50/70 p-5 rounded-2xl border border-blue-200/70 space-y-2">
+                <ShieldCheck className="w-8 h-8 text-blue-600 mx-auto" />
+                <h4 className="font-bold text-sm text-slate-900">Razorpay Payment Gateway</h4>
+                <p className="text-xs text-slate-600">
+                  Pay securely using Credit Cards, Debit Cards, Netbanking, or UPI via Razorpay.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={handleRazorpayCheckout}
+                  disabled={submitting}
+                  className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-xs shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {submitting ? 'Opening Razorpay...' : <>Pay ₹{amountInr} via Razorpay <CreditCard className="w-4 h-4" /></>}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    toast.success('🎉 Test Razorpay Payment Verified!');
+                    onPaymentSuccess({
+                      paymentId: `RZP_TEST_${Date.now()}`,
+                      paymentMethod: 'Razorpay UPI',
+                      amount: amountInr
+                    });
+                  }}
+                  className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold text-xs transition flex items-center justify-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Simulate Instant Razorpay Payment Success
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: FREE UPI QR CODE */}
           {activeTab === 'free_upi' && (
             <div className="space-y-4">
               <div className="text-center bg-slate-50 p-4 rounded-2xl border border-slate-200">
@@ -422,177 +607,6 @@ export default function AppointmentPaymentModal({ isOpen, onClose, bookingDetail
                   {submitting ? 'Verifying Payment...' : <>Confirm Payment &amp; Book Appointment <ArrowRight className="w-4 h-4" /></>}
                 </button>
               </form>
-            </div>
-          )}
-
-          {/* TAB 2: RAZORPAY ONLINE */}
-          {activeTab === 'razorpay' && (
-            <div className="space-y-4 text-center">
-              <div className="bg-blue-50/70 p-5 rounded-2xl border border-blue-200/70 space-y-2">
-                <ShieldCheck className="w-8 h-8 text-blue-600 mx-auto" />
-                <h4 className="font-bold text-sm text-slate-900">Razorpay Payment Gateway</h4>
-                <p className="text-xs text-slate-600">
-                  Pay securely using Credit Cards, Debit Cards, Netbanking, or UPI via Razorpay.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={handleRazorpayCheckout}
-                  disabled={submitting}
-                  className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-xs shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {submitting ? 'Opening Razorpay...' : <>Pay ₹{amountInr} via Razorpay <CreditCard className="w-4 h-4" /></>}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={async () => {
-                    toast.success('🎉 Test Razorpay Payment Verified!');
-                    onPaymentSuccess({
-                      paymentId: `RZP_TEST_${Date.now()}`,
-                      paymentMethod: 'Razorpay UPI',
-                      amount: amountInr
-                    });
-                  }}
-                  className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold text-xs transition flex items-center justify-center gap-1.5"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Simulate Instant Razorpay Payment Success
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: STRIPE CARD PAYMENT */}
-          {activeTab === 'stripe' && (
-            <div className="space-y-4">
-              <div className="bg-indigo-50/70 p-3.5 rounded-2xl border border-indigo-200/70 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 bg-indigo-600 text-white rounded-xl">
-                    <CreditCard className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-xs text-slate-900">Card Payment (Stripe)</h4>
-                    <p className="text-[11px] text-slate-500">
-                      Visa, Mastercard, Amex, RuPay &amp; International Cards
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAutoFillTestCard}
-                  className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-white px-2.5 py-1 rounded-lg border border-indigo-200 shadow-2xs inline-flex items-center gap-1 transition"
-                >
-                  <Sparkles className="w-3 h-3 text-amber-500" /> Test Card
-                </button>
-              </div>
-
-              {/* In-Modal Card Information Form */}
-              <form onSubmit={handleSubmitCardPayment} className="space-y-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Cardholder Name *
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Full name as printed on card"
-                    value={cardData.name}
-                    onChange={(e) => setCardData({ ...cardData, name: e.target.value })}
-                    required
-                    className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Card Number (16 Digits) *
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="4242 4242 4242 4242"
-                      value={cardData.number}
-                      onChange={handleCardNumberChange}
-                      maxLength={19}
-                      required
-                      className="w-full pl-10 pr-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-mono outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 tracking-wider"
-                    />
-                    <CreditCard className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2.5">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      Expires *
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="MM/YY"
-                      value={cardData.expiry}
-                      onChange={handleExpiryChange}
-                      maxLength={5}
-                      required
-                      className="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-xs font-mono text-center outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      CVC / CVV *
-                    </label>
-                    <input
-                      type="password"
-                      placeholder="123"
-                      value={cardData.cvc}
-                      onChange={handleCvcChange}
-                      maxLength={4}
-                      required
-                      className="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-xs font-mono text-center outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                      Postal Code
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 110001"
-                      value={cardData.zip}
-                      onChange={(e) => setCardData({ ...cardData, zip: e.target.value })}
-                      className="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-xs font-mono text-center outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full py-3 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 text-white rounded-xl font-bold text-xs shadow-md shadow-indigo-600/20 hover:shadow-lg transition flex items-center justify-center gap-2 disabled:opacity-50 mt-1 cursor-pointer"
-                >
-                  {submitting ? (
-                    'Authorizing Card...'
-                  ) : (
-                    <>
-                      <Lock className="w-3.5 h-3.5" /> Pay ₹{amountInr} with Card
-                    </>
-                  )}
-                </button>
-              </form>
-
-              <div className="pt-2 border-t border-slate-100 text-center">
-                <button
-                  type="button"
-                  onClick={handleStripeHostedRedirect}
-                  disabled={submitting}
-                  className="text-[11px] font-semibold text-slate-500 hover:text-indigo-600 transition inline-flex items-center gap-1"
-                >
-                  <span>Or open official Stripe Hosted Checkout page</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              </div>
             </div>
           )}
         </div>

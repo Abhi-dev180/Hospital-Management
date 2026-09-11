@@ -80,8 +80,11 @@ export default function UserDashboard() {
     if (userData && token) {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
+      const todayStr = new Date().toISOString().split('T')[0];
       setFormData((prev) => ({
         ...prev,
+        date: prev.date || todayStr,
+        time: prev.time || '10:00',
         patientName: parsedUser.name || '',
         patientPhone: parsedUser.mobile || parsedUser.phone || '',
         email: parsedUser.email || ''
@@ -354,8 +357,21 @@ export default function UserDashboard() {
       <DashboardTabs role="user" />
 
       {/* KPI Overview Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3">
+      <motion.div
+        initial="hidden"
+        animate="show"
+        variants={{
+          hidden: {},
+          show: { transition: { staggerChildren: 0.06 } }
+        }}
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8"
+      >
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }}
+          whileHover={{ y: -3, scale: 1.02 }}
+          transition={{ duration: 0.25 }}
+          className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3 transition-shadow hover:shadow-lg"
+        >
           <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl shrink-0">
             <Stethoscope className="w-5 h-5" />
           </div>
@@ -363,9 +379,14 @@ export default function UserDashboard() {
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Doctor Visits</p>
             <p className="text-xl font-black text-slate-900 mt-0.5">{doctorAppointments.length}</p>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3">
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }}
+          whileHover={{ y: -3, scale: 1.02 }}
+          transition={{ duration: 0.25 }}
+          className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3 transition-shadow hover:shadow-lg"
+        >
           <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl shrink-0">
             <TestTube className="w-5 h-5" />
           </div>
@@ -373,9 +394,14 @@ export default function UserDashboard() {
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Lab Tests</p>
             <p className="text-xl font-black text-slate-900 mt-0.5">{labAppointments.length}</p>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3">
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }}
+          whileHover={{ y: -3, scale: 1.02 }}
+          transition={{ duration: 0.25 }}
+          className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3 transition-shadow hover:shadow-lg"
+        >
           <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl shrink-0">
             <Clock className="w-5 h-5" />
           </div>
@@ -383,9 +409,14 @@ export default function UserDashboard() {
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Upcoming</p>
             <p className="text-xl font-black text-slate-900 mt-0.5">{upcomingAppointments.length}</p>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3">
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }}
+          whileHover={{ y: -3, scale: 1.02 }}
+          transition={{ duration: 0.25 }}
+          className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3 transition-shadow hover:shadow-lg"
+        >
           <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl shrink-0">
             <Building2 className="w-5 h-5" />
           </div>
@@ -393,9 +424,14 @@ export default function UserDashboard() {
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Hospitals</p>
             <p className="text-xl font-black text-slate-900 mt-0.5">{hospitals.length}</p>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3">
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }}
+          whileHover={{ y: -3, scale: 1.02 }}
+          transition={{ duration: 0.25 }}
+          className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3 transition-shadow hover:shadow-lg"
+        >
           <div className="p-3 bg-teal-50 text-teal-600 rounded-2xl shrink-0">
             <MessageSquare className="w-5 h-5" />
           </div>
@@ -403,23 +439,29 @@ export default function UserDashboard() {
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Feedbacks</p>
             <p className="text-xl font-black text-slate-900 mt-0.5">{feedbacks.length}</p>
           </div>
-        </div>
+        </motion.div>
 
-        <Link
-          to="/dashboard/my-appointments?tab=refunds"
-          className="bg-gradient-to-br from-emerald-50/70 to-teal-50/70 hover:from-emerald-100/80 hover:to-teal-100/80 rounded-3xl p-5 border border-emerald-200/80 shadow-md flex items-center gap-3 transition-all hover:scale-[1.02] group"
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }}
+          whileHover={{ y: -3, scale: 1.02 }}
+          transition={{ duration: 0.25 }}
         >
-          <div className="p-3 bg-emerald-600 text-white rounded-2xl shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-            <RotateCcw className="w-5 h-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 truncate">Refunds (₹)</p>
-            <p className="text-xl font-black text-emerald-900 mt-0.5">
-              ₹{totalRefundAmount.toLocaleString()}
-            </p>
-          </div>
-        </Link>
-      </div>
+          <Link
+            to="/dashboard/my-appointments?tab=refunds"
+            className="h-full bg-gradient-to-br from-emerald-50/70 to-teal-50/70 hover:from-emerald-100/80 hover:to-teal-100/80 rounded-3xl p-5 border border-emerald-200/80 shadow-md flex items-center gap-3 transition-all hover:shadow-lg group"
+          >
+            <div className="p-3 bg-emerald-600 text-white rounded-2xl shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+              <RotateCcw className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 truncate">Refunds (₹)</p>
+              <p className="text-xl font-black text-emerald-900 mt-0.5">
+                ₹{totalRefundAmount.toLocaleString()}
+              </p>
+            </div>
+          </Link>
+        </motion.div>
+      </motion.div>
 
       {/* Next Upcoming Appointment Highlight Banner */}
       {nextAppointment && (() => {
@@ -625,47 +667,42 @@ export default function UserDashboard() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Date *
-                  </label>
-                  <input
-                    name="date"
-                    type="date"
-                    min={new Date().toISOString().split('T')[0]}
-                    value={formData.date}
-                    onChange={handleAppointmentChange}
-                    className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:border-medical-blue outline-none"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Time Slot *
-                  </label>
-                  <input
-                    name="time"
-                    type="time"
-                    value={formData.time}
-                    onChange={handleAppointmentChange}
-                    className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:border-medical-blue outline-none"
-                    required
-                  />
-                </div>
+              {/* Date */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Date *
+                </label>
+                <input
+                  name="date"
+                  type="date"
+                  min={new Date().toISOString().split('T')[0]}
+                  value={formData.date}
+                  onChange={handleAppointmentChange}
+                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:border-medical-blue outline-none bg-white font-medium"
+                  required
+                />
               </div>
 
-              {formData.date && formData.hospitalId && (
-                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80">
+              {/* Interactive Clock & Time Slot Selector */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                  <span>Time Slot *</span>
+                  {formData.time && (
+                    <span className="text-blue-600 font-extrabold text-[11px] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                      Selected: {formData.time}
+                    </span>
+                  )}
+                </label>
+                <div className="bg-slate-50/90 p-3 rounded-2xl border border-slate-200/80">
                   <SlotSelector
                     date={formData.date}
                     hospitalId={formData.hospitalId}
-                    selectedTime={formData.time}
+                    selectedTime={formData.time || '10:00'}
                     onSelectTime={(slot) => setFormData((f) => ({ ...f, time: slot }))}
+                    showClock={true}
                   />
                 </div>
-              )}
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
