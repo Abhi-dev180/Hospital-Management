@@ -193,8 +193,11 @@ export default function SuperAdminDemos() {
   });
 
   useWebSocket("demo_updated", (updatedDemo) => {
-    setBookings((prev) => prev.map(b => b.id === updatedDemo.id ? updatedDemo : b));
-    // The fetchBookings handles exact counts better, but for UI updates the list changes instantly.
+    fetchBookings();
+  });
+
+  useWebSocket("payment_created", () => {
+    fetchBookings();
   });
 
   useWebSocket("demo_deleted", ({ id }) => {
