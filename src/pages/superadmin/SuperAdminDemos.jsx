@@ -620,10 +620,11 @@ export default function SuperAdminDemos() {
                         <td className="py-4 px-5">
                           {b.payment && b.payment.amount ? (() => {
                             const amt = b.payment.amount;
-                            const isRupees = String(b.payment.currency).toLowerCase() === 'inr' || amt >= 1000;
+                            const currencyStr = String(b.payment.currency || 'usd').toLowerCase();
+                            const isRupees = currencyStr === 'inr';
                             const formattedAmt = isRupees
                               ? `₹${(amt > 100000 ? Math.round(amt / 100) : amt).toLocaleString('en-IN')}`
-                              : `$${(amt / 100).toFixed(2)}`;
+                              : `$${(amt >= 100 ? (amt / 100).toFixed(2) : Number(amt).toFixed(2))}`;
 
                             return (
                               <span className="font-bold text-slate-900 flex items-center gap-1">
