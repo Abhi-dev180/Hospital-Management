@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Building2, Pencil, Trash2, Check, X, Loader2 } from 'lucide-react';
 import API_URL from '../../config/api';
+import DashboardTabs from '../../components/DashboardTabs';
 import { SectionLoader } from '../../components/Loader';
 
 // ─── Default Days ─────────────────────────────────────────────
@@ -138,11 +139,13 @@ export default function AdminTimings() {
 
   // ─── Render ─────────────────────────────────────────────────
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
-    >
+    <div className="w-full px-2 sm:px-3 py-4 space-y-4">
+      <DashboardTabs role="admin" />
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+      >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-100">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-50 rounded-xl">
@@ -302,5 +305,6 @@ export default function AdminTimings() {
         * Click the Status pill to quickly toggle a day Open/Closed. Click the Edit (pencil) icon to adjust the time range for a specific day.
       </p>
     </motion.div>
+  </div>
   );
 }

@@ -423,22 +423,27 @@ export default function AdminOverview() {
 
   if (loading) {
     return (
-      <div className="space-y-8">
-        <StatSkeleton count={4} />
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <SectionLoader label="Loading dashboard…" sub="Pulling your hospital's latest activity" />
+      <div className="w-full px-2 sm:px-3 py-4 space-y-4">
+        <DashboardTabs role="admin" />
+        <div className="space-y-4">
+          <StatSkeleton count={4} />
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <SectionLoader label="Loading dashboard…" sub="Pulling your hospital's latest activity" />
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
-      className="space-y-6 sm:space-y-8"
-    >
+    <div className="w-full px-2 sm:px-3 py-4 space-y-4">
+      <DashboardTabs role="admin" />
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+        className="space-y-4"
+      >
       {/* Header */}
       <motion.div variants={itemVariants} className="flex items-center gap-3">
         <div className="p-3 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl shadow-lg shadow-blue-500/30">
@@ -629,5 +634,6 @@ export default function AdminOverview() {
         </motion.div>
       </div>
     </motion.div>
+  </div>
   );
 }

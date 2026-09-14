@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
-import DashboardLayout from '../../components/DashboardLayout';
+import DashboardTabs from '../../components/DashboardTabs';
 import Pagination from '../../components/Pagination';
 import { TableSkeleton } from '../../components/Loader';
 import { useWebSocket } from '../../hooks/useWebSocket';
@@ -196,19 +196,14 @@ export default function AdminAppointmentFeedback() {
   useEffect(() => setPage(1), [search, statusFilter]);
 
   return (
-
-    <DashboardLayout>
-  <motion.div
-    initial="hidden"
-    animate="visible"
-    variants={pageVariants}
-    className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 p-2 sm:p-4 lg:p-6"
-  >
-    <motion.div
-      variants={cardVariants}
-      // ✅ IMPROVED: Responsive width. Uses 100% on mobile, caps at 1920px for ultra-wide screens.
-      className="w-full max-w-screen-2xl 2xl:max-w-[1920px] mx-auto bg-white/90 backdrop-blur-xl p-4 sm:p-6 lg:p-10 rounded-2xl sm:rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/50"
-    >
+    <div className="w-full px-2 sm:px-3 py-4 space-y-4">
+      <DashboardTabs role="admin" />
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={pageVariants}
+        className="w-full bg-white/90 backdrop-blur-xl p-4 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100"
+      >
       {/* Header Section - Fully responsive */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 lg:mb-8">
         <div className="flex items-center gap-3 sm:gap-4">
@@ -576,8 +571,7 @@ export default function AdminAppointmentFeedback() {
         </motion.div>
       )}
     </AnimatePresence>
-  </motion.div>
-</DashboardLayout>
+  </div>
   );
 }
 
