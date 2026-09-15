@@ -22,23 +22,46 @@ export default function ProfileDropdown({ user: initialUser, onLogout }) {
     setUser(initialUser);
   }, [initialUser]);
 
-  // Fetch live subscription details from backend
-  const fetchSubscription = async () => {
+  // Fetch live user profile and subscription details from backend
+  const fetchUserData = async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
       setLoadingSub(true);
-      const res = await fetch(`${API_URL}/api/subscriptions/my-subscriptions`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.subscription) {
-          setSubscription(data.subscription);
+
+      const [userRes, subRes] = await Promise.allSettled([
+        fetch(`${API_URL}/api/users/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        fetch(`${API_URL}/api/subscriptions/my-subscriptions`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
+
+      if (userRes.status === 'fulfilled' && userRes.value.ok) {
+        const uData = await userRes.value.json();
+        if (uData.user) {
+          setUser((prev) => {
+            const merged = { ...prev, ...uData.user };
+            try {
+              localStorage.setItem('user', JSON.stringify(merged));
+            } catch (_) {}
+            return merged;
+          });
+          if (uData.subscription) {
+            setSubscription(uData.subscription);
+          }
+        }
+      }
+
+      if (subRes.status === 'fulfilled' && subRes.value.ok) {
+        const sData = await subRes.value.json();
+        if (sData.subscription) {
+          setSubscription(sData.subscription);
         }
       }
     } catch (e) {
-      console.debug('Failed to fetch subscription in dropdown:', e);
+      console.debug('Failed to fetch user/subscription in dropdown:', e);
     } finally {
       setLoadingSub(false);
     }
@@ -54,11 +77,11 @@ export default function ProfileDropdown({ user: initialUser, onLogout }) {
       } catch (_) {}
     };
 
-    fetchSubscription();
+    fetchUserData();
     window.addEventListener('storage', syncUserState);
     window.addEventListener('user_subscription_updated', () => {
       syncUserState();
-      fetchSubscription();
+      fetchUserData();
     });
 
     return () => {

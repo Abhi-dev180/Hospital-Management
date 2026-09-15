@@ -81,9 +81,11 @@ export default function ProfilePage() {
     setLoading(false);
 
     fetchSubscription();
+    fetchProfile();
 
     const handleCustomSubUpdate = () => {
       fetchSubscription();
+      fetchProfile();
       const updatedStr = localStorage.getItem('user');
       if (updatedStr) {
         setUser(JSON.parse(updatedStr));
@@ -96,6 +98,37 @@ export default function ProfilePage() {
       window.removeEventListener('storage', handleCustomSubUpdate);
     };
   }, [navigate]);
+
+  const fetchProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await fetch(`${API_URL}/api/users/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user) {
+          const merged = { ...JSON.parse(localStorage.getItem('user') || '{}'), ...data.user };
+          localStorage.setItem('user', JSON.stringify(merged));
+          setUser(merged);
+          setOriginalEmail(merged.email || '');
+          setForm((prev) => ({
+            ...prev,
+            name: merged.name || prev.name || '',
+            email: merged.email || prev.email || '',
+            mobile: merged.mobile || prev.mobile || '',
+            hospital: merged.hospital || prev.hospital || ''
+          }));
+          if (data.subscription) {
+            setSubscription(data.subscription);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch user profile:', e);
+    }
+  };
 
   const update = (k) => (e) => {
     const val = e.target.value;
@@ -372,21 +405,30 @@ export default function ProfilePage() {
             </label>
           </div>
 
-          {isAdminOrSuper && (
-            <div className="sm:col-span-2">
-              <label className="block">
-                <span className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-1.5">
-                  <Building2 className="w-4 h-4 text-medical-blue" /> Hospital
-                </span>
-                <input
-                  value={form.hospital || 'Not assigned'}
-                  disabled
-                  className="portal-input w-full bg-gray-50 text-gray-500 cursor-not-allowed"
-                />
-                <p className="text-xs text-gray-400 mt-1">Hospital cannot be changed.</p>
-              </label>
-            </div>
-          )}
+          <div className="sm:col-span-2">
+            <label className="block">
+              <span className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-1.5">
+                <Building2 className="w-4 h-4 text-medical-blue" />
+                {user?.role === 'superadmin' ? 'Organization Access' : 'Hospital'}
+              </span>
+              <input
+                value={
+                  form.hospital ||
+                  user?.hospital ||
+                  (user?.role === 'superadmin' ? 'System Administrator (All Hospitals)' : 'Not assigned / General Access')
+                }
+                disabled
+                className="portal-input w-full bg-gray-50 text-gray-700 cursor-not-allowed font-medium"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                {user?.role === 'admin'
+                  ? 'Assigned hospital branch for this administrator account.'
+                  : user?.role === 'superadmin'
+                  ? 'Super Administrator has full administrative access across all hospitals.'
+                  : 'Assigned or registered hospital network for appointments and care.'}
+              </p>
+            </label>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 pt-2">
