@@ -44,6 +44,13 @@ export default function ChatbotWidget() {
   const [loading, setLoading] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [chatContext, setChatContext] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('medibot_context');
+      if (saved) return JSON.parse(saved);
+    } catch (_) {}
+    return {};
+  });
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const navigate = useNavigate();
@@ -54,6 +61,13 @@ export default function ChatbotWidget() {
       sessionStorage.setItem('medibot_messages', JSON.stringify(messages));
     } catch (_) {}
   }, [messages]);
+
+  // Save context in sessionStorage
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('medibot_context', JSON.stringify(chatContext));
+    } catch (_) {}
+  }, [chatContext]);
 
   // Scroll to bottom whenever messages update
   useEffect(() => {
@@ -114,12 +128,16 @@ export default function ChatbotWidget() {
         },
         body: JSON.stringify({
           message: query,
+          context: chatContext,
           history: messages.slice(-6).map((m) => ({ sender: m.sender, text: m.text }))
         })
       });
 
       const data = await res.json();
       if (res.ok) {
+        if (data.context !== undefined) {
+          setChatContext(data.context || {});
+        }
         const botMsg = {
           id: `bot_${Date.now()}`,
           sender: 'bot',
@@ -170,7 +188,9 @@ export default function ChatbotWidget() {
       }
     ];
     setMessages(welcome);
+    setChatContext({});
     sessionStorage.removeItem('medibot_messages');
+    sessionStorage.removeItem('medibot_context');
   };
 
   const handleActionClick = (action) => {
