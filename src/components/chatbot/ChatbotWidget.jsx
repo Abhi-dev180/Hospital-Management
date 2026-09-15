@@ -3,10 +3,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  MessageSquare, X, Send, Bot, User, Sparkles, ChevronDown,
+  MessageSquare, X, Send, Bot, User, Sparkles, ChevronDown, ChevronUp,
   Maximize2, Minimize2, Trash2, Calendar, Stethoscope, TestTube2,
   PhoneCall, ShieldAlert, ArrowRight, ExternalLink, RefreshCw,
-  Building2, CreditCard, CheckCircle2, Clock, FileText, Volume2, VolumeX, QrCode
+  Building2, CreditCard, CheckCircle2, Clock, FileText, Volume2, VolumeX, QrCode, MapPin
 } from 'lucide-react';
 import API_URL from '../../config/api';
 import AppointmentPaymentModal from '../AppointmentPaymentModal';
@@ -16,6 +16,7 @@ export default function ChatbotWidget() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [pendingBookingDetails, setPendingBookingDetails] = useState(null);
+  const [showAllHospitalsMap, setShowAllHospitalsMap] = useState({});
   const [messages, setMessages] = useState(() => {
     try {
       const saved = sessionStorage.getItem('medibot_messages');
@@ -150,6 +151,7 @@ export default function ChatbotWidget() {
           quickReplies: data.quickReplies || [],
           appointment: data.appointment || null,
           services: data.services || null,
+          hospitals: data.hospitals || null,
           action: data.action || null,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
@@ -208,6 +210,7 @@ export default function ChatbotWidget() {
     setMessages(welcome);
     setChatContext({});
     setPendingBookingDetails(null);
+    setShowAllHospitalsMap({});
     sessionStorage.removeItem('medibot_messages');
     sessionStorage.removeItem('medibot_context');
   };
@@ -394,7 +397,6 @@ export default function ChatbotWidget() {
                 <div className="flex flex-col text-left">
                   <span className="text-xs font-black tracking-wide text-white leading-tight flex items-center gap-1">
                     MediBot AI
-                    <Sparkles className="w-3 h-3 text-amber-300" />
                   </span>
                   <span className="text-[10px] text-blue-200 font-medium leading-tight">
                     24/7 Online Assistant
@@ -523,6 +525,77 @@ export default function ChatbotWidget() {
                             formatMarkdown(msg.text)
                           )}
 
+                          {/* ─── Interactive Hospital Directory / Selection List ─── */}
+                          {msg.hospitals && msg.hospitals.length > 0 && (
+                            <div className="mt-3 space-y-2 border-t border-slate-100 pt-2.5">
+                              <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                                <span className="flex items-center gap-1 text-slate-800">
+                                  <Building2 className="w-3.5 h-3.5 text-medical-blue" />
+                                  Accredited Hospitals ({msg.hospitals.length})
+                                </span>
+                                <span className="text-[9.5px] text-slate-400">Select branch below</span>
+                              </div>
+
+                              <div className="space-y-1.5">
+                                {(showAllHospitalsMap[msg.id] ? msg.hospitals : msg.hospitals.slice(0, 3)).map((h, hIdx) => (
+                                  <div
+                                    key={hIdx}
+                                    className="p-2.5 rounded-xl bg-slate-50/80 hover:bg-blue-50/50 border border-slate-200/90 hover:border-medical-blue/40 transition group"
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="min-w-0">
+                                        <h5 className="font-bold text-slate-900 text-xs truncate flex items-center gap-1">
+                                          <Building2 className="w-3 h-3 text-medical-blue shrink-0" />
+                                          {h.name}
+                                        </h5>
+                                        <p className="text-[10px] text-slate-500 truncate mt-0.5 flex items-center gap-1">
+                                          <MapPin className="w-2.5 h-2.5 text-slate-400 shrink-0" />
+                                          {h.location || h.city || 'Metro City'}
+                                        </p>
+                                      </div>
+                                      <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-emerald-100/80 text-emerald-800 text-[9px] font-bold border border-emerald-200">
+                                        {h.emergency || '24/7 ICU'}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between gap-2 mt-2 pt-1.5 border-t border-slate-200/60 text-[10px]">
+                                      <span className="text-slate-500 font-medium">🛏️ {h.beds || '350+ Beds'}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleSend(h.name)}
+                                        className="px-2.5 py-1 rounded-lg bg-medical-blue hover:bg-medical-dark text-white font-bold text-[10.5px] transition shadow-2xs active:scale-95 cursor-pointer flex items-center gap-1"
+                                      >
+                                        <span>Select Hospital</span>
+                                        <ArrowRight className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* See More / Show Less Toggle Button */}
+                              {msg.hospitals.length > 3 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setShowAllHospitalsMap(prev => ({ ...prev, [msg.id]: !prev[msg.id] }))}
+                                  className="w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 text-medical-blue font-bold text-xs transition border border-blue-200/80 flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                                >
+                                  {showAllHospitalsMap[msg.id] ? (
+                                    <>
+                                      <span>Show Fewer Hospitals</span>
+                                      <ChevronUp className="w-3.5 h-3.5" />
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span>See More Hospitals ({msg.hospitals.length - 3} more)</span>
+                                      <ChevronDown className="w-3.5 h-3.5" />
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          )}
+
                           {/* Interactive Appointment Card */}
                           {msg.appointment && (
                             <div className="mt-3 p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 shadow-2xs space-y-2 text-slate-800">
@@ -625,9 +698,9 @@ export default function ChatbotWidget() {
                           ))}
                         </div>
                       )}
-                    </div>
-                  );
-                })}
+                      </div>
+                    );
+                  })}
 
                 {/* Typing Animation */}
                 {loading && (
