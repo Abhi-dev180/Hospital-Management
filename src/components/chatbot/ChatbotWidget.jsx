@@ -527,7 +527,7 @@ export default function ChatbotWidget() {
                               onClick={() => handleActionClick(msg.action)}
                               className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-medical-dark to-medical-blue hover:from-blue-900 hover:to-medical-blue text-white font-bold text-xs shadow-xs hover:shadow transition-all cursor-pointer"
                             >
-                              <span>{msg.action.type === 'emergency_call' ? '🚨 Call Emergency Now' : '👉 Proceed / Open Page'}</span>
+                              <span>{msg.action.label || (msg.action.type === 'emergency_call' ? '🚨 Call Emergency Now' : '👉 Proceed / Open Page')}</span>
                               <ArrowRight className="w-3.5 h-3.5" />
                             </button>
                           </div>
