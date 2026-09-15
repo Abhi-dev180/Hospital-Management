@@ -6,7 +6,7 @@ import {
   MessageSquare, X, Send, Bot, User, Sparkles, ChevronDown, ChevronUp,
   Maximize2, Minimize2, Trash2, Calendar, Stethoscope, TestTube2,
   PhoneCall, ShieldAlert, ArrowRight, ExternalLink, RefreshCw,
-  Building2, CreditCard, CheckCircle2, Clock, FileText, Volume2, VolumeX, QrCode, MapPin
+  Building2, CreditCard, CheckCircle2, Clock, FileText, Volume2, VolumeX, QrCode, MapPin, Copy, Check
 } from 'lucide-react';
 import API_URL from '../../config/api';
 import AppointmentPaymentModal from '../AppointmentPaymentModal';
@@ -17,6 +17,8 @@ export default function ChatbotWidget() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [pendingBookingDetails, setPendingBookingDetails] = useState(null);
   const [showAllHospitalsMap, setShowAllHospitalsMap] = useState({});
+  const [showAllServicesMap, setShowAllServicesMap] = useState({});
+  const [copiedId, setCopiedId] = useState(null);
   const [messages, setMessages] = useState(() => {
     try {
       const saved = sessionStorage.getItem('medibot_messages');
@@ -150,7 +152,10 @@ export default function ChatbotWidget() {
           intent: data.intent,
           quickReplies: data.quickReplies || [],
           appointment: data.appointment || null,
+          paymentDetails: data.paymentDetails || null,
+          nextOptions: data.nextOptions || null,
           services: data.services || null,
+          availableSlots: data.availableSlots || null,
           hospitals: data.hospitals || null,
           action: data.action || null,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -211,6 +216,8 @@ export default function ChatbotWidget() {
     setChatContext({});
     setPendingBookingDetails(null);
     setShowAllHospitalsMap({});
+    setShowAllServicesMap({});
+    setCopiedId(null);
     sessionStorage.removeItem('medibot_messages');
     sessionStorage.removeItem('medibot_context');
   };
@@ -224,13 +231,27 @@ export default function ChatbotWidget() {
       setPaymentModalOpen(true);
       return;
     }
+    if (action.type === 'download_invoice' || action.actionType === 'download_invoice') {
+      const apptId = action.appointmentId || action.id || action.appointmentNumber;
+      const url = action.url || `/api/appointments/${apptId}/invoice`;
+      window.open(url.startsWith('http') ? url : `${API_URL}${url}`, '_blank');
+      return;
+    }
     if (action.type === 'emergency_call') {
       window.location.href = `tel:${action.phone || '18004191234'}`;
       return;
     }
+    if (action.actionType === 'message') {
+      handleSend(action.text || action.label);
+      return;
+    }
     if (action.url) {
-      navigate(action.url);
-      if (window.innerWidth < 640) setIsOpen(false);
+      if (action.url.startsWith('/api/')) {
+        window.open(`${API_URL}${action.url}`, '_blank');
+      } else {
+        navigate(action.url);
+        if (window.innerWidth < 640) setIsOpen(false);
+      }
     }
   };
 
@@ -242,6 +263,11 @@ export default function ChatbotWidget() {
     ) {
       setPendingBookingDetails(msg?.action?.bookingData || pendingBookingDetails);
       setPaymentModalOpen(true);
+      return;
+    }
+    if (lowerQr.includes('download invoice') && (msg?.appointment?.id || msg?.paymentDetails?.appointmentId)) {
+      const id = msg?.appointment?.id || msg?.paymentDetails?.appointmentId;
+      window.open(`${API_URL}/api/appointments/${id}/invoice`, '_blank');
       return;
     }
     handleSend(qr);
@@ -596,58 +622,249 @@ export default function ChatbotWidget() {
                             </div>
                           )}
 
-                          {/* Interactive Appointment Card */}
-                          {msg.appointment && (
-                            <div className="mt-3 p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 shadow-2xs space-y-2 text-slate-800">
-                              <div className="flex items-center justify-between gap-2 border-b border-slate-200/80 pb-1.5">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                  Booking Ref #{msg.appointment.appointment_number || msg.appointment.id}
+                          {/* ─── Interactive Available Time Slot Grid (Booked Slots Excluded) ─── */}
+                          {msg.availableSlots && msg.availableSlots.length > 0 && (
+                            <div className="mt-3 space-y-2 border-t border-slate-100 pt-2.5">
+                              <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                                <span className="flex items-center gap-1 text-slate-800">
+                                  <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                                  Available Time Slots ({msg.availableSlots.length})
                                 </span>
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                  msg.appointment.status === 'Confirmed'
-                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                <span className="text-[9.5px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200">
+                                  🟢 Open Only
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                                {msg.availableSlots.map((slot, sIdx) => {
+                                  const label = typeof slot === 'object' ? (slot.label || slot.time24) : slot;
+                                  return (
+                                    <button
+                                      key={sIdx}
+                                      type="button"
+                                      onClick={() => handleSend(label)}
+                                      className="p-2 rounded-xl bg-slate-50/90 hover:bg-emerald-50/80 text-slate-800 hover:text-emerald-900 border border-slate-200/90 hover:border-emerald-400 font-bold text-[11px] transition shadow-2xs active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 group"
+                                    >
+                                      <Clock className="w-3 h-3 text-slate-400 group-hover:text-emerald-600 shrink-0" />
+                                      <span>{label}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* ─── Interactive Diagnostic Lab Tests Directory ─── */}
+                          {msg.services && msg.services.length > 0 && (
+                            <div className="mt-3 space-y-2 border-t border-slate-100 pt-2.5">
+                              <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                                <span className="flex items-center gap-1 text-slate-800">
+                                  <TestTube2 className="w-3.5 h-3.5 text-purple-600" />
+                                  Diagnostic Tests & Packages ({msg.services.length})
+                                </span>
+                                <span className="text-[9.5px] text-purple-700 font-bold bg-purple-50 px-1.5 py-0.5 rounded-md border border-purple-200">
+                                  🧪 Quick Book
+                                </span>
+                              </div>
+
+                              <div className="space-y-1.5">
+                                {(showAllServicesMap[msg.id] ? msg.services : msg.services.slice(0, 3)).map((srv, sIdx) => (
+                                  <div
+                                    key={sIdx}
+                                    className="p-2.5 rounded-xl bg-slate-50/80 hover:bg-purple-50/40 border border-slate-200/90 hover:border-purple-300 transition group"
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="min-w-0">
+                                        <h5 className="font-bold text-slate-900 text-xs truncate flex items-center gap-1">
+                                          <TestTube2 className="w-3 h-3 text-purple-600 shrink-0" />
+                                          {srv.name}
+                                        </h5>
+                                        <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                                          ⏱️ {srv.turnaround} • 🍽️ {srv.fasting}
+                                        </p>
+                                      </div>
+                                      <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-800 text-[10px] font-extrabold border border-purple-200">
+                                        ₹{srv.price}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between gap-2 mt-2 pt-1.5 border-t border-slate-200/60 text-[10px]">
+                                      <span className="text-slate-400 font-medium">{srv.category || 'Diagnostic Lab'}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleSend(`Book ${srv.name}`)}
+                                        className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-[10.5px] transition shadow-2xs active:scale-95 cursor-pointer flex items-center gap-1"
+                                      >
+                                        <span>Book Lab Test</span>
+                                        <ArrowRight className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* See More / Show Less Toggle Button */}
+                              {msg.services.length > 3 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setShowAllServicesMap(prev => ({ ...prev, [msg.id]: !prev[msg.id] }))}
+                                  className="w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-purple-50 to-indigo-50 hover:from-purple-100 hover:to-indigo-100 text-purple-700 font-bold text-xs transition border border-purple-200/80 flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                                >
+                                  {showAllServicesMap[msg.id] ? (
+                                    <>
+                                      <span>Show Fewer Tests</span>
+                                      <ChevronUp className="w-3.5 h-3.5" />
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span>See More Lab Tests ({msg.services.length - 3} more)</span>
+                                      <ChevronDown className="w-3.5 h-3.5" />
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          )}
+
+                          {/* ─── Interactive Appointment & Payment Details Card ─── */}
+                          {msg.appointment && (
+                            <div className="mt-3 p-3 rounded-2xl bg-gradient-to-b from-slate-50 to-blue-50/40 border border-slate-200/90 shadow-2xs space-y-2.5 text-slate-800">
+                              <div className="flex items-center justify-between gap-2 border-b border-slate-200/80 pb-2">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <CreditCard className="w-4 h-4 text-emerald-600 shrink-0" />
+                                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-700 truncate">
+                                    Booking Ref #{msg.appointment.appointment_number || msg.appointment.id}
+                                  </span>
+                                </div>
+                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide shrink-0 ${
+                                  msg.appointment.status === 'Confirmed' || String(msg.appointment.paymentStatus).toLowerCase().includes('paid')
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                                     : msg.appointment.status === 'Cancelled'
                                     ? 'bg-rose-100 text-rose-800 border border-rose-200'
                                     : 'bg-amber-100 text-amber-800 border border-amber-200'
                                 }`}>
-                                  {msg.appointment.status}
+                                  {String(msg.appointment.paymentStatus).toLowerCase() === 'paid' ? '🟢 PAID' : msg.appointment.status}
                                 </span>
                               </div>
 
-                              <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                              {/* Payment & Appointment Details Grid */}
+                              <div className="grid grid-cols-2 gap-2 text-[11px] bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-2xs">
                                 <div>
-                                  <span className="text-slate-400 block text-[9.5px]">Patient</span>
-                                  <span className="font-bold text-slate-800 truncate block">{msg.appointment.patientName}</span>
+                                  <span className="text-slate-400 block text-[9.5px]">Patient Name</span>
+                                  <span className="font-bold text-slate-900 truncate block">{msg.appointment.patientName}</span>
                                 </div>
                                 <div>
-                                  <span className="text-slate-400 block text-[9.5px]">Hospital</span>
-                                  <span className="font-bold text-slate-800 truncate block">{msg.appointment.hospital}</span>
+                                  <span className="text-slate-400 block text-[9.5px]">Hospital Branch</span>
+                                  <span className="font-bold text-slate-900 truncate block">{msg.appointment.hospital}</span>
                                 </div>
                                 <div>
-                                  <span className="text-slate-400 block text-[9.5px]">Slot Date & Time</span>
+                                  <span className="text-slate-400 block text-[9.5px]">Scheduled Slot</span>
                                   <span className="font-bold text-medical-blue truncate block">
                                     {msg.appointment.date} @ {msg.appointment.time}
                                   </span>
                                 </div>
                                 <div>
-                                  <span className="text-slate-400 block text-[9.5px]">Payment Status</span>
-                                  <span className="font-bold text-emerald-600 truncate block">
-                                    {msg.appointment.paymentStatus || 'Paid'} (₹{msg.appointment.paymentAmount || 500})
+                                  <span className="text-slate-400 block text-[9.5px]">Amount Paid</span>
+                                  <span className="font-extrabold text-emerald-600 truncate block">
+                                    ₹{msg.appointment.paymentAmount || 500} ({msg.appointment.paymentStatus || 'Paid'})
                                   </span>
                                 </div>
+
+                                {msg.appointment.paymentMethod && (
+                                  <div className="col-span-2">
+                                    <span className="text-slate-400 block text-[9.5px]">Payment Method</span>
+                                    <span className="font-semibold text-slate-700 truncate block">
+                                      {msg.appointment.paymentMethod}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {msg.appointment.paymentId && (
+                                  <div className="col-span-2 pt-1.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <span className="text-slate-400 block text-[9.5px]">Transaction / Payment ID</span>
+                                      <code className="font-mono font-bold text-slate-800 text-[10.5px] truncate block">
+                                        {msg.appointment.paymentId}
+                                      </code>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(msg.appointment.paymentId);
+                                        setCopiedId(msg.appointment.paymentId);
+                                        setTimeout(() => setCopiedId(null), 2000);
+                                      }}
+                                      className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[10px] font-bold transition flex items-center gap-1 cursor-pointer shrink-0"
+                                      title="Copy Transaction ID"
+                                    >
+                                      {copiedId === msg.appointment.paymentId ? (
+                                        <>
+                                          <Check className="w-3 h-3 text-emerald-600" />
+                                          <span className="text-emerald-700 font-bold">Copied</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Copy className="w-3 h-3 text-slate-500" />
+                                          <span>Copy</span>
+                                        </>
+                                      )}
+                                    </button>
+                                  </div>
+                                )}
                               </div>
 
-                              <div className="flex items-center gap-1.5 pt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    navigate(`/dashboard/my-appointments?id=${msg.appointment.id}`);
-                                    setIsOpen(false);
-                                  }}
-                                  className="flex-1 py-1.5 px-2 bg-medical-blue hover:bg-medical-dark text-white rounded-lg font-bold text-[11px] transition text-center cursor-pointer inline-flex items-center justify-center gap-1"
-                                >
-                                  <FileText className="w-3 h-3" /> View In Portal
-                                </button>
+                              {/* ─── Next Action Options ─── */}
+                              <div className="space-y-1.5 pt-1">
+                                <div className="flex items-center justify-between text-[10.5px] font-bold text-slate-600 px-0.5">
+                                  <span>👉 Next Steps for Your Visit:</span>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleActionClick({ type: 'download_invoice', appointmentId: msg.appointment.id })}
+                                    className="p-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-bold text-[11px] transition shadow-2xs active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                                  >
+                                    <FileText className="w-3.5 h-3.5" />
+                                    <span>Download Invoice (PDF)</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigate(`/dashboard/my-appointments?id=${msg.appointment.id}`);
+                                      if (window.innerWidth < 640) setIsOpen(false);
+                                    }}
+                                    className="p-2 bg-medical-blue hover:bg-medical-dark text-white rounded-xl font-bold text-[11px] transition shadow-2xs active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                                  >
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    <span>Open in Portal</span>
+                                  </button>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSend('What documents do I need to bring for my appointment?')}
+                                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200/80 text-[10.5px] font-medium transition cursor-pointer flex items-center gap-1"
+                                  >
+                                    <span>📋 Documents to Bring</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSend('What are the hospital visiting hours?')}
+                                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200/80 text-[10.5px] font-medium transition cursor-pointer flex items-center gap-1"
+                                  >
+                                    <span>🕒 Visiting Hours</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSend('Book another appointment')}
+                                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200/80 text-[10.5px] font-medium transition cursor-pointer flex items-center gap-1"
+                                  >
+                                    <span>🩺 Book Another</span>
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           )}
