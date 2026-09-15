@@ -6,13 +6,16 @@ import {
   MessageSquare, X, Send, Bot, User, Sparkles, ChevronDown,
   Maximize2, Minimize2, Trash2, Calendar, Stethoscope, TestTube2,
   PhoneCall, ShieldAlert, ArrowRight, ExternalLink, RefreshCw,
-  Building2, CreditCard, CheckCircle2, Clock, FileText, Volume2, VolumeX
+  Building2, CreditCard, CheckCircle2, Clock, FileText, Volume2, VolumeX, QrCode
 } from 'lucide-react';
 import API_URL from '../../config/api';
+import AppointmentPaymentModal from '../AppointmentPaymentModal';
 
 export default function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [pendingBookingDetails, setPendingBookingDetails] = useState(null);
   const [messages, setMessages] = useState(() => {
     try {
       const saved = sessionStorage.getItem('medibot_messages');
@@ -103,7 +106,7 @@ export default function ChatbotWidget() {
     } catch (_) {}
   };
 
-  const handleSend = async (userText) => {
+  const handleSend = async (userText, paymentInfo = null) => {
     const query = (userText || input).trim();
     if (!query || loading) return;
 
@@ -129,6 +132,7 @@ export default function ChatbotWidget() {
         body: JSON.stringify({
           message: query,
           context: chatContext,
+          paymentInfo: paymentInfo || undefined,
           history: messages.slice(-6).map((m) => ({ sender: m.sender, text: m.text }))
         })
       });
@@ -152,6 +156,10 @@ export default function ChatbotWidget() {
         setMessages((prev) => [...prev, botMsg]);
         playChime();
         if (!isOpen) setHasUnread(true);
+
+        if (data.action && data.action.type === 'open_payment_modal' && data.action.bookingData) {
+          setPendingBookingDetails(data.action.bookingData);
+        }
       } else {
         throw new Error(data.message || 'Failed to get answer');
       }
@@ -172,6 +180,16 @@ export default function ChatbotWidget() {
     }
   };
 
+  const handlePaymentSuccess = (paymentResult) => {
+    setPaymentModalOpen(false);
+    const payNote = `✅ Payment Completed (${paymentResult.paymentMethod} - ID: ${paymentResult.paymentId})`;
+    handleSend(payNote, {
+      paymentId: paymentResult.paymentId,
+      paymentMethod: paymentResult.paymentMethod,
+      paymentAmount: paymentResult.amount
+    });
+  };
+
   const clearChat = () => {
     const welcome = [
       {
@@ -189,12 +207,20 @@ export default function ChatbotWidget() {
     ];
     setMessages(welcome);
     setChatContext({});
+    setPendingBookingDetails(null);
     sessionStorage.removeItem('medibot_messages');
     sessionStorage.removeItem('medibot_context');
   };
 
   const handleActionClick = (action) => {
     if (!action) return;
+    if (action.type === 'open_payment_modal') {
+      if (action.bookingData) {
+        setPendingBookingDetails(action.bookingData);
+      }
+      setPaymentModalOpen(true);
+      return;
+    }
     if (action.type === 'emergency_call') {
       window.location.href = `tel:${action.phone || '18004191234'}`;
       return;
@@ -203,6 +229,19 @@ export default function ChatbotWidget() {
       navigate(action.url);
       if (window.innerWidth < 640) setIsOpen(false);
     }
+  };
+
+  const handleQuickReplyClick = (qr, msg) => {
+    const lowerQr = qr.toLowerCase();
+    if (
+      (lowerQr.includes('pay online') || lowerQr.includes('upi qr') || lowerQr.includes('instant upi')) &&
+      (msg?.action?.bookingData || pendingBookingDetails)
+    ) {
+      setPendingBookingDetails(msg?.action?.bookingData || pendingBookingDetails);
+      setPaymentModalOpen(true);
+      return;
+    }
+    handleSend(qr);
   };
 
   // Helper to format basic markdown (bold, lists, code, quotes)
@@ -325,304 +364,326 @@ export default function ChatbotWidget() {
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-[9999] font-sans">
-      {/* ─── Floating Chat Trigger Launcher ─────────────────────── */}
-      <AnimatePresence>
-        {!isOpen && (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-            className="relative"
-          >
-            <button
-              type="button"
-              onClick={() => setIsOpen(true)}
-              title="Chat with MediBot 24/7 AI Assistant"
-              className="group flex items-center gap-2.5 bg-gradient-to-tr from-slate-900 via-medical-dark to-medical-blue text-white pl-3.5 pr-4 py-3 rounded-full shadow-2xl hover:shadow-blue-500/25 hover:scale-105 active:scale-95 transition-all duration-200 border border-white/20 cursor-pointer"
+    <>
+      <div className="fixed bottom-5 right-5 z-[9999] font-sans">
+        {/* ─── Floating Chat Trigger Launcher ─────────────────────── */}
+        <AnimatePresence>
+          {!isOpen && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+              className="relative"
             >
-              <div className="relative flex items-center justify-center">
-                <div className="h-9 w-9 rounded-full bg-white/15 backdrop-blur-xs flex items-center justify-center text-white ring-1 ring-white/30 shadow-inner">
-                  <Bot className="w-5 h-5 text-blue-200 group-hover:rotate-12 transition-transform" />
-                </div>
-                <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-slate-950 flex items-center justify-center">
-                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" />
-                </span>
-              </div>
-
-              <div className="flex flex-col text-left">
-                <span className="text-xs font-black tracking-wide text-white leading-tight flex items-center gap-1">
-                  MediBot AI
-                  <Sparkles className="w-3 h-3 text-amber-300" />
-                </span>
-                <span className="text-[10px] text-blue-200 font-medium leading-tight">
-                  24/7 Online Assistant
-                </span>
-              </div>
-            </button>
-
-            {hasUnread && (
-              <span className="absolute -top-1.5 -left-1.5 bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-md animate-bounce ring-2 ring-white">
-                New
-              </span>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ─── Animated Chatbot Window ────────────────────────────── */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.88, y: 30 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.88, y: 30 }}
-            transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-            className={`flex flex-col bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden transition-all duration-200 ${
-              isExpanded
-                ? 'w-[94vw] sm:w-[620px] h-[86vh] max-h-[800px]'
-                : 'w-[92vw] sm:w-[410px] h-[78vh] max-h-[640px]'
-            }`}
-          >
-            {/* ─── Chatbot Header ─────────────────────────────────── */}
-            <div className="bg-gradient-to-r from-slate-950 via-medical-dark to-blue-950 text-white p-3.5 sm:p-4 flex items-center justify-between shadow-md relative">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="relative shrink-0">
-                  <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-medical-blue to-indigo-500 flex items-center justify-center text-white shadow-md ring-2 ring-white/30">
-                    <Bot className="w-5 h-5 text-white" />
+              <button
+                type="button"
+                onClick={() => setIsOpen(true)}
+                title="Chat with MediBot 24/7 AI Assistant"
+                className="group flex items-center gap-2.5 bg-gradient-to-tr from-slate-900 via-medical-dark to-medical-blue text-white pl-3.5 pr-4 py-3 rounded-full shadow-2xl hover:shadow-blue-500/25 hover:scale-105 active:scale-95 transition-all duration-200 border border-white/20 cursor-pointer"
+              >
+                <div className="relative flex items-center justify-center">
+                  <div className="h-9 w-9 rounded-full bg-white/15 backdrop-blur-xs flex items-center justify-center text-white ring-1 ring-white/30 shadow-inner">
+                    <Bot className="w-5 h-5 text-blue-200 group-hover:rotate-12 transition-transform" />
                   </div>
-                  <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-slate-950" />
+                  <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-slate-950 flex items-center justify-center">
+                    <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" />
+                  </span>
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <h3 className="font-extrabold text-sm sm:text-base text-white truncate leading-tight">
-                      MediBot Assistant
-                    </h3>
-                    <span className="px-1.5 py-0.2 rounded-md bg-blue-500/25 border border-blue-400/30 text-[9px] font-bold text-blue-200 uppercase tracking-wider">
-                      AI 24/7
-                    </span>
+
+                <div className="flex flex-col text-left">
+                  <span className="text-xs font-black tracking-wide text-white leading-tight flex items-center gap-1">
+                    MediBot AI
+                    <Sparkles className="w-3 h-3 text-amber-300" />
+                  </span>
+                  <span className="text-[10px] text-blue-200 font-medium leading-tight">
+                    24/7 Online Assistant
+                  </span>
+                </div>
+              </button>
+
+              {hasUnread && (
+                <span className="absolute -top-1.5 -left-1.5 bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-md animate-bounce ring-2 ring-white">
+                  New
+                </span>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ─── Animated Chatbot Window ────────────────────────────── */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.88, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.88, y: 30 }}
+              transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+              className={`flex flex-col bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden transition-all duration-200 ${
+                isExpanded
+                  ? 'w-[94vw] sm:w-[620px] h-[86vh] max-h-[800px]'
+                  : 'w-[92vw] sm:w-[410px] h-[78vh] max-h-[640px]'
+              }`}
+            >
+              {/* ─── Chatbot Header ─────────────────────────────────── */}
+              <div className="bg-gradient-to-r from-slate-950 via-medical-dark to-blue-950 text-white p-3.5 sm:p-4 flex items-center justify-between shadow-md relative">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="relative shrink-0">
+                    <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-medical-blue to-indigo-500 flex items-center justify-center text-white shadow-md ring-2 ring-white/30">
+                      <Bot className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-slate-950" />
                   </div>
-                  <p className="text-[11px] text-blue-200/80 truncate mt-0.5">
-                    Instant Booking, Reports & Hospital Help
-                  </p>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="font-extrabold text-sm sm:text-base text-white truncate leading-tight">
+                        MediBot Assistant
+                      </h3>
+                      <span className="px-1.5 py-0.2 rounded-md bg-blue-500/25 border border-blue-400/30 text-[9px] font-bold text-blue-200 uppercase tracking-wider">
+                        AI 24/7
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-blue-200/80 truncate mt-0.5">
+                      Instant Booking, Reports & Hospital Help
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Control Buttons */}
-              <div className="flex items-center gap-1 shrink-0 text-slate-300">
-                <button
-                  type="button"
-                  onClick={() => setSoundEnabled(!soundEnabled)}
-                  className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition cursor-pointer"
-                  title={soundEnabled ? 'Mute Chime' : 'Enable Chime'}
-                >
-                  {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
-                </button>
-                <button
-                  type="button"
-                  onClick={clearChat}
-                  className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition cursor-pointer"
-                  title="Clear Chat History"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="hidden sm:inline-flex p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition cursor-pointer"
-                  title={isExpanded ? 'Collapse Window' : 'Expand Window'}
-                >
-                  {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition cursor-pointer"
-                  title="Close Chat"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* ─── Message Stream ─────────────────────────────────── */}
-            <div className="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-3.5 bg-slate-50/60">
-              {messages.map((msg) => {
-                const isUser = msg.sender === 'user';
-                return (
-                  <div
-                    key={msg.id}
-                    className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
+                {/* Control Buttons */}
+                <div className="flex items-center gap-1 shrink-0 text-slate-300">
+                  <button
+                    type="button"
+                    onClick={() => setSoundEnabled(!soundEnabled)}
+                    className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition cursor-pointer"
+                    title={soundEnabled ? 'Mute Chime' : 'Enable Chime'}
                   >
-                    <div className={`flex items-end gap-2 max-w-[88%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-                      {/* Avatar */}
-                      <div className="shrink-0 mb-1">
-                        {isUser ? (
-                          <div className="h-6 w-6 rounded-full bg-medical-dark text-white flex items-center justify-center text-[10px] font-bold shadow-xs">
-                            <User className="w-3.5 h-3.5" />
-                          </div>
-                        ) : (
-                          <div className="h-6 w-6 rounded-full bg-gradient-to-tr from-medical-blue to-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shadow-xs">
-                            <Bot className="w-3.5 h-3.5" />
-                          </div>
-                        )}
-                      </div>
+                    {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearChat}
+                    className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition cursor-pointer"
+                    title="Clear Chat History"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="hidden sm:inline-flex p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition cursor-pointer"
+                    title={isExpanded ? 'Collapse Window' : 'Expand Window'}
+                  >
+                    {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsOpen(false)}
+                    className="p-1.5 rounded-lg hover:bg-white/10 hover:text-white transition cursor-pointer"
+                    title="Close Chat"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
 
-                      {/* Bubble */}
-                      <div
-                        className={`p-3 rounded-2xl text-xs shadow-2xs ${
-                          isUser
-                            ? 'bg-gradient-to-tr from-medical-dark to-medical-blue text-white rounded-br-xs'
-                            : 'bg-white text-slate-800 border border-slate-200/90 rounded-bl-xs'
-                        }`}
-                      >
-                        {isUser ? (
-                          <p className="leading-relaxed whitespace-pre-wrap">{msg.text}</p>
-                        ) : (
-                          formatMarkdown(msg.text)
-                        )}
-
-                        {/* Interactive Appointment Card */}
-                        {msg.appointment && (
-                          <div className="mt-3 p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 shadow-2xs space-y-2 text-slate-800">
-                            <div className="flex items-center justify-between gap-2 border-b border-slate-200/80 pb-1.5">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                Booking Ref #{msg.appointment.appointment_number || msg.appointment.id}
-                              </span>
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                msg.appointment.status === 'Confirmed'
-                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                  : msg.appointment.status === 'Cancelled'
-                                  ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                                  : 'bg-amber-100 text-amber-800 border border-amber-200'
-                              }`}>
-                                {msg.appointment.status}
-                              </span>
+              {/* ─── Message Stream ─────────────────────────────────── */}
+              <div className="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-3.5 bg-slate-50/60">
+                {messages.map((msg) => {
+                  const isUser = msg.sender === 'user';
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
+                    >
+                      <div className={`flex items-end gap-2 max-w-[88%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                        {/* Avatar */}
+                        <div className="shrink-0 mb-1">
+                          {isUser ? (
+                            <div className="h-6 w-6 rounded-full bg-medical-dark text-white flex items-center justify-center text-[10px] font-bold shadow-xs">
+                              <User className="w-3.5 h-3.5" />
                             </div>
+                          ) : (
+                            <div className="h-6 w-6 rounded-full bg-gradient-to-tr from-medical-blue to-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shadow-xs">
+                              <Bot className="w-3.5 h-3.5" />
+                            </div>
+                          )}
+                        </div>
 
-                            <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-                              <div>
-                                <span className="text-slate-400 block text-[9.5px]">Patient</span>
-                                <span className="font-bold text-slate-800 truncate block">{msg.appointment.patientName}</span>
-                              </div>
-                              <div>
-                                <span className="text-slate-400 block text-[9.5px]">Hospital</span>
-                                <span className="font-bold text-slate-800 truncate block">{msg.appointment.hospital}</span>
-                              </div>
-                              <div>
-                                <span className="text-slate-400 block text-[9.5px]">Slot Date & Time</span>
-                                <span className="font-bold text-medical-blue truncate block">
-                                  {msg.appointment.date} @ {msg.appointment.time}
+                        {/* Bubble */}
+                        <div
+                          className={`p-3 rounded-2xl text-xs shadow-2xs ${
+                            isUser
+                              ? 'bg-gradient-to-tr from-medical-dark to-medical-blue text-white rounded-br-xs'
+                              : 'bg-white text-slate-800 border border-slate-200/90 rounded-bl-xs'
+                          }`}
+                        >
+                          {isUser ? (
+                            <p className="leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                          ) : (
+                            formatMarkdown(msg.text)
+                          )}
+
+                          {/* Interactive Appointment Card */}
+                          {msg.appointment && (
+                            <div className="mt-3 p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 shadow-2xs space-y-2 text-slate-800">
+                              <div className="flex items-center justify-between gap-2 border-b border-slate-200/80 pb-1.5">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                  Booking Ref #{msg.appointment.appointment_number || msg.appointment.id}
+                                </span>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                                  msg.appointment.status === 'Confirmed'
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                    : msg.appointment.status === 'Cancelled'
+                                    ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                    : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                }`}>
+                                  {msg.appointment.status}
                                 </span>
                               </div>
-                              <div>
-                                <span className="text-slate-400 block text-[9.5px]">Payment Status</span>
-                                <span className="font-bold text-emerald-600 truncate block">
-                                  {msg.appointment.paymentStatus || 'Paid'} (₹{msg.appointment.paymentAmount || 500})
-                                </span>
+
+                              <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                                <div>
+                                  <span className="text-slate-400 block text-[9.5px]">Patient</span>
+                                  <span className="font-bold text-slate-800 truncate block">{msg.appointment.patientName}</span>
+                                </div>
+                                <div>
+                                  <span className="text-slate-400 block text-[9.5px]">Hospital</span>
+                                  <span className="font-bold text-slate-800 truncate block">{msg.appointment.hospital}</span>
+                                </div>
+                                <div>
+                                  <span className="text-slate-400 block text-[9.5px]">Slot Date & Time</span>
+                                  <span className="font-bold text-medical-blue truncate block">
+                                    {msg.appointment.date} @ {msg.appointment.time}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-slate-400 block text-[9.5px]">Payment Status</span>
+                                  <span className="font-bold text-emerald-600 truncate block">
+                                    {msg.appointment.paymentStatus || 'Paid'} (₹{msg.appointment.paymentAmount || 500})
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigate(`/dashboard/my-appointments?id=${msg.appointment.id}`);
+                                    setIsOpen(false);
+                                  }}
+                                  className="flex-1 py-1.5 px-2 bg-medical-blue hover:bg-medical-dark text-white rounded-lg font-bold text-[11px] transition text-center cursor-pointer inline-flex items-center justify-center gap-1"
+                                >
+                                  <FileText className="w-3 h-3" /> View In Portal
+                                </button>
                               </div>
                             </div>
+                          )}
 
-                            <div className="flex items-center gap-1.5 pt-1">
+                          {/* Interactive Direct Action Button */}
+                          {msg.action && (
+                            <div className="mt-2.5 pt-2 border-t border-slate-100">
                               <button
                                 type="button"
-                                onClick={() => {
-                                  navigate(`/dashboard/my-appointments?id=${msg.appointment.id}`);
-                                  setIsOpen(false);
-                                }}
-                                className="flex-1 py-1.5 px-2 bg-medical-blue hover:bg-medical-dark text-white rounded-lg font-bold text-[11px] transition text-center cursor-pointer inline-flex items-center justify-center gap-1"
+                                onClick={() => handleActionClick(msg.action)}
+                                className={`w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-white font-bold text-xs shadow-xs hover:shadow transition-all cursor-pointer ${
+                                  msg.action.type === 'open_payment_modal'
+                                    ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-medical-blue hover:from-emerald-700 hover:to-blue-700 ring-2 ring-emerald-400/40 animate-pulse'
+                                    : 'bg-gradient-to-r from-medical-dark to-medical-blue hover:from-blue-900 hover:to-medical-blue'
+                                }`}
                               >
-                                <FileText className="w-3 h-3" /> View In Portal
+                                {msg.action.type === 'open_payment_modal' ? (
+                                  <CreditCard className="w-4 h-4 text-amber-300" />
+                                ) : null}
+                                <span>{msg.action.label || (msg.action.type === 'emergency_call' ? '🚨 Call Emergency Now' : '👉 Proceed / Open Page')}</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
                               </button>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
+                      </div>
 
-                        {/* Interactive Direct Action Button */}
-                        {msg.action && (
-                          <div className="mt-2.5 pt-2 border-t border-slate-100">
+                      <span className="text-[9.5px] text-slate-400 mt-1 px-1">
+                        {msg.timestamp}
+                      </span>
+
+                      {/* Quick Reply Chips (Only for latest bot message) */}
+                      {!isUser && msg.quickReplies && msg.quickReplies.length > 0 && (
+                        <div className="flex items-center gap-1.5 flex-wrap mt-2 max-w-full">
+                          {msg.quickReplies.map((qr, qIdx) => (
                             <button
+                              key={qIdx}
                               type="button"
-                              onClick={() => handleActionClick(msg.action)}
-                              className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-medical-dark to-medical-blue hover:from-blue-900 hover:to-medical-blue text-white font-bold text-xs shadow-xs hover:shadow transition-all cursor-pointer"
+                              onClick={() => handleQuickReplyClick(qr, msg)}
+                              className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer shrink-0 ${
+                                qr.includes('Pay Online') || qr.includes('Instant UPI')
+                                  ? 'bg-gradient-to-r from-emerald-50 to-blue-50 text-emerald-800 border border-emerald-300 hover:border-emerald-500 font-bold'
+                                  : 'bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200 hover:border-medical-blue/40'
+                              }`}
                             >
-                              <span>{msg.action.label || (msg.action.type === 'emergency_call' ? '🚨 Call Emergency Now' : '👉 Proceed / Open Page')}</span>
-                              <ArrowRight className="w-3.5 h-3.5" />
+                              {qr}
                             </button>
-                          </div>
-                        )}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
+                  );
+                })}
 
-                    <span className="text-[9.5px] text-slate-400 mt-1 px-1">
-                      {msg.timestamp}
-                    </span>
-
-                    {/* Quick Reply Chips (Only for latest bot message) */}
-                    {!isUser && msg.quickReplies && msg.quickReplies.length > 0 && (
-                      <div className="flex items-center gap-1.5 flex-wrap mt-2 max-w-full">
-                        {msg.quickReplies.map((qr, qIdx) => (
-                          <button
-                            key={qIdx}
-                            type="button"
-                            onClick={() => handleSend(qr)}
-                            className="px-2.5 py-1 rounded-full bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200 hover:border-medical-blue/40 text-[11px] font-semibold transition-all shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer shrink-0"
-                          >
-                            {qr}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                {/* Typing Animation */}
+                {loading && (
+                  <div className="flex items-end gap-2">
+                    <div className="h-6 w-6 rounded-full bg-gradient-to-tr from-medical-blue to-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shadow-xs">
+                      <Bot className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="p-3 rounded-2xl bg-white border border-slate-200/90 rounded-bl-xs shadow-2xs flex items-center gap-1.5 text-slate-500">
+                      <span className="text-[11px] font-medium mr-1 text-slate-400">MediBot is typing</span>
+                      <span className="h-1.5 w-1.5 rounded-full bg-medical-blue animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="h-1.5 w-1.5 rounded-full bg-medical-blue animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="h-1.5 w-1.5 rounded-full bg-medical-blue animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
                   </div>
-                );
-              })}
+                )}
+                <div ref={messagesEndRef} />
+              </div>
 
-              {/* Typing Animation */}
-              {loading && (
-                <div className="flex items-end gap-2">
-                  <div className="h-6 w-6 rounded-full bg-gradient-to-tr from-medical-blue to-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shadow-xs">
-                    <Bot className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="p-3 rounded-2xl bg-white border border-slate-200/90 rounded-bl-xs shadow-2xs flex items-center gap-1.5 text-slate-500">
-                    <span className="text-[11px] font-medium mr-1 text-slate-400">MediBot is typing</span>
-                    <span className="h-1.5 w-1.5 rounded-full bg-medical-blue animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="h-1.5 w-1.5 rounded-full bg-medical-blue animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="h-1.5 w-1.5 rounded-full bg-medical-blue animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* ─── Chat Input Bar ─────────────────────────────────── */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSend();
-              }}
-              className="p-2.5 sm:p-3 bg-white border-t border-slate-200/90 flex items-center gap-2"
-            >
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask MediBot... (e.g. 'Book doctor', '#1042', 'Lab tests')"
-                className="flex-1 bg-slate-100 hover:bg-slate-50 focus:bg-white text-slate-800 text-xs px-3.5 py-2.5 rounded-xl border border-transparent focus:border-medical-blue/40 focus:ring-2 focus:ring-medical-blue/20 outline-none transition"
-              />
-              <button
-                type="submit"
-                disabled={!input.trim() || loading}
-                className="h-9 w-9 rounded-xl bg-medical-dark hover:bg-medical-blue disabled:opacity-40 text-white flex items-center justify-center transition shadow-xs shrink-0 cursor-pointer active:scale-95"
-                title="Send Message"
+              {/* ─── Chat Input Bar ─────────────────────────────────── */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSend();
+                }}
+                className="p-2.5 sm:p-3 bg-white border-t border-slate-200/90 flex items-center gap-2"
               >
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Ask MediBot... (e.g. 'Book doctor', '#1042', 'Lab tests')"
+                  className="flex-1 bg-slate-100 hover:bg-slate-50 focus:bg-white text-slate-800 text-xs px-3.5 py-2.5 rounded-xl border border-transparent focus:border-medical-blue/40 focus:ring-2 focus:ring-medical-blue/20 outline-none transition"
+                />
+                <button
+                  type="submit"
+                  disabled={!input.trim() || loading}
+                  className="h-9 w-9 rounded-xl bg-medical-dark hover:bg-medical-blue disabled:opacity-40 text-white flex items-center justify-center transition shadow-xs shrink-0 cursor-pointer active:scale-95"
+                  title="Send Message"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* ─── In-Chat Payment Gateway Modal (Stripe / Razorpay / Free UPI QR) ─── */}
+      <AppointmentPaymentModal
+        isOpen={paymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
+        bookingDetails={pendingBookingDetails}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
+    </>
   );
 }
+
