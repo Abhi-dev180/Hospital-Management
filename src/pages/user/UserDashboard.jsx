@@ -335,9 +335,27 @@ export default function UserDashboard() {
 
   // Active filtered appointments for the recent list
   const filteredAppointments = useMemo(() => {
-    if (appointmentFilter === 'doctor') return doctorAppointments;
-    if (appointmentFilter === 'lab') return labAppointments;
-    return appointments;
+    let list = appointments;
+    if (appointmentFilter === 'doctor') list = doctorAppointments;
+    if (appointmentFilter === 'lab') list = labAppointments;
+    return [...list].sort((a, b) => {
+      const getTimestamp = (item) => {
+        if (!item) return 0;
+        if (item.createdAt) {
+          const t = new Date(item.createdAt).getTime();
+          if (!isNaN(t) && t > 0) return t;
+        }
+        if (item.date) {
+          const t = new Date(`${item.date}T${item.time || '00:00'}`).getTime();
+          if (!isNaN(t) && t > 0) return t;
+        }
+        if (item.appointment_number) {
+          return Number(item.appointment_number) || 0;
+        }
+        return Number(item.id) || 0;
+      };
+      return getTimestamp(b) - getTimestamp(a);
+    });
   }, [appointments, doctorAppointments, labAppointments, appointmentFilter]);
 
   // Paginated appointments

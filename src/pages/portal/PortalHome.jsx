@@ -256,7 +256,7 @@ export default function PortalHome() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <span className="inline-flex items-center gap-2 text-medical-blue font-semibold text-sm uppercase tracking-wider">
-              <Sparkles className="w-4 h-4" /> Features
+              <Sparkles className="w-4 h-4" /> Features 
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-medical-dark mt-3">Everything your clinic needs, in one portal</h2>
             <p className="text-gray-600 mt-4">Purpose-built modules that replace spreadsheets, sticky notes, and disconnected tools.</p>

@@ -566,6 +566,25 @@ export default function AdminAppointments() {
 
       return matchStatus && matchType && matchSearch;
     });
+
+    return [...result].sort((a, b) => {
+      const getTimestamp = (item) => {
+        if (!item) return 0;
+        if (item.createdAt) {
+          const t = new Date(item.createdAt).getTime();
+          if (!isNaN(t) && t > 0) return t;
+        }
+        if (item.date) {
+          const t = new Date(`${item.date}T${item.time || '00:00'}`).getTime();
+          if (!isNaN(t) && t > 0) return t;
+        }
+        if (item.appointment_number) {
+          return Number(item.appointment_number) || 0;
+        }
+        return Number(item.id) || 0;
+      };
+      return getTimestamp(b) - getTimestamp(a);
+    });
   }, [appointments, search, statusFilter, typeFilter]);
 
   const paginated = useMemo(() => filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE), [filtered, page]);
