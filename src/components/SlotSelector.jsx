@@ -1,7 +1,7 @@
-// frontend/src/components/SlotSelector.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Clock } from 'lucide-react';
 import API_URL from '../config/api';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 export default function SlotSelector({
   date,
@@ -52,27 +52,48 @@ export default function SlotSelector({
     if (onSelectTime) onSelectTime(formatted);
   };
 
-  useEffect(() => {
+  const fetchBookedSlots = useCallback(async () => {
     if (!date) return;
-    (async () => {
-      setLoadingSlots(true);
-      try {
-        const res = await fetch(
-          `${API_URL}/api/appointments/booked-slots?date=${date}&hospitalId=${hospitalId || ''}`
-        );
-        const data = await res.json();
-        if (res.ok && Array.isArray(data.bookedSlots)) {
-          setBookedSlots(data.bookedSlots);
-        } else {
-          setBookedSlots([]);
-        }
-      } catch (e) {
-        console.error('Could not fetch booked slots:', e);
-      } finally {
-        setLoadingSlots(false);
+    setLoadingSlots(true);
+    try {
+      const res = await fetch(
+        `${API_URL}/api/appointments/booked-slots?date=${date}&hospitalId=${hospitalId || ''}`
+      );
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.bookedSlots)) {
+        setBookedSlots(data.bookedSlots);
+      } else {
+        setBookedSlots([]);
       }
-    })();
+    } catch (e) {
+      console.error('Could not fetch booked slots:', e);
+    } finally {
+      setLoadingSlots(false);
+    }
   }, [date, hospitalId]);
+
+  useEffect(() => {
+    fetchBookedSlots();
+  }, [fetchBookedSlots]);
+
+  // Real-time slot update listeners
+  useWebSocket('appointment_cancelled', (payload) => {
+    if (!payload || !payload.date || payload.date === date) {
+      fetchBookedSlots();
+    }
+  });
+
+  useWebSocket('slots_updated', (payload) => {
+    if (!payload || !payload.date || payload.date === date) {
+      fetchBookedSlots();
+    }
+  });
+
+  useWebSocket('appointment_created', (payload) => {
+    if (!payload || !payload.date || payload.date === date) {
+      fetchBookedSlots();
+    }
+  });
 
   const slots = [
     '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',

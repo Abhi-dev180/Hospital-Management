@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User, Phone, Building2, Mail, Calendar, Clock, MessageSquare, PawPrint,
@@ -12,6 +12,7 @@ import API_URL from '../../config/api';
 import Loader, { ListSkeleton, OverlayLoader } from '../../components/Loader';
 import AppointmentPaymentModal from '../AppointmentPaymentModal';
 import SlotSelector from '../SlotSelector';
+import { useWebSocket } from '../../hooks/useWebSocket';
 
 // ─── Constants ────────────────────────────────────────────────
 const initialForm = {
@@ -156,22 +157,43 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
   }, [presetHospitalId]);
 
   // Fetch booked slots when date changes
-  useEffect(() => {
+  const fetchBookedSlots = useCallback(async () => {
     if (!form.date) return;
-    (async () => {
-      setLoadingSlots(true);
-      try {
-        const res = await fetch(`${API_URL}/api/appointments/booked-slots?date=${form.date}&hospitalId=${form.hospitalId || ''}`);
-        const data = await res.json();
-        setBookedSlots(res.ok && Array.isArray(data.bookedSlots) ? data.bookedSlots : []);
-        setAvailableSlots(res.ok && Array.isArray(data.availableSlots) ? data.availableSlots : []);
-      } catch (e) {
-        console.error('Could not fetch booked slots:', e);
-      } finally {
-        setLoadingSlots(false);
-      }
-    })();
+    setLoadingSlots(true);
+    try {
+      const res = await fetch(`${API_URL}/api/appointments/booked-slots?date=${form.date}&hospitalId=${form.hospitalId || ''}`);
+      const data = await res.json();
+      setBookedSlots(res.ok && Array.isArray(data.bookedSlots) ? data.bookedSlots : []);
+      setAvailableSlots(res.ok && Array.isArray(data.availableSlots) ? data.availableSlots : []);
+    } catch (e) {
+      console.error('Could not fetch booked slots:', e);
+    } finally {
+      setLoadingSlots(false);
+    }
   }, [form.date, form.hospitalId]);
+
+  useEffect(() => {
+    fetchBookedSlots();
+  }, [fetchBookedSlots]);
+
+  // Real-time slot update listeners
+  useWebSocket('appointment_cancelled', (payload) => {
+    if (!payload || !payload.date || payload.date === form.date) {
+      fetchBookedSlots();
+    }
+  });
+
+  useWebSocket('slots_updated', (payload) => {
+    if (!payload || !payload.date || payload.date === form.date) {
+      fetchBookedSlots();
+    }
+  });
+
+  useWebSocket('appointment_created', (payload) => {
+    if (!payload || !payload.date || payload.date === form.date) {
+      fetchBookedSlots();
+    }
+  });
 
   // Calendar helpers
   const daysInMonth = getDaysInMonth(currentYear, currentMonth);
