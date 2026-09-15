@@ -14,6 +14,7 @@ import FeedbackPage from "./pages/Feedback/FeedbackPage";        // wrapper that
 import PublicFeedbackForm from "./components/portal/PublicFeedbackForm";
 import ScrollToTop from "./components/ScrollToTop";
 import FloatingScrollTop from "./components/FloatingScrollTop";
+import ChatbotWidget from "./components/chatbot/ChatbotWidget";
 import PlanExpiredModal from "./components/PlanExpiredModal";
 import useStripeSessionVerifier from "./hooks/useStripeSessionVerifier";
 
@@ -190,6 +191,7 @@ function AppContent() {
         </main>
         <Footer />
         <FloatingScrollTop />
+        <ChatbotWidget />
       </div>
 
       <PlanExpiredModal
