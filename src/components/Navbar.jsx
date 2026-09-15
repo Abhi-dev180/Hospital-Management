@@ -276,7 +276,7 @@ export default function Navbar() {
                   })}
                 </div>
 
-                <div className="flex items-center gap-2.5 ml-2 pl-3 border-l border-gray-200 shrink-0">
+                <div className="flex items-center gap-2 ml-1.5 pl-3 border-l border-slate-200/90 shrink-0">
                   <ProfileDropdown user={user} onLogout={handleLogout} />
                 </div>
               </>
