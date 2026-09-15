@@ -58,7 +58,11 @@ export default function Navbar() {
     };
     checkAuth();
     window.addEventListener('storage', checkAuth);
-    return () => window.removeEventListener('storage', checkAuth);
+    window.addEventListener('user_subscription_updated', checkAuth);
+    return () => {
+      window.removeEventListener('storage', checkAuth);
+      window.removeEventListener('user_subscription_updated', checkAuth);
+    };
   }, []);
 
   // ─── Close mobile menu on route change ────────────────────
@@ -323,15 +327,28 @@ export default function Navbar() {
             <div className="px-4 pt-3 pb-6 space-y-2 flex flex-col max-h-[85vh] overflow-y-auto">
               {user ? (
                 <>
-                  <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-gray-50 border border-gray-100 mb-1">
-                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-medical-blue text-white font-bold uppercase shadow-2xs">
+                  <Link
+                    to="/profile"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-gradient-to-r from-blue-50/90 to-slate-50 border border-blue-100/90 mb-2 hover:border-medical-blue/40 transition-all group"
+                  >
+                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-medical-dark to-medical-blue text-white font-bold uppercase shadow-2xs group-hover:scale-105 transition-transform shrink-0">
                       {user?.name?.charAt(0) || 'U'}
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-gray-900 truncate text-sm">{user?.name}</p>
-                      <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="font-bold text-gray-900 truncate text-sm group-hover:text-medical-blue transition-colors">
+                          {user?.name}
+                        </p>
+                        <span className="text-[10px] font-bold text-medical-blue bg-blue-100/80 px-2 py-0.5 rounded-full capitalize shrink-0">
+                          {user?.role}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 truncate mt-0.5">
+                        {user?.hospital || user?.email}
+                      </p>
                     </div>
-                  </div>
+                  </Link>
 
                   {showDashboardNav ? (
                     <>
