@@ -206,7 +206,7 @@ export default function Navbar() {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center justify-end gap-2 lg:gap-3 font-medium text-xs lg:text-sm text-gray-600 min-w-0 flex-1 ml-3 overflow-hidden">
+          <nav className="hidden md:flex items-center justify-end gap-2 lg:gap-3 font-medium text-xs lg:text-sm text-gray-600 min-w-0 flex-1 ml-3">
             {!showDashboardNav && (
               <div className="flex items-center gap-1.5 lg:gap-2">
                 {publicLinks.map((link) =>
