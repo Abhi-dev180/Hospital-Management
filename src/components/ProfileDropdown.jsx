@@ -202,35 +202,35 @@ export default function ProfileDropdown({ user: initialUser, onLogout }) {
         aria-expanded={open}
         aria-haspopup="true"
         title="View profile, hospital & subscription details"
-        className={`group flex items-center gap-2 px-2 py-1.5 rounded-full border transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-medical-blue/40 ${
+        className={`group flex items-center gap-1.5 px-1.5 py-1 rounded-full border transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-medical-blue/40 ${
           open
-            ? 'bg-blue-50/90 border-medical-blue/40 text-medical-dark shadow-sm'
+            ? 'bg-blue-50/90 border-medical-blue/40 text-medical-dark shadow-xs'
             : 'bg-white hover:bg-slate-50 border-slate-200/90 text-slate-700 shadow-2xs hover:border-slate-300'
         }`}
       >
         <div className="relative">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-medical-dark to-medical-blue flex items-center justify-center text-white font-bold text-xs uppercase shadow-xs group-hover:scale-105 transition-transform">
+          <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-medical-dark to-medical-blue flex items-center justify-center text-white font-bold text-[11px] uppercase shadow-xs group-hover:scale-105 transition-transform">
             {userInitial}
           </div>
           <span
-            className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-white ${
+            className={`absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full ring-1.5 ring-white ${
               isExpired ? 'bg-amber-500' : 'bg-emerald-500'
             }`}
             title={isExpired ? 'Subscription Expired' : 'Active Account'}
           />
         </div>
 
-        <div className="hidden sm:flex flex-col text-left max-w-[130px] pr-0.5">
-          <span className="text-xs font-bold text-slate-800 truncate leading-tight">
+        <div className="hidden sm:flex flex-col text-left max-w-[110px] pr-0.5">
+          <span className="text-[11px] font-bold text-slate-800 truncate leading-tight">
             {user.name || 'Account'}
           </span>
-          <span className="text-[10px] text-slate-500 font-medium capitalize truncate leading-tight">
+          <span className="text-[9px] text-slate-500 font-medium capitalize truncate leading-tight">
             {hospitalName ? hospitalName : roleName}
           </span>
         </div>
 
         <ChevronDown
-          className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform duration-200 ${
+          className={`w-3 h-3 text-slate-400 group-hover:text-slate-600 transition-transform duration-200 ${
             open ? 'rotate-180 text-medical-blue' : ''
           }`}
         />
@@ -240,10 +240,10 @@ export default function ProfileDropdown({ user: initialUser, onLogout }) {
       <button
         type="button"
         onClick={handleLogout}
-        className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50/80 text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors border border-red-200/70 focus:outline-none focus:ring-2 focus:ring-red-200 cursor-pointer"
+        className="flex h-7 w-7 items-center justify-center rounded-full bg-red-50/80 text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors border border-red-200/70 focus:outline-none focus:ring-2 focus:ring-red-200 cursor-pointer"
         title="Sign Out"
       >
-        <LogOut className="w-3.5 h-3.5" />
+        <LogOut className="w-3 h-3" />
       </button>
 
       {/* ─── Rich Profile Popover Dropdown ──────────────────────── */}
