@@ -306,6 +306,15 @@ export default function UserMyAppointmentsList() {
     }
   };
 
+  const handleDownloadInvoice = (app, isCancel = false) => {
+    const apptId = app.appointment_number || app.id;
+    const token = localStorage.getItem('token');
+    const url = isCancel
+      ? `${API_URL}/api/appointments/${apptId}/cancellation-invoice`
+      : `${API_URL}/api/appointments/${apptId}/invoice`;
+    window.open(url, '_blank');
+  };
+
   const apptsList = Array.isArray(appointments) ? appointments : [];
 
   // ─── Section Counts ──────────────────────────────────────────
@@ -809,6 +818,27 @@ export default function UserMyAppointmentsList() {
                           Give Feedback
                         </button>
                       ) : null}
+
+                      {/* Invoice download button */}
+                      {app.status === 'Cancelled' ? (
+                        <button
+                          onClick={() => handleDownloadInvoice(app, true)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 active:scale-95 transition shadow-2xs"
+                          title="Download PDF Cancellation Invoice & Credit Memo"
+                        >
+                          <Receipt size={13} />
+                          <span>Cancel Invoice</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleDownloadInvoice(app, false)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 active:scale-95 transition shadow-2xs"
+                          title="Download PDF Booking Invoice"
+                        >
+                          <Receipt size={13} />
+                          <span>Invoice</span>
+                        </button>
+                      )}
 
                       {/* Reschedule / Cancel actions */}
                       {app.status !== 'Cancelled' && app.status !== 'Completed' && (
