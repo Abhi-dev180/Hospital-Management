@@ -22,15 +22,20 @@ export default function ChatbotWidget() {
       {
         id: 'welcome_1',
         sender: 'bot',
-        text: `👋 **Hello! I am MediBot, your 24/7 Hospital & Medical Assistant.**\n\nHow can I help you today? You can ask me to book appointments, track an existing booking, check diagnostic test prices, or get emergency help!`,
+        text: `👋 **Hello! I am MediBot, your 24/7 Hospital & Medical Assistant.**\n\nHow can I assist you today? You can ask me to book appointments, track an existing booking, check diagnostic test fasting rules, vaccination schedules, health packages, doctor fees, or get emergency help!`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         quickReplies: [
           '🩺 Book Doctor Appointment',
-          '🧪 Lab Tests & Pricing',
+          '🧪 Lab Tests & Fasting Rules',
+          '💎 Full Body Health Checkup',
+          '💉 Vaccination Schedules',
+          '🌸 Maternity & Delivery',
+          '🏠 Home Blood Collection',
+          '👴 Senior Citizen Care',
+          '💰 Doctor Consultation Fees',
+          '🛡️ Insurance & Cashless TPA',
           '🔍 Track My Appointment',
-          '🚨 Emergency Helplines',
-          '🏥 Hospital Network',
-          '💳 Software Pricing'
+          '🚨 Emergency Helplines'
         ]
       }
     ];
