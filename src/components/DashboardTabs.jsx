@@ -11,6 +11,7 @@ import useAdminBadges from '../hooks/useAdminBadges';
 
 const ROLE_TABS = {
   superadmin: [
+    { name: 'Overview', to: '/superadmin', icon: LayoutDashboard },
     { name: 'Demo Bookings', to: '/superadmin/demos', badge: 'demos', icon: Video },
     { name: 'Registrations', to: '/superadmin/registrations', badge: 'registrations', icon: ClipboardCheck },
     { name: 'Users', to: '/superadmin/users', icon: Users },
@@ -118,26 +119,14 @@ export default function DashboardTabs({ role }) {
             !location.search.includes('tab=all')))
       );
     }
-    if (to === '/superadmin/appointments') {
-      return (
-        location.pathname === '/superadmin/appointments' &&
-        !location.search.includes('tab=lab') &&
-        !location.search.includes('tab=refunds')
-      );
+    if (to === '/superadmin') {
+      return location.pathname === '/superadmin' || location.pathname === '/superadmin/overview';
     }
-    if (to === '/admin/appointments') {
-      return (
-        location.pathname === '/admin/appointments' &&
-        !location.search.includes('tab=lab') &&
-        !location.search.includes('tab=refunds')
-      );
+    if (to === '/admin') {
+      return location.pathname === '/admin' || location.pathname === '/admin/overview';
     }
-    if (to === '/dashboard/my-appointments') {
-      return (
-        location.pathname === '/dashboard/my-appointments' &&
-        !location.search.includes('tab=lab') &&
-        !location.search.includes('tab=refunds')
-      );
+    if (to === '/dashboard') {
+      return location.pathname === '/dashboard' || location.pathname === '/dashboard/overview';
     }
     return location.pathname === to;
   };

@@ -139,6 +139,8 @@ export default function Navbar() {
         { name: 'Manage Admin', to: '/superadmin/manage-admin', icon: ShieldCheck },
         { name: 'Manage Hospitals', to: '/superadmin/manage-hospitals', icon: Building2 },
         { name: 'Appointments', to: '/superadmin/appointments', badge: 'appointments', icon: CalendarCheck },
+        { name: 'Lab Bookings', to: '/superadmin/appointments?tab=lab', icon: FlaskConical },
+        { name: 'Refunds & Settlements', to: '/superadmin/appointments?tab=refunds', icon: DollarSign },
         { name: 'Calendar', to: '/superadmin/calendar', icon: Calendar },
         { name: 'Contacts', to: '/superadmin/contacts', badge: 'contacts', icon: Mail }
       ];
@@ -148,19 +150,23 @@ export default function Navbar() {
       return [
         { name: 'Overview', to: '/admin', icon: LayoutDashboard },
         { name: 'Appointments', to: '/admin/appointments', badge: 'appointments', icon: CalendarCheck },
+        { name: 'Lab Bookings', to: '/admin/appointments?tab=lab', icon: FlaskConical },
+        { name: 'Refunds & Settlements', to: '/admin/appointments?tab=refunds', icon: DollarSign },
         { name: 'Calendar', to: '/admin/calendar', icon: Calendar },
         { name: 'Timings', to: '/admin/timings', icon: Clock },
-        { name: 'Feedback', to: '/admin/appointment-feedback', badge: 'feedback', icon: Star }
+        { name: 'Feedbacks', to: '/admin/appointment-feedback', badge: 'feedback', icon: Star }
       ];
     }
 
     return [
       { name: 'Overview', to: '/dashboard', icon: LayoutDashboard },
+      { name: 'Lab Catalog', to: '/dashboard/services', icon: FlaskConical },
+      { name: 'Book Consult', to: '/dashboard/book-appointment', icon: Stethoscope },
+      { name: 'Doctor Appointments', to: '/dashboard/my-appointments?tab=doctor', icon: CalendarCheck },
+      { name: 'Lab Bookings', to: '/dashboard/my-appointments?tab=lab', icon: FlaskConical },
+      { name: 'Refunds & Settlements', to: '/dashboard/my-appointments?tab=refunds', icon: DollarSign },
       { name: 'Explore Hospitals', to: '/dashboard/explore-hospitals', icon: Building2 },
-      { name: 'Lab & Diagnostics', to: '/dashboard/services', icon: FlaskConical },
-      { name: 'Book Appointment', to: '/dashboard/book-appointment', icon: Stethoscope },
-      { name: 'My Appointments', to: '/dashboard/my-appointments', icon: CalendarCheck },
-      { name: 'Reviews', to: '/dashboard/feedbacks', icon: Star }
+      { name: 'Feedback & Reviews', to: '/dashboard/feedbacks', icon: Star }
     ];
   };
 
