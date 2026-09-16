@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Menu, X, LayoutDashboard, Video, ClipboardCheck, Users,
   FlaskConical, ShieldCheck, Building2, CalendarCheck, Calendar,
-  Mail, Star, Clock, Stethoscope, ChevronLeft, ChevronRight
+  Mail, Star, Clock, Stethoscope, ChevronLeft, ChevronRight, DollarSign
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import medicalLogo from '../assets/sign.jpeg';
