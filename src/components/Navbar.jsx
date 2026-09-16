@@ -170,6 +170,65 @@ export default function Navbar() {
     ];
   };
 
+  const isTabActive = (to) => {
+    if (to.includes('?tab=refunds')) {
+      return (
+        (location.pathname === '/superadmin/appointments' ||
+          location.pathname === '/admin/appointments' ||
+          location.pathname === '/dashboard/my-appointments') &&
+        location.search.includes('tab=refunds')
+      );
+    }
+    if (to.includes('?tab=lab')) {
+      return (
+        (location.pathname === '/superadmin/appointments' ||
+          location.pathname === '/admin/appointments' ||
+          location.pathname === '/dashboard/my-appointments') &&
+        location.search.includes('tab=lab')
+      );
+    }
+    if (to.includes('?tab=doctor')) {
+      return (
+        location.pathname === '/dashboard/my-appointments' &&
+        (location.search.includes('tab=doctor') ||
+          (!location.search.includes('tab=lab') &&
+            !location.search.includes('tab=refunds') &&
+            !location.search.includes('tab=all')))
+      );
+    }
+    if (to === '/superadmin/appointments') {
+      return (
+        location.pathname === '/superadmin/appointments' &&
+        !location.search.includes('tab=lab') &&
+        !location.search.includes('tab=refunds')
+      );
+    }
+    if (to === '/admin/appointments') {
+      return (
+        location.pathname === '/admin/appointments' &&
+        !location.search.includes('tab=lab') &&
+        !location.search.includes('tab=refunds')
+      );
+    }
+    if (to === '/dashboard/my-appointments') {
+      return (
+        location.pathname === '/dashboard/my-appointments' &&
+        !location.search.includes('tab=lab') &&
+        !location.search.includes('tab=refunds')
+      );
+    }
+    if (to === '/superadmin') {
+      return location.pathname === '/superadmin' || location.pathname === '/superadmin/overview';
+    }
+    if (to === '/admin') {
+      return location.pathname === '/admin' || location.pathname === '/admin/overview';
+    }
+    if (to === '/dashboard') {
+      return location.pathname === '/dashboard' || location.pathname === '/dashboard/overview';
+    }
+    return location.pathname === to;
+  };
+
   const dashboardLinks = getRoleLinks();
   const showDashboardNav = !!user && isDashboardRoute();
   const logoRedirect = user ? getDashboardLink() : '/';
@@ -292,43 +351,38 @@ export default function Navbar() {
                     className="flex items-center gap-1 lg:gap-1.5 overflow-x-auto no-scrollbar overscroll-x-contain scroll-smooth whitespace-nowrap py-1 px-1 flex-1 min-w-0"
                   >
                     {dashboardLinks.map((link) => {
+                      const active = isTabActive(link.to);
                       const Icon = link.icon;
                       const badgeCount = link.badge ? activeBadges[link.badge] : 0;
                       return (
-                        <NavLink
+                        <Link
                           key={link.name}
                           to={link.to}
-                          className={({ isActive }) =>
-                            `relative inline-flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors shrink-0 z-10 ${
-                              isActive
-                                ? 'text-white font-bold'
-                                : 'text-slate-600 hover:text-medical-blue hover:bg-slate-100/60'
-                            }`
-                          }
+                          className={`relative inline-flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0 z-10 ${
+                            active
+                              ? 'text-white font-bold'
+                              : 'text-slate-800 hover:text-medical-blue hover:bg-slate-100/70'
+                          }`}
                         >
-                          {({ isActive }) => (
-                            <>
-                              {isActive && (
-                                <motion.div
-                                  layoutId="navbarActivePill"
-                                  transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-                                  className="absolute inset-0 bg-medical-blue rounded-xl shadow-xs -z-10"
-                                />
-                              )}
-                              {Icon && <Icon className="w-3.5 h-3.5 shrink-0" />}
-                              <span>{link.name}</span>
-                              {badgeCount > 0 && (
-                                <span
-                                  className={`inline-flex items-center justify-center px-1.5 py-0.2 text-[10px] font-black rounded-full leading-tight transition-colors ${
-                                    isActive ? 'bg-white text-blue-700' : 'bg-rose-500 text-white shadow-2xs'
-                                  }`}
-                                >
-                                  {badgeCount > 99 ? '99+' : badgeCount}
-                                </span>
-                              )}
-                            </>
+                          {active && (
+                            <motion.div
+                              layoutId="navbarActivePill"
+                              transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                              className="absolute inset-0 bg-medical-blue rounded-xl shadow-xs -z-10"
+                            />
                           )}
-                        </NavLink>
+                          {Icon && <Icon className="w-3.5 h-3.5 shrink-0" />}
+                          <span>{link.name}</span>
+                          {badgeCount > 0 && (
+                            <span
+                              className={`inline-flex items-center justify-center px-1.5 py-0.2 text-[10px] font-black rounded-full leading-tight transition-colors ${
+                                active ? 'bg-white text-blue-700' : 'bg-rose-500 text-white shadow-2xs'
+                              }`}
+                            >
+                              {badgeCount > 99 ? '99+' : badgeCount}
+                            </span>
+                          )}
+                        </Link>
                       );
                     })}
                   </div>
@@ -425,18 +479,17 @@ export default function Navbar() {
                       {dashboardLinks.map((link) => {
                         const Icon = link.icon;
                         const badgeCount = link.badge ? activeBadges[link.badge] : 0;
+                        const active = isTabActive(link.to);
                         return (
-                          <NavLink
+                          <Link
                             key={link.name}
                             to={link.to}
                             onClick={() => setIsOpen(false)}
-                            className={({ isActive }) =>
-                              `flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl text-sm font-medium transition ${
-                                isActive
-                                  ? 'text-medical-blue bg-blue-50/80 font-bold'
-                                  : 'text-gray-700 hover:text-medical-blue hover:bg-gray-50'
-                              }`
-                            }
+                            className={`flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl text-sm font-medium transition ${
+                              active
+                                ? 'text-medical-blue bg-blue-50/80 font-bold'
+                                : 'text-gray-700 hover:text-medical-blue hover:bg-gray-50'
+                            }`}
                           >
                             <span className="flex items-center gap-2.5">
                               {Icon && <Icon className="w-4 h-4 text-slate-500" />}
@@ -447,7 +500,7 @@ export default function Navbar() {
                                 {badgeCount > 99 ? '99+' : badgeCount}
                               </span>
                             )}
-                          </NavLink>
+                          </Link>
                         );
                       })}
                       <button
