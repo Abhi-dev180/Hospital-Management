@@ -403,24 +403,24 @@ export default function UserMyAppointmentsList() {
     >
       <DashboardTabs role="user" />
 
-      <div className="bg-white p-5 sm:p-7 lg:p-8 rounded-3xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.08)] border border-slate-100">
+      <div className="bg-white p-3.5 sm:p-6 lg:p-8 rounded-2xl sm:rounded-3xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.08)] border border-slate-100">
         
         {/* ─── Master Section Switcher Tabs ─────────────────────── */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200/80">
-          <div className="flex items-center gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/80 overflow-x-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 mb-6 pb-4 border-b border-slate-200/80">
+          <div className="flex items-center gap-1.5 sm:gap-2 p-1 sm:p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/80 overflow-x-auto scrollbar-none w-full sm:w-auto">
             <button
               type="button"
               onClick={() => handleTabChange('doctor')}
-              className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+              className={`inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex-1 sm:flex-initial ${
                 activeTab === 'doctor'
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 scale-[1.01]'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
               }`}
             >
-              <Stethoscope size={16} />
+              <Stethoscope size={15} />
               <span>Doctor Appointments</span>
               <span
-                className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10.5px] sm:text-[11px] font-extrabold ${
                   activeTab === 'doctor' ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-700'
                 }`}
               >
@@ -431,16 +431,16 @@ export default function UserMyAppointmentsList() {
             <button
               type="button"
               onClick={() => handleTabChange('lab')}
-              className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+              className={`inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex-1 sm:flex-initial ${
                 activeTab === 'lab'
                   ? 'bg-rose-600 text-white shadow-md shadow-rose-500/20 scale-[1.01]'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
               }`}
             >
-              <TestTube size={16} />
+              <TestTube size={15} />
               <span>Lab Test Appointments</span>
               <span
-                className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10.5px] sm:text-[11px] font-extrabold ${
                   activeTab === 'lab' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-700'
                 }`}
               >
@@ -451,16 +451,16 @@ export default function UserMyAppointmentsList() {
             <button
               type="button"
               onClick={() => handleTabChange('refunds')}
-              className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+              className={`inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex-1 sm:flex-initial ${
                 activeTab === 'refunds'
                   ? 'bg-amber-600 text-white shadow-md shadow-amber-500/20 scale-[1.01]'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
               }`}
             >
-              <Undo2 size={16} />
+              <Undo2 size={15} />
               <span>Refunds &amp; Cancellations</span>
               <span
-                className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10.5px] sm:text-[11px] font-extrabold ${
                   activeTab === 'refunds' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
                 }`}
               >
@@ -471,16 +471,16 @@ export default function UserMyAppointmentsList() {
             <button
               type="button"
               onClick={() => handleTabChange('all')}
-              className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+              className={`inline-flex items-center justify-center gap-2 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex-1 sm:flex-initial ${
                 activeTab === 'all'
                   ? 'bg-slate-900 text-white shadow-md shadow-slate-900/20 scale-[1.01]'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
               }`}
             >
               <ClipboardList size={15} />
-              <span>All Bookings</span>
+              <span>All</span>
               <span
-                className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10.5px] sm:text-[11px] font-extrabold ${
                   activeTab === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-700'
                 }`}
               >
@@ -493,14 +493,14 @@ export default function UserMyAppointmentsList() {
             {activeTab === 'lab' ? (
               <Link
                 to="/dashboard/services"
-                className="inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm shadow-md shadow-rose-500/20 transition-all duration-200"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 active:scale-[0.98] text-white px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm shadow-md shadow-rose-500/20 transition-all duration-200"
               >
                 <Sparkles size={15} /> Book Lab Test
               </Link>
             ) : (
               <Link
                 to="/dashboard/book-appointment"
-                className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm shadow-md shadow-blue-500/20 transition-all duration-200"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white px-4 py-2.5 rounded-2xl font-bold text-xs sm:text-sm shadow-md shadow-blue-500/20 transition-all duration-200"
               >
                 <CalendarClock size={15} /> Book Consultation
               </Link>
@@ -538,9 +538,9 @@ export default function UserMyAppointmentsList() {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
-            <div className="relative flex-1 sm:w-64 min-w-[200px]">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3">
+            <div className="relative flex-1 sm:w-64 min-w-0">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <input
                 type="text"
                 placeholder={
@@ -550,16 +550,16 @@ export default function UserMyAppointmentsList() {
                 }
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                className="w-full pl-9 pr-4 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
               />
             </div>
 
-            <div className="relative flex items-center">
-              <Filter className="absolute left-3.5 text-slate-400 pointer-events-none" size={15} />
+            <div className="relative flex items-center w-full sm:w-auto">
+              <Filter className="absolute left-3.5 text-slate-400 pointer-events-none" size={14} />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="pl-9 pr-8 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-2xl font-semibold text-slate-700 outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all cursor-pointer"
+                className="w-full sm:w-auto pl-9 pr-8 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl font-semibold text-slate-700 outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all cursor-pointer"
               >
                 <option value="all">All Status</option>
                 <option value="Pending">Pending</option>
@@ -575,10 +575,10 @@ export default function UserMyAppointmentsList() {
               onClick={fetchAppointments}
               disabled={loading}
               title="Refresh bookings list"
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-slate-100 active:scale-95 text-slate-700 border border-slate-200 rounded-2xl text-xs font-bold transition disabled:opacity-50"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-50 hover:bg-slate-100 active:scale-95 text-slate-700 border border-slate-200 rounded-xl sm:rounded-2xl text-xs font-bold transition disabled:opacity-50"
             >
-              <RefreshCw size={15} className={loading ? 'animate-spin text-blue-600' : ''} />
-              <span className="hidden sm:inline">Refresh</span>
+              <RefreshCw size={14} className={loading ? 'animate-spin text-blue-600' : ''} />
+              <span>Refresh</span>
             </button>
           </div>
         </div>
@@ -760,7 +760,7 @@ export default function UserMyAppointmentsList() {
                       )}
 
                       {/* Payment & Refund Metadata Banner */}
-                      <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-3 text-xs">
+                      <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
                         <span className="inline-flex items-center gap-1 font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                           {app.paymentStatus || 'Paid'}
@@ -772,7 +772,7 @@ export default function UserMyAppointmentsList() {
 
                         {/* Refund badge if cancelled with refund */}
                         {app.status === 'Cancelled' && (Number(app.refundAmount) > 0 || app.refundStatus) && (
-                          <span className="inline-flex items-center gap-1.5 font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 shadow-xs">
+                          <span className="inline-flex items-center gap-1.5 font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 shadow-2xs">
                             <Undo2 className="w-3.5 h-3.5 text-rose-600" />
                             <span>
                               {app.refundStatus || 'Refunded'}: ₹{Number(app.refundAmount || 0).toFixed(2)}
@@ -800,22 +800,22 @@ export default function UserMyAppointmentsList() {
                       </div>
                     </div>
 
-                    {/* ─── Action Buttons ─────────────────────────────── */}
-                    <div className="flex flex-row lg:flex-col items-center lg:items-end justify-end gap-2 shrink-0 border-t lg:border-t-0 pt-3 lg:pt-0">
+                    {/* ─── Action Buttons (Fully Responsive Across All Screens) ─── */}
+                    <div className="flex flex-wrap items-center justify-stretch sm:justify-end gap-2 shrink-0 border-t lg:border-t-0 pt-3 lg:pt-0 w-full lg:w-auto">
                       
                       {/* Feedback button */}
                       {feedbackMap.get(String(app.id)) || feedbackMap.get(String(app.appointment_number)) ? (
-                        <div className="inline-flex items-center gap-1 px-3 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full">
+                        <div className="inline-flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl w-full sm:w-auto">
                           <Star className="w-3.5 h-3.5 fill-emerald-500 text-emerald-500" />
                           <span>{feedbackMap.get(String(app.id))?.rating || feedbackMap.get(String(app.appointment_number))?.rating || '5'}★ Reviewed</span>
                         </div>
                       ) : app.status === 'Completed' ? (
                         <button
                           onClick={() => setSelectedApptForFeedback(app)}
-                          className="inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-bold text-amber-900 bg-amber-50 border border-amber-200 rounded-full hover:bg-amber-100 transition shadow-xs"
+                          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:py-1.5 text-xs font-bold text-amber-900 bg-amber-50 border border-amber-200 rounded-xl hover:bg-amber-100 active:scale-95 transition shadow-2xs flex-1 sm:flex-initial"
                         >
                           <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                          Give Feedback
+                          <span>Give Feedback</span>
                         </button>
                       ) : null}
 
@@ -823,54 +823,56 @@ export default function UserMyAppointmentsList() {
                       {app.status === 'Cancelled' ? (
                         <button
                           onClick={() => handleDownloadInvoice(app, true)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 active:scale-95 transition shadow-2xs"
+                          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:py-1.5 text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 active:scale-95 transition shadow-2xs flex-1 sm:flex-initial"
                           title="Download PDF Cancellation Invoice & Credit Memo"
                         >
-                          <Receipt size={13} />
+                          <Receipt size={14} />
                           <span>Cancel Invoice</span>
                         </button>
                       ) : (
                         <button
                           onClick={() => handleDownloadInvoice(app, false)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 active:scale-95 transition shadow-2xs"
+                          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:py-1.5 text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 active:scale-95 transition shadow-2xs flex-1 sm:flex-initial"
                           title="Download PDF Booking Invoice"
                         >
-                          <Receipt size={13} />
+                          <Receipt size={14} />
                           <span>Invoice</span>
                         </button>
                       )}
 
                       {/* Reschedule / Cancel actions */}
                       {app.status !== 'Cancelled' && app.status !== 'Completed' && (
-                        <div className="flex items-center gap-2">
+                        <>
                           <button
                             onClick={() => openRescheduleModal(app)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 active:scale-95 transition shadow-xs"
+                            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:py-1.5 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 active:scale-95 transition shadow-2xs flex-1 sm:flex-initial"
                           >
-                            <CalendarClock size={13} /> Reschedule
+                            <CalendarClock size={14} />
+                            <span>Reschedule</span>
                           </button>
 
                           <button
                             onClick={() => openCancelModal(app)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 active:scale-95 transition"
+                            className="inline-flex items-center justify-center gap-1 px-3.5 py-2 sm:py-1.5 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl hover:bg-rose-100 active:scale-95 transition shadow-2xs flex-1 sm:flex-initial"
                           >
-                            <Trash2 size={13} /> Cancel
+                            <Trash2 size={14} />
+                            <span>Cancel</span>
                           </button>
-                        </div>
+                        </>
                       )}
 
                       {/* Quick link to book again */}
                       {isLabTest ? (
                         <Link
                           to="/dashboard/services"
-                          className="hidden xl:inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-800 transition mt-1"
+                          className="hidden lg:inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-800 transition mt-1 w-full justify-end"
                         >
                           Book another test <ArrowRight size={12} />
                         </Link>
                       ) : (
                         <Link
                           to="/dashboard/book-appointment"
-                          className="hidden xl:inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 transition mt-1"
+                          className="hidden lg:inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 transition mt-1 w-full justify-end"
                         >
                           Book consultation <ArrowRight size={12} />
                         </Link>
@@ -898,7 +900,7 @@ export default function UserMyAppointmentsList() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
             onClick={() => setShowRescheduleModal(false)}
           >
             <motion.div
@@ -906,18 +908,18 @@ export default function UserMyAppointmentsList() {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto border border-slate-100"
+              className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg p-5 sm:p-7 max-h-[90vh] overflow-y-auto border border-slate-100 my-auto"
             >
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-medical-dark flex items-center gap-2">
+                <h3 className="text-lg sm:text-xl font-bold text-medical-dark flex items-center gap-2">
                   <CalendarClock className="text-medical-blue" size={20} />
                   Reschedule Slot
                 </h3>
                 <button
                   onClick={() => setShowRescheduleModal(false)}
-                  className="p-1 rounded-full hover:bg-slate-100 transition text-slate-500"
+                  className="p-1.5 rounded-full hover:bg-slate-100 transition text-slate-500"
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
 
@@ -933,19 +935,19 @@ export default function UserMyAppointmentsList() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">New Date *</label>
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-700 mb-1">New Date *</label>
                   <input
                     type="date"
                     min={new Date().toISOString().split('T')[0]}
                     value={newDate}
                     onChange={(e) => setNewDate(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-medical-blue focus:border-medical-blue outline-none"
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-medical-blue focus:border-medical-blue outline-none"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-700 mb-1 flex items-center justify-between">
                     <span>New Time Slot *</span>
                     {newTime && (
                       <span className="text-blue-600 font-extrabold text-xs bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
@@ -953,7 +955,7 @@ export default function UserMyAppointmentsList() {
                       </span>
                     )}
                   </label>
-                  <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+                  <div className="bg-slate-50 p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 max-h-56 overflow-y-auto">
                     <SlotSelector
                       date={newDate}
                       hospitalId={selectedAppointment?.hospitalId}
@@ -964,20 +966,20 @@ export default function UserMyAppointmentsList() {
                   </div>
                 </div>
 
-                <div className="flex gap-3 pt-2">
+                <div className="flex flex-col-reverse xs:flex-row gap-2.5 sm:gap-3 pt-3 border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() => setShowRescheduleModal(false)}
-                    className="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl font-semibold text-slate-600 hover:bg-slate-50 transition"
+                    className="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl font-bold text-xs sm:text-sm text-slate-600 hover:bg-slate-50 transition"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 px-4 py-2.5 bg-medical-blue text-white rounded-xl font-semibold hover:bg-blue-700 transition disabled:opacity-60 flex items-center justify-center gap-2 shadow-md shadow-blue-500/20"
+                    className="flex-1 px-4 py-2.5 bg-medical-blue text-white rounded-xl font-bold text-xs sm:text-sm hover:bg-blue-700 transition disabled:opacity-60 flex items-center justify-center gap-2 shadow-md shadow-blue-500/20"
                   >
-                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 size={18} />}
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 size={16} />}
                     {submitting ? 'Saving...' : 'Confirm Reschedule'}
                   </button>
                 </div>
@@ -1009,7 +1011,7 @@ export default function UserMyAppointmentsList() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
               onClick={() => !cancelSubmitting && setShowCancelModal(false)}
             >
               <motion.div
@@ -1017,19 +1019,19 @@ export default function UserMyAppointmentsList() {
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.95, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 sm:p-7 border border-slate-100 my-8 overflow-hidden"
+                className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg p-5 sm:p-7 border border-slate-100 my-auto max-h-[90vh] overflow-y-auto"
               >
                 {/* Header */}
                 <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shadow-sm">
-                      <Trash2 size={22} />
+                  <div className="flex items-center gap-2.5 sm:gap-3">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shadow-sm shrink-0">
+                      <Trash2 size={20} />
                     </div>
-                    <div>
-                      <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                    <div className="min-w-0">
+                      <h3 className="text-base sm:text-lg font-black text-slate-900 tracking-tight truncate">
                         Cancel {isLab ? 'Lab Test' : 'Appointment'}
                       </h3>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-slate-500 truncate">
                         Appointment #{selectedApptForCancel.appointment_number} • {selectedApptForCancel.hospital}
                       </p>
                     </div>
@@ -1037,7 +1039,7 @@ export default function UserMyAppointmentsList() {
                   <button
                     onClick={() => setShowCancelModal(false)}
                     disabled={cancelSubmitting}
-                    className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"
+                    className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition shrink-0"
                   >
                     <X size={18} />
                   </button>
@@ -1045,8 +1047,8 @@ export default function UserMyAppointmentsList() {
 
                 <form onSubmit={handleConfirmCancellation} className="space-y-4">
                   {/* Service Card Summary */}
-                  <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 text-xs space-y-1">
-                    <p className="font-extrabold text-slate-900 text-sm">
+                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 text-xs space-y-1">
+                    <p className="font-extrabold text-slate-900 text-xs sm:text-sm">
                       {isLab
                         ? `🧪 ${selectedApptForCancel.serviceName || 'Diagnostic Lab Investigation'}`
                         : `🩺 ${selectedApptForCancel.doctorName ? `Dr. ${selectedApptForCancel.doctorName}` : 'Doctor Consultation'}`}
@@ -1062,12 +1064,12 @@ export default function UserMyAppointmentsList() {
 
                   {/* Financial & Refund Breakdown */}
                   {isPaid ? (
-                    <div className="rounded-2xl border border-rose-200 bg-rose-50/40 p-4 space-y-3">
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50/40 p-3.5 sm:p-4 space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-rose-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <span className="text-[11px] sm:text-xs font-bold text-rose-900 uppercase tracking-wider flex items-center gap-1.5">
                           <Receipt size={14} className="text-rose-600" /> Refund & Fee Statement
                         </span>
-                        <span className="text-[11px] font-bold text-rose-700 bg-rose-100/80 px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] sm:text-[11px] font-bold text-rose-700 bg-rose-100/80 px-2 py-0.5 rounded-full">
                           10% Cancellation Fee
                         </span>
                       </div>
@@ -1081,13 +1083,13 @@ export default function UserMyAppointmentsList() {
                           <span>Cancellation Charge (10%)</span>
                           <span className="font-bold">-₹{cancelFee.toFixed(2)}</span>
                         </div>
-                        <div className="pt-2 border-t border-rose-200 flex justify-between text-sm font-black text-emerald-800 bg-emerald-50/70 p-2 rounded-xl">
+                        <div className="pt-2 border-t border-rose-200 flex justify-between text-xs sm:text-sm font-black text-emerald-800 bg-emerald-50/70 p-2 rounded-xl">
                           <span>Estimated Refund to Card</span>
-                          <span className="text-base text-emerald-700">₹{netRefund.toFixed(2)}</span>
+                          <span className="text-sm sm:text-base text-emerald-700">₹{netRefund.toFixed(2)}</span>
                         </div>
                       </div>
 
-                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                      <p className="text-[10.5px] sm:text-[11px] text-slate-500 leading-relaxed">
                         💡 The refund of <strong>₹{netRefund.toFixed(2)}</strong> will be automatically credited to your original payment card / method via <strong>Stripe Gateway</strong> within <strong>5–7 business days</strong>.
                       </p>
                     </div>
@@ -1110,9 +1112,9 @@ export default function UserMyAppointmentsList() {
                           key={r}
                           type="button"
                           onClick={() => setCancelReason(r)}
-                          className={`text-[11px] px-2.5 py-1 rounded-lg border font-medium transition ${
+                          className={`text-[10.5px] sm:text-[11px] px-2.5 py-1 rounded-lg border font-medium transition ${
                             cancelReason === r
-                              ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                              ? 'bg-rose-600 text-white border-rose-600 shadow-2xs'
                               : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                           }`}
                         >
@@ -1131,19 +1133,19 @@ export default function UserMyAppointmentsList() {
                   </div>
 
                   {/* Buttons */}
-                  <div className="flex gap-3 pt-2">
+                  <div className="flex flex-col-reverse xs:flex-row gap-2.5 sm:gap-3 pt-3 border-t border-slate-100">
                     <button
                       type="button"
                       disabled={cancelSubmitting}
                       onClick={() => setShowCancelModal(false)}
-                      className="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl font-bold text-xs text-slate-700 hover:bg-slate-50 transition"
+                      className="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl font-bold text-xs sm:text-sm text-slate-700 hover:bg-slate-50 transition"
                     >
                       Keep Booking
                     </button>
                     <button
                       type="submit"
                       disabled={cancelSubmitting}
-                      className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-xl font-bold text-xs hover:bg-rose-700 active:scale-95 transition disabled:opacity-60 flex items-center justify-center gap-2 shadow-md shadow-rose-600/20"
+                      className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-xl font-bold text-xs sm:text-sm hover:bg-rose-700 active:scale-95 transition disabled:opacity-60 flex items-center justify-center gap-2 shadow-md shadow-rose-600/20"
                     >
                       {cancelSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 size={15} />}
                       {cancelSubmitting ? 'Processing Refund...' : 'Confirm Cancellation'}
