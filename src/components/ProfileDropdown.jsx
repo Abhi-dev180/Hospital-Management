@@ -38,26 +38,44 @@ export default function ProfileDropdown({ user: initialUser, onLogout }) {
         })
       ]);
 
-      if (userRes.status === 'fulfilled' && userRes.value.ok) {
-        const uData = await userRes.value.json();
-        if (uData.user) {
-          setUser((prev) => {
-            const merged = { ...prev, ...uData.user };
-            try {
-              localStorage.setItem('user', JSON.stringify(merged));
-            } catch (_) {}
-            return merged;
-          });
-          if (uData.subscription) {
-            setSubscription(uData.subscription);
+      if (userRes.status === 'fulfilled') {
+        if (userRes.value.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
+          onLogout?.();
+          return;
+        }
+        if (userRes.value.ok) {
+          const uData = await userRes.value.json();
+          if (uData.user) {
+            setUser((prev) => {
+              const merged = { ...prev, ...uData.user };
+              try {
+                localStorage.setItem('user', JSON.stringify(merged));
+              } catch (_) {}
+              return merged;
+            });
+            if (uData.subscription) {
+              setSubscription(uData.subscription);
+            }
           }
         }
       }
 
-      if (subRes.status === 'fulfilled' && subRes.value.ok) {
-        const sData = await subRes.value.json();
-        if (sData.subscription) {
-          setSubscription(sData.subscription);
+      if (subRes.status === 'fulfilled') {
+        if (subRes.value.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
+          onLogout?.();
+          return;
+        }
+        if (subRes.value.ok) {
+          const sData = await subRes.value.json();
+          if (sData.subscription) {
+            setSubscription(sData.subscription);
+          }
         }
       }
     } catch (e) {

@@ -74,6 +74,12 @@ export default function ProfilePage() {
       const res = await fetch(`${API_URL}/api/subscriptions/my-subscriptions`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         if (data.subscription) {
@@ -97,6 +103,12 @@ export default function ProfilePage() {
       const res = await fetch(`${API_URL}/api/users/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         if (data.user) {
