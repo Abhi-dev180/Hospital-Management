@@ -396,28 +396,30 @@ export default function ProfilePage() {
   }
 
   return (
-    <PortalCardPage>
+    <PortalCardPage size="5xl">
       {/* ─── Page Header with Dynamic Role Identity ──────────────── */}
       <div className="mb-6">
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1 text-sm font-semibold text-medical-blue hover:text-medical-dark transition cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-medical-blue hover:text-medical-dark transition cursor-pointer mb-2"
         >
-          <ArrowLeft className="w-4 h-4" /> Back
+          <ArrowLeft className="w-4 h-4" /> Back to Dashboard
         </button>
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-2">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-medical-dark flex items-center gap-2">
-                {isPatient && <UserCheck className="w-7 h-7 text-emerald-600" />}
-                {isHospitalAdmin && <Building2 className="w-7 h-7 text-medical-blue" />}
-                {isSuperAdmin && <ShieldCheck className="w-7 h-7 text-indigo-600" />}
-                {isPatient && 'Patient Profile & Health Details'}
-                {isHospitalAdmin && 'Hospital Facility & Admin Profile'}
-                {isSuperAdmin && 'Master System Administrator Profile'}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 mt-1">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-medical-dark flex items-center gap-2 leading-tight">
+                {isPatient && <UserCheck className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-600 shrink-0" />}
+                {isHospitalAdmin && <Building2 className="w-6 h-6 sm:w-7 sm:h-7 text-medical-blue shrink-0" />}
+                {isSuperAdmin && <ShieldCheck className="w-6 h-6 sm:w-7 sm:h-7 text-indigo-600 shrink-0" />}
+                <span>
+                  {isPatient && 'Patient Profile & Health Details'}
+                  {isHospitalAdmin && 'Hospital Facility & Admin Profile'}
+                  {isSuperAdmin && 'Master Administrator Profile'}
+                </span>
               </h1>
-              <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${
+              <span className={`text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border uppercase tracking-wider shrink-0 ${
                 isSuperAdmin
                   ? 'bg-indigo-100 text-indigo-800 border-indigo-200'
                   : isHospitalAdmin
@@ -427,16 +429,16 @@ export default function ProfilePage() {
                 {role}
               </span>
             </div>
-            <p className="text-sm text-gray-500 mt-1">
-              {isPatient && 'Manage your personal medical information, emergency contacts, and linked hospital.'}
-              {isHospitalAdmin && 'Manage your registered hospital facility, branch address, bed capacity, and subscription licenses.'}
-              {isSuperAdmin && 'System governance, master root administrative credentials, and multi-hospital network controls.'}
+            <p className="text-xs sm:text-sm text-gray-500 mt-1 max-w-3xl leading-relaxed">
+              {isPatient && 'Manage your personal medical profile, emergency contacts, linked hospital, and bookings.'}
+              {isHospitalAdmin && 'Manage your hospital facility profile, helpline, bed capacity, and subscription licenses.'}
+              {isSuperAdmin && 'Master root system administrator credentials, hospital management, and platform governance.'}
             </p>
           </div>
 
           {saved && (
-            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full flex items-center gap-1.5 self-start sm:self-center">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Saved
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-full flex items-center gap-1.5 self-start md:self-center shrink-0 shadow-2xs">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Changes Saved
             </span>
           )}
         </div>

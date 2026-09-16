@@ -394,7 +394,7 @@ export default function ChatbotWidget() {
 
   return (
     <>
-      <div className="fixed bottom-5 right-5 z-[9999] font-sans">
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9999] font-sans">
         {/* ─── Floating Chat Trigger Launcher ─────────────────────── */}
         <AnimatePresence>
           {!isOpen && (
@@ -409,23 +409,23 @@ export default function ChatbotWidget() {
                 type="button"
                 onClick={() => setIsOpen(true)}
                 title="Chat with MediBot 24/7 AI Assistant"
-                className="group flex items-center gap-2.5 bg-gradient-to-tr from-slate-900 via-medical-dark to-medical-blue text-white pl-3.5 pr-4 py-3 rounded-full shadow-2xl hover:shadow-blue-500/25 hover:scale-105 active:scale-95 transition-all duration-200 border border-white/20 cursor-pointer"
+                className="group flex items-center gap-2 sm:gap-2.5 bg-gradient-to-tr from-slate-900 via-medical-dark to-medical-blue text-white p-2.5 sm:pl-3.5 sm:pr-4 sm:py-3 rounded-full shadow-2xl hover:shadow-blue-500/25 hover:scale-105 active:scale-95 transition-all duration-200 border border-white/20 cursor-pointer"
               >
                 <div className="relative flex items-center justify-center">
-                  <div className="h-9 w-9 rounded-full bg-white/15 backdrop-blur-xs flex items-center justify-center text-white ring-1 ring-white/30 shadow-inner">
-                    <Bot className="w-5 h-5 text-blue-200 group-hover:rotate-12 transition-transform" />
+                  <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-white/15 backdrop-blur-xs flex items-center justify-center text-white ring-1 ring-white/30 shadow-inner">
+                    <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-blue-200 group-hover:rotate-12 transition-transform" />
                   </div>
-                  <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-slate-950 flex items-center justify-center">
-                    <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" />
+                  <span className="absolute -top-1 -right-1 h-3 w-3 sm:h-3.5 sm:w-3.5 rounded-full bg-emerald-500 ring-2 ring-slate-950 flex items-center justify-center">
+                    <span className="h-1 sm:h-1.5 w-1 sm:w-1.5 rounded-full bg-white animate-ping" />
                   </span>
                 </div>
 
-                <div className="flex flex-col text-left">
+                <div className="hidden xs:flex flex-col text-left">
                   <span className="text-xs font-black tracking-wide text-white leading-tight flex items-center gap-1">
                     MediBot AI
                   </span>
                   <span className="text-[10px] text-blue-200 font-medium leading-tight">
-                    24/7 Online Assistant
+                    24/7 Assistant
                   </span>
                 </div>
               </button>
@@ -447,10 +447,10 @@ export default function ChatbotWidget() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.88, y: 30 }}
               transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-              className={`flex flex-col bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden transition-all duration-200 ${
+              className={`fixed z-[9999] origin-bottom-right transition-all duration-200 flex flex-col bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden ${
                 isExpanded
-                  ? 'w-[94vw] sm:w-[620px] h-[86vh] max-h-[800px]'
-                  : 'w-[92vw] sm:w-[410px] h-[78vh] max-h-[640px]'
+                  ? 'inset-x-2 bottom-2 top-12 sm:top-auto sm:inset-auto sm:bottom-6 sm:right-6 w-auto sm:w-[640px] lg:w-[700px] h-[calc(100dvh-3.5rem)] sm:h-[84vh] sm:max-h-[820px]'
+                  : 'inset-x-2 bottom-2 top-12 sm:top-auto sm:inset-auto sm:bottom-6 sm:right-6 w-auto sm:w-[430px] md:w-[450px] h-[calc(100dvh-3.5rem)] sm:h-[640px] sm:max-h-[82vh]'
               }`}
             >
               {/* ─── Chatbot Header ─────────────────────────────────── */}
