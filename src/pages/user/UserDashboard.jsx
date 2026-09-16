@@ -382,20 +382,20 @@ export default function UserDashboard() {
           hidden: {},
           show: { transition: { staggerChildren: 0.06 } }
         }}
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8"
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-4 mb-6 sm:mb-8"
       >
         <motion.div
           variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }}
           whileHover={{ y: -3, scale: 1.02 }}
           transition={{ duration: 0.25 }}
-          className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3 transition-shadow hover:shadow-lg"
+          className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-slate-100 shadow-sm sm:shadow-md flex items-center gap-2.5 sm:gap-3 transition-shadow hover:shadow-lg"
         >
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl shrink-0">
-            <Stethoscope className="w-5 h-5" />
+          <div className="p-2.5 sm:p-3 bg-blue-50 text-blue-600 rounded-xl sm:rounded-2xl shrink-0">
+            <Stethoscope className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Doctor Visits</p>
-            <p className="text-xl font-black text-slate-900 mt-0.5">{doctorAppointments.length}</p>
+            <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Doctor Visits</p>
+            <p className="text-lg sm:text-xl font-black text-slate-900 mt-0.5">{doctorAppointments.length}</p>
           </div>
         </motion.div>
 
@@ -403,14 +403,14 @@ export default function UserDashboard() {
           variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }}
           whileHover={{ y: -3, scale: 1.02 }}
           transition={{ duration: 0.25 }}
-          className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3 transition-shadow hover:shadow-lg"
+          className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-slate-100 shadow-sm sm:shadow-md flex items-center gap-2.5 sm:gap-3 transition-shadow hover:shadow-lg"
         >
-          <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl shrink-0">
-            <TestTube className="w-5 h-5" />
+          <div className="p-2.5 sm:p-3 bg-rose-50 text-rose-600 rounded-xl sm:rounded-2xl shrink-0">
+            <TestTube className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Lab Tests</p>
-            <p className="text-xl font-black text-slate-900 mt-0.5">{labAppointments.length}</p>
+            <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Lab Tests</p>
+            <p className="text-lg sm:text-xl font-black text-slate-900 mt-0.5">{labAppointments.length}</p>
           </div>
         </motion.div>
 
@@ -418,14 +418,14 @@ export default function UserDashboard() {
           variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }}
           whileHover={{ y: -3, scale: 1.02 }}
           transition={{ duration: 0.25 }}
-          className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3 transition-shadow hover:shadow-lg"
+          className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-slate-100 shadow-sm sm:shadow-md flex items-center gap-2.5 sm:gap-3 transition-shadow hover:shadow-lg"
         >
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl shrink-0">
-            <Clock className="w-5 h-5" />
+          <div className="p-2.5 sm:p-3 bg-amber-50 text-amber-600 rounded-xl sm:rounded-2xl shrink-0">
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Upcoming</p>
-            <p className="text-xl font-black text-slate-900 mt-0.5">{upcomingAppointments.length}</p>
+            <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Upcoming</p>
+            <p className="text-lg sm:text-xl font-black text-slate-900 mt-0.5">{upcomingAppointments.length}</p>
           </div>
         </motion.div>
 
@@ -433,14 +433,14 @@ export default function UserDashboard() {
           variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }}
           whileHover={{ y: -3, scale: 1.02 }}
           transition={{ duration: 0.25 }}
-          className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3 transition-shadow hover:shadow-lg"
+          className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-slate-100 shadow-sm sm:shadow-md flex items-center gap-2.5 sm:gap-3 transition-shadow hover:shadow-lg"
         >
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl shrink-0">
-            <Building2 className="w-5 h-5" />
+          <div className="p-2.5 sm:p-3 bg-emerald-50 text-emerald-600 rounded-xl sm:rounded-2xl shrink-0">
+            <Building2 className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Hospitals</p>
-            <p className="text-xl font-black text-slate-900 mt-0.5">{hospitals.length}</p>
+            <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Hospitals</p>
+            <p className="text-lg sm:text-xl font-black text-slate-900 mt-0.5">{hospitals.length}</p>
           </div>
         </motion.div>
 
@@ -448,14 +448,14 @@ export default function UserDashboard() {
           variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0 } }}
           whileHover={{ y: -3, scale: 1.02 }}
           transition={{ duration: 0.25 }}
-          className="bg-white rounded-3xl p-5 border border-slate-100 shadow-md flex items-center gap-3 transition-shadow hover:shadow-lg"
+          className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-slate-100 shadow-sm sm:shadow-md flex items-center gap-2.5 sm:gap-3 transition-shadow hover:shadow-lg"
         >
-          <div className="p-3 bg-teal-50 text-teal-600 rounded-2xl shrink-0">
-            <MessageSquare className="w-5 h-5" />
+          <div className="p-2.5 sm:p-3 bg-teal-50 text-teal-600 rounded-xl sm:rounded-2xl shrink-0">
+            <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Feedbacks</p>
-            <p className="text-xl font-black text-slate-900 mt-0.5">{feedbacks.length}</p>
+            <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 truncate">Feedbacks</p>
+            <p className="text-lg sm:text-xl font-black text-slate-900 mt-0.5">{feedbacks.length}</p>
           </div>
         </motion.div>
 
@@ -466,14 +466,14 @@ export default function UserDashboard() {
         >
           <Link
             to="/dashboard/my-appointments?tab=refunds"
-            className="h-full bg-gradient-to-br from-emerald-50/70 to-teal-50/70 hover:from-emerald-100/80 hover:to-teal-100/80 rounded-3xl p-5 border border-emerald-200/80 shadow-md flex items-center gap-3 transition-all hover:shadow-lg group"
+            className="h-full bg-gradient-to-br from-emerald-50/70 to-teal-50/70 hover:from-emerald-100/80 hover:to-teal-100/80 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-emerald-200/80 shadow-sm sm:shadow-md flex items-center gap-2.5 sm:gap-3 transition-all hover:shadow-lg group"
           >
-            <div className="p-3 bg-emerald-600 text-white rounded-2xl shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-              <RotateCcw className="w-5 h-5" />
+            <div className="p-2.5 sm:p-3 bg-emerald-600 text-white rounded-xl sm:rounded-2xl shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+              <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 truncate">Refunds (₹)</p>
-              <p className="text-xl font-black text-emerald-900 mt-0.5">
+              <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-emerald-800 truncate">Refunds (₹)</p>
+              <p className="text-lg sm:text-xl font-black text-emerald-900 mt-0.5">
                 ₹{totalRefundAmount.toLocaleString()}
               </p>
             </div>
@@ -642,38 +642,38 @@ export default function UserDashboard() {
       </div>
 
       {/* Main Content Grid: Booking Form & My Appointments */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
         {/* Left Column (5 cols): Quick Book Appointment */}
-        <div className="lg:col-span-5 bg-white p-6 rounded-3xl shadow-lg border border-slate-100 flex flex-col justify-between">
+        <div className="lg:col-span-5 bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm sm:shadow-lg border border-slate-100 flex flex-col justify-between">
           <div>
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2.5 bg-blue-50 text-medical-blue rounded-xl">
-                  <Calendar className="w-5 h-5" />
+            <div className="flex items-center justify-between mb-4 sm:mb-5">
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <div className="p-2 sm:p-2.5 bg-blue-50 text-medical-blue rounded-xl">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900">Book Appointment</h3>
-                  <p className="text-xs text-slate-500">Quickly reserve your consultation</p>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900">Book Appointment</h3>
+                  <p className="text-[11px] sm:text-xs text-slate-500">Quickly reserve your consultation</p>
                 </div>
               </div>
               <Link
                 to="/dashboard/explore-hospitals"
-                className="text-xs font-semibold text-medical-blue hover:underline"
+                className="text-[11px] sm:text-xs font-semibold text-medical-blue hover:underline"
               >
                 Browse Hospitals →
               </Link>
             </div>
 
-            <form onSubmit={handleBookAppointment} className="space-y-3.5">
+            <form onSubmit={handleBookAppointment} className="space-y-3 sm:space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] sm:text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Select Hospital *
                 </label>
                 <select
                   name="hospitalId"
                   value={formData.hospitalId}
                   onChange={handleAppointmentChange}
-                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:border-medical-blue outline-none"
+                  className="w-full px-3.5 py-2 sm:py-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:border-medical-blue outline-none"
                   required
                 >
                   <option value="">-- Choose Hospital --</option>
@@ -687,7 +687,7 @@ export default function UserDashboard() {
 
               {/* Date */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] sm:text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Date *
                 </label>
                 <input
@@ -696,22 +696,22 @@ export default function UserDashboard() {
                   min={new Date().toISOString().split('T')[0]}
                   value={formData.date}
                   onChange={handleAppointmentChange}
-                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:border-medical-blue outline-none bg-white font-medium"
+                  className="w-full px-3.5 py-2 sm:py-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:border-medical-blue outline-none bg-white font-medium"
                   required
                 />
               </div>
 
               {/* Interactive Clock & Time Slot Selector */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <label className="block text-[11px] sm:text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
                   <span>Time Slot *</span>
                   {formData.time && (
-                    <span className="text-blue-600 font-extrabold text-[11px] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                    <span className="text-blue-600 font-extrabold text-[10.5px] sm:text-[11px] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
                       Selected: {formData.time}
                     </span>
                   )}
                 </label>
-                <div className="bg-slate-50/90 p-3 rounded-2xl border border-slate-200/80">
+                <div className="bg-slate-50/90 p-2.5 sm:p-3 rounded-2xl border border-slate-200/80 max-h-52 overflow-y-auto">
                   <SlotSelector
                     date={formData.date}
                     hospitalId={formData.hospitalId}
@@ -722,9 +722,9 @@ export default function UserDashboard() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  <label className="block text-[11px] sm:text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Patient Name *
                   </label>
                   <input
@@ -733,13 +733,13 @@ export default function UserDashboard() {
                     placeholder="Full name"
                     value={formData.patientName}
                     onChange={handleAppointmentChange}
-                    className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:border-medical-blue outline-none"
+                    className="w-full px-3.5 py-2 sm:py-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:border-medical-blue outline-none"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  <label className="block text-[11px] sm:text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Phone (10 Digits) *
                   </label>
                   <input
@@ -749,14 +749,14 @@ export default function UserDashboard() {
                     value={formData.patientPhone}
                     onChange={handleAppointmentChange}
                     maxLength={10}
-                    className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:border-medical-blue outline-none"
+                    className="w-full px-3.5 py-2 sm:py-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:border-medical-blue outline-none"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] sm:text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Reason for Visit (Optional)
                 </label>
                 <textarea
@@ -765,15 +765,15 @@ export default function UserDashboard() {
                   value={formData.reason}
                   onChange={handleAppointmentChange}
                   rows={2}
-                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:border-medical-blue outline-none resize-none"
+                  className="w-full px-3.5 py-2 sm:py-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:border-medical-blue outline-none resize-none"
                 />
               </div>
 
-              <div className="flex gap-2.5 pt-2">
+              <div className="flex gap-2 sm:gap-2.5 pt-2">
                 <button
                   type="submit"
                   disabled={bookingLoading}
-                  className="flex-1 py-3 bg-gradient-to-r from-medical-blue to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md shadow-medical-blue/20 transition flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 py-2.5 sm:py-3 bg-gradient-to-r from-medical-blue to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md shadow-medical-blue/20 transition flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {bookingLoading ? (
                     <>
@@ -789,7 +789,7 @@ export default function UserDashboard() {
                   type="button"
                   onClick={handleCallHospital}
                   title="Request hospital callback"
-                  className="px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition inline-flex items-center gap-1.5"
+                  className="px-3.5 sm:px-4 py-2.5 sm:py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition inline-flex items-center gap-1.5"
                 >
                   <PhoneCall className="w-4 h-4" /> Call
                 </button>
@@ -799,7 +799,7 @@ export default function UserDashboard() {
         </div>
 
         {/* Right Column (7 cols): My Bookings with Feedback Action */}
-        <div className="lg:col-span-7 bg-white p-6 rounded-3xl shadow-lg border border-slate-100 flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm sm:shadow-lg border border-slate-100 flex flex-col justify-between">
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-2.5">
