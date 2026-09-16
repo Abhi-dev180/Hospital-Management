@@ -104,12 +104,12 @@ export default function DashboardTabs({ role }) {
   };
 
   return (
-    <div className="mb-6 w-full overflow-x-auto no-scrollbar py-1">
+    <div className="mb-6 w-full">
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="inline-flex items-center gap-1.5 p-1.5 bg-slate-100/90 backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-2xs whitespace-nowrap"
+        className="flex flex-wrap items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 bg-slate-100/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-2xs w-full"
       >
         {tabs.map((tab) => {
           const active = isTabActive(tab.to);
@@ -119,10 +119,10 @@ export default function DashboardTabs({ role }) {
             <Link
               key={tab.name}
               to={tab.to}
-              className={`relative inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-colors shrink-0 z-10 ${
+              className={`relative inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 z-10 ${
                 active
                   ? 'text-white'
-                  : 'text-slate-600 hover:text-medical-blue hover:bg-white/50'
+                  : 'text-slate-600 hover:text-medical-blue hover:bg-white/70'
               }`}
             >
               {active && (
