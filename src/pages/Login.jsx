@@ -1,8 +1,7 @@
-
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Info, X, CalendarCheck, Eye, EyeOff, Mail, KeyRound, Loader2, ArrowLeft } from 'lucide-react';
+import { Info, X, CalendarCheck, Eye, EyeOff, Mail, KeyRound, Loader2, ArrowLeft, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../config/api';
 
@@ -160,7 +159,8 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-80px)] bg-white">
+    <div className="flex min-h-[calc(100vh-80px)] bg-slate-50 lg:bg-white items-center justify-center lg:items-stretch">
+      {/* ─── Desktop Left Brand Hero ──────────────────────────────── */}
       <div className="hidden lg:flex w-1/2 bg-medical-dark relative overflow-hidden">
         <div className="absolute inset-0 bg-medical-blue/40 mix-blend-multiply z-10"></div>
         <img
@@ -168,45 +168,55 @@ export default function Login() {
           alt="Hospital hallway"
           className="absolute inset-0 w-full h-full object-cover"
         />
-        <div className="absolute inset-0 z-20 flex flex-col justify-center px-16 text-white">
-          <h1 className="text-5xl font-extrabold mb-6 leading-tight drop-shadow-md">
+        <div className="absolute inset-0 z-20 flex flex-col justify-center px-12 xl:px-16 text-white">
+          <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-blue-200 text-xs font-bold uppercase tracking-wider mb-6 w-fit">
+            <Building2 className="w-4 h-4 text-blue-300" />
+            <span>MEDPARK Healthcare OS</span>
+          </div>
+          <h1 className="text-4xl xl:text-5xl font-extrabold mb-5 leading-tight drop-shadow-md">
             Welcome to <br />
             Medpark Hospital
           </h1>
-          <p className="text-xl max-w-md font-medium drop-shadow-md text-gray-100">
-            Providing world-class healthcare, advanced medical facilities, and compassionate care to our community.
+          <p className="text-lg xl:text-xl max-w-md font-medium drop-shadow-md text-blue-100/90 leading-relaxed">
+            Providing world-class healthcare, real-time bed analytics, and compassionate clinical care to our community.
           </p>
         </div>
       </div>
 
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-50">
-        <div className="bg-white p-10 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-extrabold text-medical-dark mb-2">
+      {/* ─── Right Form Section (Mobile & Desktop Responsive) ────────── */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-3 sm:p-6 md:p-8 lg:p-10 xl:p-12">
+        <div className="bg-white p-4.5 sm:p-7 md:p-9 rounded-2xl sm:rounded-3xl shadow-xl w-full max-w-md border border-slate-200/90 sm:border-gray-100 transition-all">
+          <div className="text-center mb-5 sm:mb-7">
+            <div className="inline-flex lg:hidden items-center justify-center w-11 h-11 rounded-2xl bg-blue-50 text-medical-blue mb-2.5 ring-1 ring-blue-100 shadow-2xs">
+              <Building2 className="w-5 h-5" />
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-medical-dark mb-1.5 tracking-tight">
               {isLogin ? 'Login to MediCare' : 'Create an Account'}
             </h2>
-            <p className="text-gray-500 text-sm">
+            <p className="text-gray-500 text-xs sm:text-sm">
               {isLogin ? 'Welcome back! Please enter your details.' : 'Join our healthcare portal today.'}
             </p>
           </div>
 
-          <div className="mb-6 flex justify-center">
+          <div className="mb-4 sm:mb-5 flex justify-center">
             <button
               type="button"
               onClick={() => setShowNoticeModal(true)}
-              className="inline-flex items-center gap-2 bg-blue-50 hover:bg-blue-100/80 border border-blue-200 text-medical-blue text-xs font-semibold px-3.5 py-1.5 rounded-full transition-all cursor-pointer shadow-sm"
+              className="inline-flex items-center gap-1.5 bg-blue-50/90 hover:bg-blue-100 border border-blue-200/80 text-medical-blue text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-full transition-all cursor-pointer shadow-2xs"
             >
-              <Info className="w-3.5 h-3.5" />
-              <span>How booking works? Click for notice</span>
+              <Info className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">How booking works? Click for notice</span>
             </button>
           </div>
 
-          <div className="mb-6 grid gap-2.5">
-            <div className="p-3.5 rounded-2xl border border-blue-100 bg-blue-50/70 hover:bg-blue-50 transition">
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                  <h3 className="font-bold text-xs text-medical-dark uppercase tracking-wider">Super Admin</h3>
+          {/* ─── Fast Demo Quick-Fill Credentials ───────────────────── */}
+          <div className="mb-5 space-y-2">
+            {/* Super Admin */}
+            <div className="p-2.5 sm:p-3 rounded-xl border border-blue-100/90 bg-blue-50/60 hover:bg-blue-50 transition">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0"></span>
+                  <h3 className="font-bold text-[11px] sm:text-xs text-medical-dark uppercase tracking-wider truncate">Super Admin</h3>
                 </div>
                 <button
                   type="button"
@@ -219,22 +229,23 @@ export default function Login() {
                     });
                     toast.success('Super Admin credentials filled');
                   }}
-                  className="text-xs font-bold text-medical-blue hover:text-medical-dark bg-white px-2.5 py-1 rounded-lg border border-blue-200 shadow-xs transition cursor-pointer"
+                  className="text-[10.5px] sm:text-xs font-bold text-medical-blue hover:text-medical-dark bg-white px-2.5 py-1 rounded-lg border border-blue-200 shadow-2xs transition cursor-pointer shrink-0 active:scale-95"
                 >
                   Fill login
                 </button>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                <p>Email: <span className="font-semibold text-slate-800">abhi@yopmail.com</span></p>
-                <p>Pass: <span className="font-semibold text-slate-800">Avinash@99</span></p>
+              <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-0.5 xs:gap-2 text-[10.5px] sm:text-xs text-gray-600">
+                <p className="truncate">Email: <span className="font-semibold text-slate-800">abhi@yopmail.com</span></p>
+                <p className="shrink-0">Pass: <span className="font-semibold text-slate-800">Avinash@99</span></p>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-2xl border border-emerald-100 bg-emerald-50/70 hover:bg-emerald-50 transition">
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-                  <h3 className="font-bold text-xs text-medical-dark uppercase tracking-wider">Hospital Admin</h3>
+            {/* Hospital Admin */}
+            <div className="p-2.5 sm:p-3 rounded-xl border border-emerald-100/90 bg-emerald-50/60 hover:bg-emerald-50 transition">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0"></span>
+                  <h3 className="font-bold text-[11px] sm:text-xs text-medical-dark uppercase tracking-wider truncate">Hospital Admin</h3>
                 </div>
                 <button
                   type="button"
@@ -247,22 +258,23 @@ export default function Login() {
                     });
                     toast.success('Hospital Admin credentials filled');
                   }}
-                  className="text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shadow-xs transition cursor-pointer"
+                  className="text-[10.5px] sm:text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs transition cursor-pointer shrink-0 active:scale-95"
                 >
                   Fill login
                 </button>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                <p>Email: <span className="font-semibold text-slate-800">aditiverma@yopmail.com</span></p>
-                <p>Pass: <span className="font-semibold text-slate-800">Aditi@99</span></p>
+              <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-0.5 xs:gap-2 text-[10.5px] sm:text-xs text-gray-600">
+                <p className="truncate">Email: <span className="font-semibold text-slate-800">aditiverma@yopmail.com</span></p>
+                <p className="shrink-0">Pass: <span className="font-semibold text-slate-800">Aditi@99</span></p>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-2xl border border-amber-100 bg-amber-50/70 hover:bg-amber-50 transition">
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-amber-600"></span>
-                  <h3 className="font-bold text-xs text-medical-dark uppercase tracking-wider">Patient / User</h3>
+            {/* Patient / User */}
+            <div className="p-2.5 sm:p-3 rounded-xl border border-amber-100/90 bg-amber-50/60 hover:bg-amber-50 transition">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="w-2 h-2 rounded-full bg-amber-600 shrink-0"></span>
+                  <h3 className="font-bold text-[11px] sm:text-xs text-medical-dark uppercase tracking-wider truncate">Patient / User</h3>
                 </div>
                 <button
                   type="button"
@@ -275,37 +287,39 @@ export default function Login() {
                     });
                     toast.success('Patient credentials filled');
                   }}
-                  className="text-xs font-bold text-amber-800 hover:text-amber-950 bg-white px-2.5 py-1 rounded-lg border border-amber-200 shadow-xs transition cursor-pointer"
+                  className="text-[10.5px] sm:text-xs font-bold text-amber-800 hover:text-amber-950 bg-white px-2.5 py-1 rounded-lg border border-amber-200 shadow-2xs transition cursor-pointer shrink-0 active:scale-95"
                 >
                   Fill login
                 </button>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                <p>Email: <span className="font-semibold text-slate-800">user@yopmail.com</span></p>
-                <p>Pass: <span className="font-semibold text-slate-800">User@123</span></p>
+              <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-0.5 xs:gap-2 text-[10.5px] sm:text-xs text-gray-600">
+                <p className="truncate">Email: <span className="font-semibold text-slate-800">user@yopmail.com</span></p>
+                <p className="shrink-0">Pass: <span className="font-semibold text-slate-800">User@123</span></p>
               </div>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {/* ─── Form Inputs ────────────────────────────────────────── */}
+          <form onSubmit={handleSubmit} className="space-y-3.5">
             {!isLogin && (
               <>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">Full Name</label>
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-medical-blue focus:border-medical-blue outline-none transition-all bg-gray-50 focus:bg-white"
+                    className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-medical-blue focus:border-medical-blue outline-none transition-all bg-gray-50 focus:bg-white text-sm"
                     placeholder="John Doe"
+                    required
                   />
                 </div>
 
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="block text-sm font-semibold text-gray-700">Mobile Number</label>
-                    <span className="text-xs text-gray-400 font-medium">{formData.mobile.length}/10 digits</span>
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700">Mobile Number</label>
+                    <span className="text-[11px] text-gray-400 font-medium">{formData.mobile.length}/10 digits</span>
                   </div>
                   <input
                     type="tel"
@@ -313,28 +327,30 @@ export default function Login() {
                     maxLength={10}
                     value={formData.mobile}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-medical-blue focus:border-medical-blue outline-none transition-all bg-gray-50 focus:bg-white"
-                    placeholder="10-digit mobile number (e.g. 9876543210)"
+                    className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-medical-blue focus:border-medical-blue outline-none transition-all bg-gray-50 focus:bg-white text-sm"
+                    placeholder="10-digit mobile number"
+                    required
                   />
                 </div>
               </>
             )}
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Email Address</label>
+              <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">Email Address</label>
               <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-medical-blue focus:border-medical-blue outline-none transition-all bg-gray-50 focus:bg-white"
+                className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-medical-blue focus:border-medical-blue outline-none transition-all bg-gray-50 focus:bg-white text-sm"
                 placeholder="you@example.com"
+                required
               />
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="block text-sm font-semibold text-gray-700">Password</label>
+                <label className="block text-xs sm:text-sm font-semibold text-gray-700">Password</label>
                 {isLogin && (
                   <button
                     type="button"
@@ -351,16 +367,17 @@ export default function Login() {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 pr-11 border border-gray-300 rounded-lg focus:ring-2 focus:ring-medical-blue focus:border-medical-blue outline-none transition-all bg-gray-50 focus:bg-white"
+                  className="w-full px-3.5 sm:px-4 py-2.5 sm:py-3 pr-11 border border-gray-300 rounded-xl focus:ring-2 focus:ring-medical-blue focus:border-medical-blue outline-none transition-all bg-gray-50 focus:bg-white text-sm"
                   placeholder="••••••••"
+                  required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer p-1"
                   title={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
                 </button>
               </div>
             </div>
@@ -368,11 +385,11 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-medical-blue hover:bg-medical-dark text-white font-bold py-3.5 rounded-lg shadow-md transition-colors mt-2 cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
+              className="w-full bg-medical-blue hover:bg-medical-dark text-white font-bold py-3 sm:py-3.5 rounded-xl shadow-md transition-all mt-2 cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2 text-sm sm:text-base active:scale-98"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" /> Signing in…
+                  <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> Signing in…
                 </>
               ) : isLogin ? (
                 'Sign In'
@@ -382,7 +399,7 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="mt-8 text-center text-sm text-gray-600 border-t pt-6">
+          <div className="mt-6 sm:mt-8 text-center text-xs sm:text-sm text-gray-600 border-t border-slate-100 pt-5">
             Want to onboard your hospital?{' '}
             <Link to="/#book-demo" className="font-bold text-medical-blue hover:text-medical-dark transition-colors cursor-pointer">
               Book a demo
@@ -391,14 +408,14 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Forgot-password modal */}
+      {/* ─── Forgot-Password Modal (Responsive) ───────────────────────── */}
       <AnimatePresence>
         {forgot && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm"
             onClick={() => setForgot(null)}
           >
             <motion.div
@@ -406,19 +423,19 @@ export default function Login() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-md bg-white rounded-3xl p-7 shadow-2xl border border-gray-100"
+              className="relative w-full max-w-md bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center gap-2.5 mb-5">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 text-medical-blue flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-medical-blue flex items-center justify-center shrink-0">
                   <KeyRound className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-lg text-medical-dark">Reset your password</h3>
-                  <p className="text-xs text-gray-500">
+                <div className="min-w-0">
+                  <h3 className="font-bold text-base sm:text-lg text-medical-dark truncate">Reset your password</h3>
+                  <p className="text-xs text-gray-500 truncate">
                     {forgot.step === 'email' ? "We'll email you a 4-digit code" : `Enter the code sent to ${forgot.email}`}
                   </p>
                 </div>
-                <button onClick={() => setForgot(null)} className="ml-auto p-1.5 rounded-full text-gray-400 hover:bg-gray-100 cursor-pointer">
+                <button onClick={() => setForgot(null)} className="ml-auto p-1.5 rounded-full text-gray-400 hover:bg-gray-100 cursor-pointer shrink-0">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -426,7 +443,7 @@ export default function Login() {
               {forgot.step === 'email' ? (
                 <form onSubmit={submitForgotEmail} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Email address</label>
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">Email address</label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input
@@ -434,14 +451,15 @@ export default function Login() {
                         value={forgot.email}
                         onChange={(e) => setForgot((f) => ({ ...f, email: e.target.value }))}
                         placeholder="you@example.com"
-                        className="w-full pl-9 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-medical-blue outline-none bg-gray-50 focus:bg-white"
+                        className="w-full pl-9 pr-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-medical-blue outline-none bg-gray-50 focus:bg-white text-sm"
+                        required
                       />
                     </div>
                   </div>
                   <button
                     type="submit"
                     disabled={forgot.sending}
-                    className="w-full bg-medical-blue hover:bg-medical-dark text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+                    className="w-full bg-medical-blue hover:bg-medical-dark text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer text-sm"
                   >
                     {forgot.sending ? (
                       <>
@@ -455,30 +473,32 @@ export default function Login() {
               ) : (
                 <form onSubmit={submitReset} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">4-digit code</label>
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">4-digit code</label>
                     <input
                       inputMode="numeric"
                       maxLength={4}
                       value={forgot.otp}
                       onChange={(e) => setForgot((f) => ({ ...f, otp: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
                       placeholder="1234"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-medical-blue outline-none bg-gray-50 focus:bg-white tracking-[0.5em] text-center text-lg font-bold"
+                      className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-medical-blue outline-none bg-gray-50 focus:bg-white tracking-[0.5em] text-center text-lg font-bold"
+                      required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">New password</label>
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">New password</label>
                     <input
                       type="password"
                       value={forgot.password}
                       onChange={(e) => setForgot((f) => ({ ...f, password: e.target.value }))}
                       placeholder="At least 6 characters"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-medical-blue outline-none bg-gray-50 focus:bg-white"
+                      className="w-full px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-medical-blue outline-none bg-gray-50 focus:bg-white text-sm"
+                      required
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={forgot.sending}
-                    className="w-full bg-medical-blue hover:bg-medical-dark text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+                    className="w-full bg-medical-blue hover:bg-medical-dark text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer text-sm"
                   >
                     {forgot.sending ? (
                       <>
@@ -491,7 +511,7 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => setForgot((f) => ({ ...f, step: 'email' }))}
-                    className="w-full text-sm text-gray-500 hover:text-medical-blue flex items-center justify-center gap-1 cursor-pointer"
+                    className="w-full text-xs sm:text-sm text-gray-500 hover:text-medical-blue flex items-center justify-center gap-1 cursor-pointer pt-1"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" /> Use a different email / resend
                   </button>
@@ -502,13 +522,14 @@ export default function Login() {
         )}
       </AnimatePresence>
 
+      {/* ─── Appointment Booking Notice Modal (Responsive) ───────────── */}
       <AnimatePresence>
         {showNoticeModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm"
             onClick={() => setShowNoticeModal(false)}
           >
             <motion.div
@@ -516,16 +537,16 @@ export default function Login() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 10 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-gray-100"
+              className="relative w-full max-w-md bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-medical-blue flex items-center justify-center">
-                    <CalendarCheck className="w-5 h-5" />
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3 sm:pb-4 mb-3 sm:mb-4">
+                <div className="flex items-center gap-2 sm:gap-2.5">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-50 text-medical-blue flex items-center justify-center shrink-0">
+                    <CalendarCheck className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg text-medical-dark">Appointment Booking Notice</h3>
-                    <p className="text-[11px] text-gray-500">Important guidelines for patients</p>
+                    <h3 className="font-bold text-base sm:text-lg text-medical-dark leading-tight">Booking Notice</h3>
+                    <p className="text-[10.5px] sm:text-[11px] text-gray-500">Important guidelines for patients</p>
                   </div>
                 </div>
                 <button
@@ -536,26 +557,26 @@ export default function Login() {
                 </button>
               </div>
 
-              <div className="space-y-3.5 text-sm text-gray-600">
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-gray-100 flex items-start gap-3">
-                  <span className="w-6 h-6 rounded-full bg-blue-100 text-medical-blue text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+              <div className="space-y-3 text-xs sm:text-sm text-gray-600">
+                <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-slate-50 border border-gray-100 flex items-start gap-2.5 sm:gap-3">
+                  <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-100 text-medical-blue text-[11px] sm:text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
                     1
                   </span>
                   <div>
-                    <p className="font-bold text-slate-900 text-xs uppercase tracking-wider">Already Registered?</p>
-                    <p className="text-xs text-gray-600 mt-0.5">
+                    <p className="font-bold text-slate-900 text-[11px] sm:text-xs uppercase tracking-wider">Already Registered?</p>
+                    <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
                       Please <span className="font-semibold text-medical-blue">Sign In</span> with your registered email and password to book your appointment instantly.
                     </p>
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-gray-100 flex items-start gap-3">
-                  <span className="w-6 h-6 rounded-full bg-blue-100 text-medical-blue text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-slate-50 border border-gray-100 flex items-start gap-2.5 sm:gap-3">
+                  <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-100 text-medical-blue text-[11px] sm:text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
                     2
                   </span>
                   <div>
-                    <p className="font-bold text-slate-900 text-xs uppercase tracking-wider">Not Registered Yet?</p>
-                    <p className="text-xs text-gray-600 mt-0.5">
+                    <p className="font-bold text-slate-900 text-[11px] sm:text-xs uppercase tracking-wider">Not Registered Yet?</p>
+                    <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
                       Click <span className="font-semibold text-medical-blue">Register here</span>, fill in your name, 10-digit mobile number, email, and password. Once created, sign in to book an appointment.
                     </p>
                   </div>
@@ -564,7 +585,7 @@ export default function Login() {
 
               <button
                 onClick={() => setShowNoticeModal(false)}
-                className="mt-6 w-full py-3 rounded-xl bg-medical-blue hover:bg-medical-dark text-white font-bold text-sm transition shadow-md shadow-medical-blue/20 cursor-pointer"
+                className="mt-5 sm:mt-6 w-full py-2.5 sm:py-3 rounded-xl bg-medical-blue hover:bg-medical-dark text-white font-bold text-xs sm:text-sm transition shadow-md shadow-medical-blue/20 cursor-pointer"
               >
                 Got it, Continue
               </button>
