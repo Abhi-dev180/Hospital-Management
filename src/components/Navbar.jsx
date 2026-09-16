@@ -272,7 +272,7 @@ export default function Navbar() {
         className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-400 origin-left z-50 pointer-events-none shadow-xs"
         style={{ scaleX: scrollYProgress }}
       />
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div className="max-w-[1720px] mx-auto px-2.5 sm:px-4 lg:px-6">
         <div className="flex justify-between items-center min-h-[64px] sm:min-h-[72px] py-2 gap-2 sm:gap-4">
           {/* Logo & Role Portal Badge */}
           <div className="flex-shrink-0 flex items-center gap-2.5 min-w-0">

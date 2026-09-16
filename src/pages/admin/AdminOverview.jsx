@@ -423,12 +423,14 @@ export default function AdminOverview() {
 
   if (loading) {
     return (
-      <div className="w-full px-2 sm:px-3 py-4 space-y-4">
-        <DashboardTabs role="admin" />
-        <div className="space-y-4">
-          <StatSkeleton count={4} />
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <SectionLoader label="Loading dashboard…" sub="Pulling your hospital's latest activity" />
+      <div className="min-h-screen w-full bg-slate-50 py-3 sm:py-4 px-2 sm:px-3 md:px-4 lg:px-5">
+        <div className="w-full max-w-[1720px] mx-auto space-y-4">
+          <DashboardTabs role="admin" />
+          <div className="space-y-4">
+            <StatSkeleton count={4} />
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <SectionLoader label="Loading dashboard…" sub="Pulling your hospital's latest activity" />
+            </div>
           </div>
         </div>
       </div>
@@ -436,13 +438,14 @@ export default function AdminOverview() {
   }
 
   return (
-    <div className="w-full px-2 sm:px-3 py-4 space-y-4">
-      <DashboardTabs role="admin" />
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={containerVariants}
-        className="space-y-4"
+    <div className="min-h-screen w-full bg-slate-50 py-3 sm:py-4 px-2 sm:px-3 md:px-4 lg:px-5">
+      <div className="w-full max-w-[1720px] mx-auto space-y-4">
+        <DashboardTabs role="admin" />
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={containerVariants}
+          className="space-y-4"
       >
       {/* Header */}
       <motion.div variants={itemVariants} className="flex items-center gap-3">
@@ -634,6 +637,7 @@ export default function AdminOverview() {
         </motion.div>
       </div>
     </motion.div>
-  </div>
+      </div>
+    </div>
   );
 }

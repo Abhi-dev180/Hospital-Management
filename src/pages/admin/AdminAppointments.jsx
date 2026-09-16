@@ -591,14 +591,15 @@ export default function AdminAppointments() {
   useEffect(() => setPage(1), [search, statusFilter, typeFilter]);
 
   return (
-    <div className="w-full px-2 sm:px-3 py-4">
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={pageVariants}
-        className="w-full space-y-4"
-      >
-        <DashboardTabs role="admin" />
+    <div className="min-h-screen w-full bg-slate-50 py-3 sm:py-4 px-2 sm:px-3 md:px-4 lg:px-5">
+      <div className="w-full max-w-[1720px] mx-auto">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={pageVariants}
+          className="w-full space-y-4"
+        >
+          <DashboardTabs role="admin" />
 
       <div className="bg-white/80 backdrop-blur-xl p-4 sm:p-6 lg:p-8 rounded-3xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.08)] border border-slate-100">
         
@@ -1593,6 +1594,7 @@ export default function AdminAppointments() {
         )}
       </AnimatePresence>
     </motion.div>
-  </div>
+      </div>
+    </div>
   );
 }

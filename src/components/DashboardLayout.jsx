@@ -2,8 +2,8 @@ import { motion } from 'framer-motion';
 
 export default function DashboardLayout({ title, subtitle, children, showHeader = true }) {
   return (
-    <div className="min-h-screen w-full bg-slate-50 py-3 sm:py-5 md:py-6 px-2.5 sm:px-4 md:px-6 lg:px-8">
-      <div className="w-full max-w-7xl mx-auto space-y-4 sm:space-y-6">
+    <div className="min-h-screen w-full bg-slate-50 py-3 sm:py-4 px-2 sm:px-3 md:px-4 lg:px-5">
+      <div className="w-full max-w-[1720px] mx-auto space-y-4 sm:space-y-5">
         {showHeader && (
           <motion.div
             initial={{ opacity: 0, y: 16 }}

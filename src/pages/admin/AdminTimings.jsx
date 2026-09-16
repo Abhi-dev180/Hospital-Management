@@ -139,8 +139,9 @@ export default function AdminTimings() {
 
   // ─── Render ─────────────────────────────────────────────────
   return (
-    <div className="w-full px-2 sm:px-3 py-4 space-y-4">
-      <DashboardTabs role="admin" />
+    <div className="min-h-screen w-full bg-slate-50 py-3 sm:py-4 px-2 sm:px-3 md:px-4 lg:px-5">
+      <div className="w-full max-w-[1720px] mx-auto space-y-4">
+        <DashboardTabs role="admin" />
       <motion.div 
         initial={{ opacity: 0, y: 10 }} 
         animate={{ opacity: 1, y: 0 }} 
@@ -305,6 +306,7 @@ export default function AdminTimings() {
         * Click the Status pill to quickly toggle a day Open/Closed. Click the Edit (pencil) icon to adjust the time range for a specific day.
       </p>
     </motion.div>
-  </div>
+      </div>
+    </div>
   );
 }
