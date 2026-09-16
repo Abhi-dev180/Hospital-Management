@@ -1,10 +1,10 @@
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Menu, X, LayoutDashboard, Video, ClipboardCheck, Users,
   FlaskConical, ShieldCheck, Building2, CalendarCheck, Calendar,
-  Mail, Star, Clock, Stethoscope
+  Mail, Star, Clock, Stethoscope, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import medicalLogo from '../assets/sign.jpeg';
@@ -34,6 +34,9 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const navScrollRef = useRef(null);
+  const [canScrollNavLeft, setCanScrollNavLeft] = useState(false);
+  const [canScrollNavRight, setCanScrollNavRight] = useState(false);
 
   const isSuperAdmin = user?.role === 'superadmin';
   const isAdmin = user?.role === 'admin';
@@ -65,10 +68,41 @@ export default function Navbar() {
     };
   }, []);
 
-  // ─── Close mobile menu on route change ────────────────────
+  // ─── Navbar Horizontal Scroll Listeners & Actions ─────────
+  const updateNavScrollState = () => {
+    if (!navScrollRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = navScrollRef.current;
+    setCanScrollNavLeft(scrollLeft > 6);
+    setCanScrollNavRight(scrollLeft < scrollWidth - clientWidth - 6);
+  };
+
   useEffect(() => {
-    if (isOpen) setIsOpen(false);
-  }, [location.pathname]);
+    updateNavScrollState();
+    const el = navScrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', updateNavScrollState, { passive: true });
+    window.addEventListener('resize', updateNavScrollState);
+    return () => {
+      el.removeEventListener('scroll', updateNavScrollState);
+      window.removeEventListener('resize', updateNavScrollState);
+    };
+  }, [location.pathname, user?.role]);
+
+  const scrollNav = (direction) => {
+    if (!navScrollRef.current) return;
+    navScrollRef.current.scrollBy({
+      left: direction === 'left' ? -220 : 220,
+      behavior: 'smooth'
+    });
+  };
+
+  const handleNavWheel = (e) => {
+    if (!navScrollRef.current) return;
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && navScrollRef.current.scrollWidth > navScrollRef.current.clientWidth) {
+      e.preventDefault();
+      navScrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -233,47 +267,77 @@ export default function Navbar() {
 
             {showDashboardNav ? (
               <>
-                <div className="flex items-center gap-1 lg:gap-1.5 overflow-x-auto no-scrollbar overscroll-x-contain scroll-smooth whitespace-nowrap py-1 px-1">
-                  {dashboardLinks.map((link) => {
-                    const Icon = link.icon;
-                    const badgeCount = link.badge ? activeBadges[link.badge] : 0;
-                    return (
-                      <NavLink
-                        key={link.name}
-                        to={link.to}
-                        className={({ isActive }) =>
-                          `relative inline-flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors shrink-0 z-10 ${
-                            isActive
-                              ? 'text-white font-bold'
-                              : 'text-slate-600 hover:text-medical-blue hover:bg-slate-100/60'
-                          }`
-                        }
-                      >
-                        {({ isActive }) => (
-                          <>
-                            {isActive && (
-                              <motion.div
-                                layoutId="navbarActivePill"
-                                transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-                                className="absolute inset-0 bg-medical-blue rounded-xl shadow-xs -z-10"
-                              />
-                            )}
-                            {Icon && <Icon className="w-3.5 h-3.5 shrink-0" />}
-                            <span>{link.name}</span>
-                            {badgeCount > 0 && (
-                              <span
-                                className={`inline-flex items-center justify-center px-1.5 py-0.2 text-[10px] font-black rounded-full leading-tight transition-colors ${
-                                  isActive ? 'bg-white text-blue-700' : 'bg-rose-500 text-white shadow-2xs'
-                                }`}
-                              >
-                                {badgeCount > 99 ? '99+' : badgeCount}
-                              </span>
-                            )}
-                          </>
-                        )}
-                      </NavLink>
-                    );
-                  })}
+                <div className="relative flex items-center min-w-0 flex-1 max-w-full group/nav">
+                  {canScrollNavLeft && (
+                    <button
+                      type="button"
+                      onClick={() => scrollNav('left')}
+                      title="Scroll navigation left"
+                      aria-label="Scroll left"
+                      className="absolute -left-1 z-30 h-6 w-6 rounded-full bg-white/95 shadow-md border border-slate-200 text-slate-700 hover:text-medical-blue hover:bg-white flex items-center justify-center cursor-pointer transition-all active:scale-95"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
+                  <div
+                    ref={navScrollRef}
+                    onWheel={handleNavWheel}
+                    className="flex items-center gap-1 lg:gap-1.5 overflow-x-auto no-scrollbar overscroll-x-contain scroll-smooth whitespace-nowrap py-1 px-1 flex-1 min-w-0"
+                  >
+                    {dashboardLinks.map((link) => {
+                      const Icon = link.icon;
+                      const badgeCount = link.badge ? activeBadges[link.badge] : 0;
+                      return (
+                        <NavLink
+                          key={link.name}
+                          to={link.to}
+                          className={({ isActive }) =>
+                            `relative inline-flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors shrink-0 z-10 ${
+                              isActive
+                                ? 'text-white font-bold'
+                                : 'text-slate-600 hover:text-medical-blue hover:bg-slate-100/60'
+                            }`
+                          }
+                        >
+                          {({ isActive }) => (
+                            <>
+                              {isActive && (
+                                <motion.div
+                                  layoutId="navbarActivePill"
+                                  transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                                  className="absolute inset-0 bg-medical-blue rounded-xl shadow-xs -z-10"
+                                />
+                              )}
+                              {Icon && <Icon className="w-3.5 h-3.5 shrink-0" />}
+                              <span>{link.name}</span>
+                              {badgeCount > 0 && (
+                                <span
+                                  className={`inline-flex items-center justify-center px-1.5 py-0.2 text-[10px] font-black rounded-full leading-tight transition-colors ${
+                                    isActive ? 'bg-white text-blue-700' : 'bg-rose-500 text-white shadow-2xs'
+                                  }`}
+                                >
+                                  {badgeCount > 99 ? '99+' : badgeCount}
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </NavLink>
+                      );
+                    })}
+                  </div>
+
+                  {canScrollNavRight && (
+                    <button
+                      type="button"
+                      onClick={() => scrollNav('right')}
+                      title="Scroll navigation right"
+                      aria-label="Scroll right"
+                      className="absolute -right-1 z-30 h-6 w-6 rounded-full bg-white/95 shadow-md border border-slate-200 text-slate-700 hover:text-medical-blue hover:bg-white flex items-center justify-center cursor-pointer transition-all active:scale-95"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2 ml-1.5 pl-3 border-l border-slate-200/90 shrink-0">
