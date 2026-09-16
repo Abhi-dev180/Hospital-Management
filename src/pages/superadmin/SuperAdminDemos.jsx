@@ -412,7 +412,8 @@ export default function SuperAdminDemos() {
         <DashboardTabs role="superadmin" />
 
         {/* Dynamic Metric Cards */}
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
+        {/* Dynamic Metric Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
           {statCards.map((c) => {
             const Icon = c.icon;
             return (
@@ -420,24 +421,24 @@ export default function SuperAdminDemos() {
                 key={c.title}
                 variants={cardAnimation}
                 whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                className={`relative overflow-hidden rounded-3xl bg-white/95 backdrop-blur-xl p-5 sm:p-6 shadow-[0_10px_30px_-15px_rgba(15,23,42,0.07)] border ${c.border}`}
+                className={`relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white/95 backdrop-blur-xl p-3.5 sm:p-5 md:p-6 shadow-[0_10px_30px_-15px_rgba(15,23,42,0.07)] border ${c.border}`}
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-br ${c.gradient} pointer-events-none`}
                 />
-                <div className="relative z-10 flex items-center justify-between gap-4">
+                <div className="relative z-10 flex items-center justify-between gap-2 sm:gap-4">
                   <div className="min-w-0">
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                    <p className="text-[10.5px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 truncate">
                       {c.title}
                     </p>
-                    <p className="text-3xl font-black text-slate-900 mt-2 tracking-tight">
+                    <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1 sm:mt-2 tracking-tight">
                       {c.value}
                     </p>
                   </div>
                   <div
-                    className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${c.iconBg}`}
+                    className={`w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 shadow-md ${c.iconBg}`}
                   >
-                    <Icon className="w-6 h-6 sm:w-7 sm:h-7" />
+                    <Icon className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
                   </div>
                 </div>
               </motion.div>
@@ -448,44 +449,45 @@ export default function SuperAdminDemos() {
         {/* Main Data Container */}
         <motion.div variants={cardAnimation} className="space-y-6 sm:space-y-8">
           <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-blue-500/5 rounded-full blur-3xl -translate-x-1/2 translate-y-1/2 pointer-events-none" />
+          
           {/* Table Toolbar Header */}
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between mb-8 relative z-10">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6 sm:mb-8 relative z-10">
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                   Hospital Inquiries
                 </h2>
                 <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-100">
                   {filtered.length} Active
                 </span>
               </div>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-xs sm:text-sm text-slate-500 mt-1">
                 Real-time scheduling metrics and institutional conversions.
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
-              <div className="relative w-full sm:w-72">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full lg:w-auto">
+              <div className="relative w-full sm:w-64 md:w-72">
                 <Search
                   className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                  size={17}
+                  size={16}
                 />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search hospital, name, email…"
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50/80 border border-slate-200/80 rounded-2xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition text-sm font-medium text-slate-800 placeholder:text-slate-400 shadow-inner"
+                  className="w-full pl-9 pr-4 py-2.5 sm:py-3 bg-slate-50/80 border border-slate-200/80 rounded-xl sm:rounded-2xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition text-xs sm:text-sm font-medium text-slate-800 placeholder:text-slate-400 shadow-inner"
                 />
               </div>
 
               <div className="relative w-full sm:w-auto">
                 <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                  <Filter size={15} />
+                  <Filter size={14} />
                 </div>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full sm:w-auto pl-10 pr-8 py-3 bg-slate-50/80 border border-slate-200/80 rounded-2xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition text-sm font-semibold text-slate-700 appearance-none shadow-inner cursor-pointer"
+                  className="w-full sm:w-auto pl-9 pr-8 py-2.5 sm:py-3 bg-slate-50/80 border border-slate-200/80 rounded-xl sm:rounded-2xl outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition text-xs sm:text-sm font-semibold text-slate-700 appearance-none shadow-inner cursor-pointer"
                 >
                   <option value="all">All statuses</option>
                   <option value="requested">Requested</option>
@@ -498,14 +500,14 @@ export default function SuperAdminDemos() {
 
               <button
                 onClick={fetchBookings}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-5 py-3 rounded-2xl font-bold text-sm shadow-sm transition active:scale-95"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm shadow-xs transition active:scale-95 cursor-pointer"
               >
-                <RefreshCw size={16} className="text-slate-500" /> Refresh
+                <RefreshCw size={15} className="text-slate-500" /> Refresh
               </button>
             </div>
           </div>
 
-          {/* Table View */}
+          {/* ─── Content Views (Mobile Cards + Desktop Table) ──────────── */}
           {loading ? (
             <SectionLoader
               label="Syncing booking data…"
@@ -513,284 +515,438 @@ export default function SuperAdminDemos() {
               minHeight="min-h-[380px]"
             />
           ) : (
-            <div className="overflow-x-auto rounded-3xl border border-slate-200/70 shadow-sm relative z-10 min-h-[380px]">
-              <table className="w-full text-left border-collapse min-w-[1250px]">
-                <thead>
-                  <tr className="bg-slate-50/90 text-slate-600 text-xs font-bold uppercase tracking-wider border-b border-slate-200/80">
-                    <th className="py-4 px-5">Hospital Profile</th>
-                    <th className="py-4 px-5">Contact Details</th>
-                    <th className="py-4 px-5">Scheduled Slot</th>
-                    <th className="py-4 px-5">Status</th>
-                    <th className="py-4 px-5">Plan</th>
-                    <th className="py-4 px-5">Amount</th>
-                    <th className="py-4 px-5">Payment</th>
-                    <th className="py-4 px-5">Meeting</th>
-                    <th className="py-4 px-5 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-medium text-sm">
-                  {paginated.map((b, idx) => {
-                    const statusData = STATUS_CONFIG[b.status] || {
-                      label: b.status,
-                      badge: "bg-slate-100 text-slate-600 border-slate-200",
-                      dot: "bg-slate-400",
-                    };
-                    const isMenuOpen = activeMenuId === b.id;
+            <>
+              {/* 1. Mobile & Tablet Card List View (Visible on < 1024px) */}
+              <div className="block lg:hidden space-y-3.5 relative z-10">
+                {paginated.map((b, idx) => {
+                  const statusData = STATUS_CONFIG[b.status] || {
+                    label: b.status,
+                    badge: "bg-slate-100 text-slate-600 border-slate-200",
+                    dot: "bg-slate-400",
+                  };
+                  const isMenuOpen = activeMenuId === b.id;
 
-                    return (
-                      <motion.tr
-                        key={b.id}
-                        variants={rowAnimation}
-                        initial="hidden"
-                        animate="visible"
-                        transition={{ delay: idx * 0.02 }}
-                        className="hover:bg-slate-50/70 transition-colors group"
-                      >
-                        <td className="py-4 px-5">
-                          <div className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-sm">
-                              <Building2 size={16} />
-                            </div>
-                            {b.hospital_name}
+                  return (
+                    <div
+                      key={b.id}
+                      className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-3"
+                    >
+                      {/* Card Header: Hospital & Status */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-2xs">
+                            <Building2 size={18} />
                           </div>
-                          <div className="text-slate-400 text-xs flex items-center gap-1 mt-1 font-normal pl-10">
-                            <MapPin size={12} />{" "}
-                            {b.city || "Location unspecified"}
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-sm text-slate-900 truncate">
+                              {b.hospital_name}
+                            </h4>
+                            <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                              <MapPin size={11} /> {b.city || "Location unspecified"}
+                            </p>
                           </div>
-                        </td>
+                        </div>
 
-                        <td className="py-4 px-5">
-                          <div className="text-slate-900 font-semibold">
-                            {b.contact_name}
-                          </div>
-                          <div className="text-slate-500 text-xs flex items-center gap-1 mt-0.5">
-                            <Mail size={12} className="text-slate-400" />{" "}
-                            {b.email}
-                          </div>
-                          {b.phone && (
-                            <div className="text-slate-500 text-xs flex items-center gap-1 mt-0.5">
-                              <Phone size={12} className="text-slate-400" />{" "}
-                              {b.phone}
-                            </div>
-                          )}
-                        </td>
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border shadow-2xs capitalize shrink-0 ${statusData.badge}`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${statusData.dot}`} />
+                          {statusData.label}
+                        </span>
+                      </div>
 
-                        <td className="py-4 px-5 text-slate-700 whitespace-nowrap">
-                          <div className="font-semibold text-slate-800">
+                      {/* Contact & Scheduled Date Details */}
+                      <div className="grid grid-cols-1 xs:grid-cols-2 gap-2 text-xs bg-slate-50/80 p-3 rounded-xl border border-slate-100">
+                        <div>
+                          <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Contact Person</span>
+                          <span className="font-semibold text-slate-800">{b.contact_name}</span>
+                          <span className="text-slate-500 block text-[11px] truncate mt-0.5">{b.email}</span>
+                          {b.phone && <span className="text-slate-500 block text-[11px]">{b.phone}</span>}
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px] font-bold uppercase tracking-wider">Scheduled Slot</span>
+                          <span className="font-semibold text-slate-800 flex items-center gap-1 mt-0.5">
+                            <CalendarClock size={13} className="text-blue-500 shrink-0" />
                             {fmt(b.scheduled_at)}
-                          </div>
-                        </td>
-
-                        <td className="py-4 px-5">
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-sm capitalize ${statusData.badge}`}
-                          >
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${statusData.dot}`}
-                            />
-                            {statusData.label}
                           </span>
-                        </td>
-
-                        <td className="py-4 px-5">
-                          {b.payment ? (
-                            <span className="font-bold text-slate-800">
-                              {b.payment.plan || "Quarterly Plan"}
-                              <span className="text-slate-400 text-xs block font-normal capitalize">
-                                {b.payment.interval || "billed every 90 days"}
-                              </span>
-                              {b.payment.startDate && (
-                                <span className="text-slate-400 text-[10px] block font-normal mt-0.5">
-                                  {new Date(
-                                    b.payment.startDate,
-                                  ).toLocaleDateString()}{" "}
-                                  -{" "}
-                                  {b.payment.endDate
-                                    ? new Date(
-                                        b.payment.endDate,
-                                      ).toLocaleDateString()
-                                    : "Active"}
-                                </span>
-                              )}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400 text-xs italic font-normal">
-                              No plan chosen
+                          {b.payment && (
+                            <span className="text-slate-600 block text-[11px] mt-1">
+                              <strong>{b.payment.plan || "Quarterly"}</strong> (₹{((b.payment.amount || 200) > 1000 ? (b.payment.amount / 100) : (b.payment.amount || 200) * 100).toLocaleString('en-IN')})
                             </span>
                           )}
-                        </td>
+                        </div>
+                      </div>
 
-                        <td className="py-4 px-5">
-                          {b.payment && b.payment.amount ? (() => {
-                            const amt = b.payment.amount;
-                            const currencyStr = String(b.payment.currency || 'usd').toLowerCase();
-                            const isRupees = currencyStr === 'inr';
-                            const formattedAmt = isRupees
-                              ? `₹${(amt > 100000 ? Math.round(amt / 100) : amt).toLocaleString('en-IN')}`
-                              : `$${(amt >= 100 ? (amt / 100).toFixed(2) : Number(amt).toFixed(2))}`;
+                      {/* Meeting Link & Actions Bar */}
+                      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                        {b.meeting_link ? (
+                          <a
+                            href={b.meeting_link}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-2xs"
+                          >
+                            <Video size={13} /> Join Call <ExternalLink size={10} />
+                          </a>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 italic">No link assigned</span>
+                        )}
 
-                            return (
-                              <span className="font-bold text-slate-900 flex items-center gap-1">
-                                <CreditCard size={13} className="text-slate-400" />
-                                {formattedAmt}
-                                <span className="text-slate-400 text-xs font-normal uppercase">
-                                  {b.payment.currency || (isRupees ? 'INR' : 'USD')}
-                                </span>
-                              </span>
-                            );
-                          })() : (
-                            <span className="text-slate-400 text-xs italic font-normal">—</span>
-                          )}
-                        </td>
+                        {/* Hamburger Actions Menu */}
+                        <div className="relative action-menu-container">
+                          <button
+                            onClick={() => setActiveMenuId(isMenuOpen ? null : b.id)}
+                            className={`p-1.5 rounded-xl border transition shadow-2xs ${
+                              isMenuOpen
+                                ? "bg-blue-600 text-white border-blue-600"
+                                : "bg-white hover:bg-slate-100 text-slate-600 border-slate-200"
+                            }`}
+                            title="Actions"
+                          >
+                            <MoreVertical size={16} />
+                          </button>
 
-                        <td className="py-4 px-5">
-                          {(() => {
-                            const isPaid = b.payment && (b.payment.status === 'paid' || b.payment.status === 'active');
-                            const isPending = b.payment && b.payment.status === 'pending';
-
-                            if (isPaid) {
-                              return (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border bg-emerald-50 text-emerald-700 border-emerald-200 capitalize">
-                                  <ShieldCheck size={12} /> Paid
-                                </span>
-                              );
-                            }
-
-                            if (isPending) {
-                              return (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border bg-amber-50 text-amber-700 border-amber-200 capitalize">
-                                  <ShieldCheck size={12} /> Pending
-                                </span>
-                              );
-                            }
-
-                            return (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border bg-slate-50 text-slate-500 border-slate-200">
-                                <ShieldCheck size={12} className="text-slate-400" /> Unpaid
-                              </span>
-                            );
-                          })()}
-                        </td>
-
-                        <td className="py-4 px-5">
-                          {b.meeting_link ? (() => {
-                            const isZoom = b.meeting_link.includes("zoom.us");
-                            const isMeet = b.meeting_link.includes("meet.google.com");
-                            const joinText = isZoom ? "Join Zoom" : isMeet ? "Join Meet" : "Join";
-                            
-                            return (
-                              <a
-                                href={b.meeting_link}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1.5 text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm"
+                          <AnimatePresence>
+                            {isMenuOpen && (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 8 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute right-0 top-10 w-48 bg-white rounded-2xl shadow-2xl border border-slate-100 py-1.5 z-50 text-left overflow-hidden"
                               >
-                                <Video size={13} /> {joinText}{" "}
-                                <ExternalLink size={10} />
-                              </a>
-                            );
-                          })() : (
-                            <span className="text-slate-400 text-xs font-normal italic">
-                              No meeting link
-                            </span>
-                          )}
-                        </td>
-
-                        {/* ─── Hamburger / Dropdown Menu ─── */}
-                        <td className="py-4 px-5 text-right relative">
-                          <div className="inline-block action-menu-container">
-                            <button
-                              onClick={() =>
-                                setActiveMenuId(isMenuOpen ? null : b.id)
-                              }
-                              className={`p-2 rounded-xl border transition shadow-sm ${
-                                isMenuOpen
-                                  ? "bg-blue-600 text-white border-blue-600 shadow-blue-500/20"
-                                  : "bg-white hover:bg-slate-100 text-slate-600 border-slate-200"
-                              }`}
-                              title="Actions"
-                            >
-                              <MoreVertical size={16} />
-                            </button>
-
-                            <AnimatePresence>
-                              {isMenuOpen && (
-                                <motion.div
-                                  initial={{ opacity: 0, scale: 0.95, y: 8 }}
-                                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                                  exit={{ opacity: 0, scale: 0.95, y: 8 }}
-                                  transition={{ duration: 0.15 }}
-                                  className="absolute right-5 top-14 w-52 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-50 text-left overflow-hidden"
+                                <button
+                                  onClick={() => openRescheduleModal(b)}
+                                  className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-violet-700 hover:bg-violet-50 transition"
                                 >
-                                  <div className="px-3 py-1.5 border-b border-slate-100 mb-1">
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                      Manage Booking
-                                    </p>
-                                  </div>
-
+                                  <CalendarClock size={13} /> Reschedule Slot
+                                </button>
+                                <button
+                                  onClick={() => openLinkModal(b)}
+                                  className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                                >
+                                  <Link2 size={13} /> Configure Link
+                                </button>
+                                {b.status !== "completed" && (
                                   <button
-                                    onClick={() => openRescheduleModal(b)}
-                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-violet-700 hover:bg-violet-50 transition"
+                                    onClick={() => handleComplete(b)}
+                                    className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition"
                                   >
-                                    <CalendarClock size={14} /> Reschedule Slot
+                                    <CheckCircle2 size={13} /> Mark Completed
                                   </button>
-
+                                )}
+                                {b.status !== "cancelled" && b.status !== "completed" && (
                                   <button
-                                    onClick={() => openLinkModal(b)}
-                                    className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                                    onClick={() => handleCancel(b)}
+                                    className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 transition"
                                   >
-                                    <Link2 size={14} /> Configure Link
+                                    <XCircle size={13} /> Cancel Demo
                                   </button>
+                                )}
+                                <div className="border-t border-slate-100 mt-1 pt-1">
+                                  <button
+                                    onClick={() => handleDelete(b)}
+                                    className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 transition"
+                                  >
+                                    <Trash2 size={13} /> Delete Record
+                                  </button>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
 
-                                  {b.status !== "completed" && (
+                {filtered.length === 0 && (
+                  <div className="p-8 text-center text-slate-400 italic bg-white rounded-2xl border border-slate-200">
+                    No matching demo bookings found.
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Desktop Table View (Visible on >= 1024px) */}
+              <div className="hidden lg:block overflow-x-auto rounded-3xl border border-slate-200/70 shadow-sm relative z-10 min-h-[380px] bg-white">
+                <table className="w-full text-left border-collapse min-w-[1150px]">
+                  <thead>
+                    <tr className="bg-slate-50/90 text-slate-600 text-xs font-bold uppercase tracking-wider border-b border-slate-200/80">
+                      <th className="py-4 px-5">Hospital Profile</th>
+                      <th className="py-4 px-5">Contact Details</th>
+                      <th className="py-4 px-5">Scheduled Slot</th>
+                      <th className="py-4 px-5">Status</th>
+                      <th className="py-4 px-5">Plan</th>
+                      <th className="py-4 px-5">Amount</th>
+                      <th className="py-4 px-5">Payment</th>
+                      <th className="py-4 px-5">Meeting</th>
+                      <th className="py-4 px-5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium text-sm">
+                    {paginated.map((b, idx) => {
+                      const statusData = STATUS_CONFIG[b.status] || {
+                        label: b.status,
+                        badge: "bg-slate-100 text-slate-600 border-slate-200",
+                        dot: "bg-slate-400",
+                      };
+                      const isMenuOpen = activeMenuId === b.id;
+
+                      return (
+                        <motion.tr
+                          key={b.id}
+                          variants={rowAnimation}
+                          initial="hidden"
+                          animate="visible"
+                          transition={{ delay: idx * 0.02 }}
+                          className="hover:bg-slate-50/70 transition-colors group"
+                        >
+                          <td className="py-4 px-5">
+                            <div className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-sm">
+                                <Building2 size={16} />
+                              </div>
+                              {b.hospital_name}
+                            </div>
+                            <div className="text-slate-400 text-xs flex items-center gap-1 mt-1 font-normal pl-10">
+                              <MapPin size={12} />{" "}
+                              {b.city || "Location unspecified"}
+                            </div>
+                          </td>
+
+                          <td className="py-4 px-5">
+                            <div className="text-slate-900 font-semibold">
+                              {b.contact_name}
+                            </div>
+                            <div className="text-slate-500 text-xs flex items-center gap-1 mt-0.5">
+                              <Mail size={12} className="text-slate-400" />{" "}
+                              {b.email}
+                            </div>
+                            {b.phone && (
+                              <div className="text-slate-500 text-xs flex items-center gap-1 mt-0.5">
+                                <Phone size={12} className="text-slate-400" />{" "}
+                                {b.phone}
+                              </div>
+                            )}
+                          </td>
+
+                          <td className="py-4 px-5 text-slate-700 whitespace-nowrap">
+                            <div className="font-semibold text-slate-800">
+                              {fmt(b.scheduled_at)}
+                            </div>
+                          </td>
+
+                          <td className="py-4 px-5">
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-sm capitalize ${statusData.badge}`}
+                            >
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${statusData.dot}`}
+                              />
+                              {statusData.label}
+                            </span>
+                          </td>
+
+                          <td className="py-4 px-5">
+                            {b.payment ? (
+                              <span className="font-bold text-slate-800">
+                                {b.payment.plan || "Quarterly Plan"}
+                                <span className="text-slate-400 text-xs block font-normal capitalize">
+                                  {b.payment.interval || "billed every 90 days"}
+                                </span>
+                                {b.payment.startDate && (
+                                  <span className="text-slate-400 text-[10px] block font-normal mt-0.5">
+                                    {new Date(
+                                      b.payment.startDate,
+                                    ).toLocaleDateString()}{" "}
+                                    -{" "}
+                                    {b.payment.endDate
+                                      ? new Date(
+                                          b.payment.endDate,
+                                        ).toLocaleDateString()
+                                      : "Active"}
+                                  </span>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 text-xs italic font-normal">
+                                No plan chosen
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="py-4 px-5">
+                            {b.payment && b.payment.amount ? (() => {
+                              const amt = b.payment.amount;
+                              const currencyStr = String(b.payment.currency || 'usd').toLowerCase();
+                              const isRupees = currencyStr === 'inr';
+                              const formattedAmt = isRupees
+                                ? `₹${(amt > 100000 ? Math.round(amt / 100) : amt).toLocaleString('en-IN')}`
+                                : `$${(amt >= 100 ? (amt / 100).toFixed(2) : Number(amt).toFixed(2))}`;
+
+                              return (
+                                <span className="font-bold text-slate-900 flex items-center gap-1">
+                                  <CreditCard size={13} className="text-slate-400" />
+                                  {formattedAmt}
+                                  <span className="text-slate-400 text-xs font-normal uppercase">
+                                    {b.payment.currency || (isRupees ? 'INR' : 'USD')}
+                                  </span>
+                                </span>
+                              );
+                            })() : (
+                              <span className="text-slate-400 text-xs italic font-normal">—</span>
+                            )}
+                          </td>
+
+                          <td className="py-4 px-5">
+                            {(() => {
+                              const isPaid = b.payment && (b.payment.status === 'paid' || b.payment.status === 'active');
+                              const isPending = b.payment && b.payment.status === 'pending';
+
+                              if (isPaid) {
+                                return (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border bg-emerald-50 text-emerald-700 border-emerald-200 capitalize">
+                                    <ShieldCheck size={12} /> Paid
+                                  </span>
+                                );
+                              }
+
+                              if (isPending) {
+                                return (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border bg-amber-50 text-amber-700 border-amber-200 capitalize">
+                                    <ShieldCheck size={12} /> Pending
+                                  </span>
+                                );
+                              }
+
+                              return (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border bg-slate-50 text-slate-500 border-slate-200">
+                                  <ShieldCheck size={12} className="text-slate-400" /> Unpaid
+                                </span>
+                              );
+                            })()}
+                          </td>
+
+                          <td className="py-4 px-5">
+                            {b.meeting_link ? (() => {
+                              const isZoom = b.meeting_link.includes("zoom.us");
+                              const isMeet = b.meeting_link.includes("meet.google.com");
+                              const joinText = isZoom ? "Join Zoom" : isMeet ? "Join Meet" : "Join";
+                              
+                              return (
+                                <a
+                                  href={b.meeting_link}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1.5 text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm"
+                                >
+                                  <Video size={13} /> {joinText}{" "}
+                                  <ExternalLink size={10} />
+                                </a>
+                              );
+                            })() : (
+                              <span className="text-slate-400 text-xs font-normal italic">
+                                No meeting link
+                              </span>
+                            )}
+                          </td>
+
+                          {/* ─── Hamburger / Dropdown Menu ─── */}
+                          <td className="py-4 px-5 text-right relative">
+                            <div className="inline-block action-menu-container">
+                              <button
+                                onClick={() =>
+                                  setActiveMenuId(isMenuOpen ? null : b.id)
+                                }
+                                className={`p-2 rounded-xl border transition shadow-sm ${
+                                  isMenuOpen
+                                    ? "bg-blue-600 text-white border-blue-600 shadow-blue-500/20"
+                                    : "bg-white hover:bg-slate-100 text-slate-600 border-slate-200"
+                                }`}
+                                title="Actions"
+                              >
+                                <MoreVertical size={16} />
+                              </button>
+
+                              <AnimatePresence>
+                                {isMenuOpen && (
+                                  <motion.div
+                                    initial={{ opacity: 0, scale: 0.95, y: 8 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                                    transition={{ duration: 0.15 }}
+                                    className="absolute right-5 top-14 w-52 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-50 text-left overflow-hidden"
+                                  >
+                                    <div className="px-3 py-1.5 border-b border-slate-100 mb-1">
+                                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                        Manage Booking
+                                      </p>
+                                    </div>
+
                                     <button
-                                      onClick={() => handleComplete(b)}
-                                      className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition"
+                                      onClick={() => openRescheduleModal(b)}
+                                      className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-violet-700 hover:bg-violet-50 transition"
                                     >
-                                      <CheckCircle2 size={14} /> Mark Completed
+                                      <CalendarClock size={14} /> Reschedule Slot
                                     </button>
-                                  )}
 
-                                  {b.status !== "cancelled" &&
-                                    b.status !== "completed" && (
+                                    <button
+                                      onClick={() => openLinkModal(b)}
+                                      className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                                    >
+                                      <Link2 size={14} /> Configure Link
+                                    </button>
+
+                                    {b.status !== "completed" && (
                                       <button
-                                        onClick={() => handleCancel(b)}
-                                        className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 transition"
+                                        onClick={() => handleComplete(b)}
+                                        className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition"
                                       >
-                                        <XCircle size={14} /> Cancel Demo
+                                        <CheckCircle2 size={14} /> Mark Completed
                                       </button>
                                     )}
 
-                                  <div className="border-t border-slate-100 mt-1 pt-1">
-                                    <button
-                                      onClick={() => handleDelete(b)}
-                                      className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 transition"
-                                    >
-                                      <Trash2 size={14} /> Delete Record
-                                    </button>
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
+                                    {b.status !== "cancelled" &&
+                                      b.status !== "completed" && (
+                                        <button
+                                          onClick={() => handleCancel(b)}
+                                          className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 transition"
+                                        >
+                                          <XCircle size={14} /> Cancel Demo
+                                        </button>
+                                      )}
+
+                                    <div className="border-t border-slate-100 mt-1 pt-1">
+                                      <button
+                                        onClick={() => handleDelete(b)}
+                                        className="w-full flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 transition"
+                                      >
+                                        <Trash2 size={14} /> Delete Record
+                                      </button>
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          </td>
+                        </motion.tr>
+                      );
+                    })}
+                    {filtered.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan="9"
+                          className="py-16 text-center text-slate-400 italic font-normal"
+                        >
+                          No matching demo bookings found. Try altering your
+                          filter criteria.
                         </td>
-                      </motion.tr>
-                    );
-                  })}
-                  {filtered.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan="9"
-                        className="py-16 text-center text-slate-400 italic font-normal"
-                      >
-                        No matching demo bookings found. Try altering your
-                        filter criteria.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
 
           <div className="mt-6">
