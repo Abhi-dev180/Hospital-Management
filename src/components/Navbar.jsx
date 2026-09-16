@@ -233,7 +233,7 @@ export default function Navbar() {
 
             {showDashboardNav ? (
               <>
-                <div className="flex items-center gap-1 lg:gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap py-1 px-1">
+                <div className="flex items-center gap-1 lg:gap-1.5 overflow-x-auto no-scrollbar overscroll-x-contain scroll-smooth whitespace-nowrap py-1 px-1">
                   {dashboardLinks.map((link) => {
                     const Icon = link.icon;
                     const badgeCount = link.badge ? activeBadges[link.badge] : 0;

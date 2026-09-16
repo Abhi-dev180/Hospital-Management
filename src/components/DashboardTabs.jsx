@@ -105,49 +105,51 @@ export default function DashboardTabs({ role }) {
 
   return (
     <div className="mb-6 w-full">
-      <motion.nav
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        aria-label="Dashboard sub-navigation"
-        className="flex flex-wrap items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs sm:shadow-sm w-full"
-      >
-        {tabs.map((tab) => {
-          const active = isTabActive(tab.to);
-          const Icon = tab.icon;
-          const badgeCount = tab.badge ? badges[tab.badge] : 0;
-          return (
-            <Link
-              key={tab.name}
-              to={tab.to}
-              className={`relative inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all shrink-0 z-10 ${
-                active
-                  ? 'text-white shadow-xs'
-                  : 'text-slate-600 hover:text-medical-blue hover:bg-slate-100/80 active:scale-95'
-              }`}
-            >
-              {active && (
-                <motion.div
-                  layoutId={`activeTabPill-${role}`}
-                  transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-                  className="absolute inset-0 bg-medical-blue rounded-xl sm:rounded-2xl shadow-md shadow-blue-500/25 -z-10"
-                />
-              )}
-              {Icon && <Icon className="w-4 h-4 shrink-0 transition-transform" />}
-              <span>{tab.name}</span>
-              {badgeCount > 0 && (
-                <span
-                  className={`inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-black rounded-full leading-tight transition-colors ${
-                    active ? 'bg-white text-medical-blue' : 'bg-rose-500 text-white shadow-2xs'
-                  }`}
-                >
-                  {badgeCount > 99 ? '99+' : badgeCount}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </motion.nav>
+      <div className="w-full overflow-x-auto no-scrollbar overscroll-x-contain scroll-smooth py-1">
+        <motion.nav
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          aria-label="Dashboard sub-navigation"
+          className="inline-flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 bg-white/95 backdrop-blur-md rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs sm:shadow-sm whitespace-nowrap min-w-full"
+        >
+          {tabs.map((tab) => {
+            const active = isTabActive(tab.to);
+            const Icon = tab.icon;
+            const badgeCount = tab.badge ? badges[tab.badge] : 0;
+            return (
+              <Link
+                key={tab.name}
+                to={tab.to}
+                className={`relative inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold transition-all shrink-0 z-10 ${
+                  active
+                    ? 'text-white shadow-xs'
+                    : 'text-slate-600 hover:text-medical-blue hover:bg-slate-100/80 active:scale-95'
+                }`}
+              >
+                {active && (
+                  <motion.div
+                    layoutId={`activeTabPill-${role}`}
+                    transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                    className="absolute inset-0 bg-medical-blue rounded-xl sm:rounded-2xl shadow-md shadow-blue-500/25 -z-10"
+                  />
+                )}
+                {Icon && <Icon className="w-4 h-4 shrink-0 transition-transform" />}
+                <span className="whitespace-nowrap">{tab.name}</span>
+                {badgeCount > 0 && (
+                  <span
+                    className={`inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-black rounded-full leading-tight transition-colors shrink-0 ${
+                      active ? 'bg-white text-medical-blue' : 'bg-rose-500 text-white shadow-2xs'
+                    }`}
+                  >
+                    {badgeCount > 99 ? '99+' : badgeCount}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </motion.nav>
+      </div>
     </div>
   );
 }
