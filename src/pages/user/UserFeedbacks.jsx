@@ -59,6 +59,13 @@ export default function UserFeedbacks() {
       const apptRes = await fetch(`${API_URL}/api/appointments`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (apptRes.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.dispatchEvent(new Event('storage'));
+        navigate('/login');
+        return;
+      }
       const apptData = apptRes.ok ? await apptRes.json() : [];
       setAppointments(Array.isArray(apptData) ? apptData : []);
 
@@ -66,6 +73,13 @@ export default function UserFeedbacks() {
       const fbRes = await fetch(`${API_URL}/api/appointment-feedbacks`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      if (fbRes.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.dispatchEvent(new Event('storage'));
+        navigate('/login');
+        return;
+      }
       const fbData = fbRes.ok ? await fbRes.json() : [];
       setFeedbacks(Array.isArray(fbData) ? fbData : []);
     } catch {
