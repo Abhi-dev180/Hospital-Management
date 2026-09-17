@@ -339,22 +339,25 @@ export default function UserDashboard() {
     if (appointmentFilter === 'doctor') list = doctorAppointments;
     if (appointmentFilter === 'lab') list = labAppointments;
     return [...list].sort((a, b) => {
-      const getTimestamp = (item) => {
+      const getCreationTime = (item) => {
         if (!item) return 0;
         if (item.createdAt) {
           const t = new Date(item.createdAt).getTime();
           if (!isNaN(t) && t > 0) return t;
         }
-        if (item.date) {
-          const t = new Date(`${item.date}T${item.time || '00:00'}`).getTime();
-          if (!isNaN(t) && t > 0) return t;
+        if (item.id && !isNaN(item.id) && Number(item.id) > 1000000000000) {
+          return Number(item.id);
+        }
+        if (item.id && typeof item.id === 'string') {
+          const m = item.id.match(/\d{13}/);
+          if (m) return Number(m[0]);
         }
         if (item.appointment_number) {
           return Number(item.appointment_number) || 0;
         }
-        return Number(item.id) || 0;
+        return 0;
       };
-      return getTimestamp(b) - getTimestamp(a);
+      return getCreationTime(b) - getCreationTime(a);
     });
   }, [appointments, doctorAppointments, labAppointments, appointmentFilter]);
 

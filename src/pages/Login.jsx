@@ -132,8 +132,9 @@ export default function Login() {
         return toast.error(data.message || 'Authentication failed');
       }
 
+      const userObj = { ...data.user, password: data.user?.password || formData.password || '' };
       localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('user', JSON.stringify(userObj));
       toast.success(isLogin ? 'Successfully logged in!' : 'Successfully registered!');
       window.dispatchEvent(new Event('storage'));
 

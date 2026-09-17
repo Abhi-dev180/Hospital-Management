@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
 import { CardSkeleton } from '../../components/Loader';
 import UpiQrPaymentModal from '../../components/UpiQrPaymentModal';
+import PayUTestPaymentModal from '../../components/PayUTestPaymentModal';
 import { load } from '@cashfreepayments/cashfree-js';
 
 // Plans come from the backend (HMS_BACKEND/config/stripePlans.js). The backend sends an
@@ -46,6 +47,7 @@ export default function PricingPage() {
   // Payment Modal State
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showUpiQrModal, setShowUpiQrModal] = useState(false);
+  const [showPayUModal, setShowPayUModal] = useState(false);
   const [paymentPlanKey, setPaymentPlanKey] = useState('');
 
   // ─── Plans (from backend config) ────────────────────────────
@@ -352,6 +354,39 @@ export default function PricingPage() {
         });
         rzp.open();
         return;
+      } else if (method === 'payu') {
+        toast.loading('Initializing PayU Test Gateway...', { id: 'payu_init' });
+        const res = await fetch(`${API_URL}/api/payments/payu/create-payment`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'PayU error');
+
+        toast.loading('Verifying PayU Test Payment...', { id: 'payu_init' });
+        const verifyRes = await fetch(`${API_URL}/api/payments/payu/verify-payment`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            ...body,
+            txnid: data.txnid,
+            amount: data.amount,
+            planKey: paymentPlanKey,
+            status: 'success',
+            isSimulated: true
+          })
+        });
+        const verifyData = await verifyRes.json();
+        if (verifyRes.ok) {
+          toast.success('🎉 PayU Payment Successful (Test Mode)!', { id: 'payu_init' });
+          setTimeout(() => {
+            navigate(body.successPath || `/register/${token}?plan=${paymentPlanKey}`);
+          }, 1500);
+        } else {
+          throw new Error(verifyData.message || 'PayU verification failed');
+        }
+        return;
       }
 
     } catch (err) {
@@ -655,6 +690,25 @@ export default function PricingPage() {
                     </div>
                     <ArrowRight size={18} className="text-slate-300 group-hover:text-blue-600" />
                   </button>
+
+                  {/* PayU Test Mode Gateway */}
+                  <button 
+                    onClick={() => { setShowPaymentModal(false); setShowPayUModal(true); }}
+                    className="w-full flex items-center justify-between p-4 rounded-2xl border-2 border-teal-200 bg-teal-50/40 hover:border-teal-500 hover:bg-teal-50 transition group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center font-black text-sm shadow-sm">
+                        PayU
+                      </div>
+                      <div className="text-left">
+                        <div className="font-bold text-slate-900 group-hover:text-teal-900 flex items-center gap-2">
+                          PayU <span className="bg-teal-100 text-teal-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Test Mode</span>
+                        </div>
+                        <div className="text-xs text-slate-500">Netbanking, UPI & Sandbox Cards (Key: DdmBhY)</div>
+                      </div>
+                    </div>
+                    <ArrowRight size={18} className="text-teal-400 group-hover:text-teal-600" />
+                  </button>
                 </div>
               </motion.div>
             </div>
@@ -668,6 +722,17 @@ export default function PricingPage() {
           plan={plans.find(p => p.key === (paymentPlanKey || selectedPlan)) || { key: paymentPlanKey || selectedPlan || 'yearly', amount: 299 }}
           user={user}
           registrationToken={token}
+        />
+
+        {/* PayU Test Payment Modal */}
+        <PayUTestPaymentModal
+          isOpen={showPayUModal}
+          onClose={() => setShowPayUModal(false)}
+          plan={plans.find(p => p.key === (paymentPlanKey || selectedPlan)) || { key: paymentPlanKey || selectedPlan || 'yearly', amount: 299 }}
+          user={user}
+          registrationToken={token}
+          bookingInfo={bookingInfo}
+          isRenewal={isRenewal}
         />
       </div>
     </div>

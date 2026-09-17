@@ -94,8 +94,15 @@ export default function SuperAdminAppointments() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const tabParam = searchParams.get("tab"); // 'doctor' | 'lab' | 'all' | 'refunds'
-  const initialType = tabParam === "lab" ? "test" : (tabParam === "refunds" ? "refunds" : (tabParam === "all" ? "all" : "consult"));
+  const tabParam = searchParams.get("tab"); // 'all' | 'doctor' | 'lab' | 'refunds'
+  const initialType =
+    tabParam === "doctor"
+      ? "consult"
+      : tabParam === "lab"
+      ? "test"
+      : tabParam === "refunds"
+      ? "refunds"
+      : "all";
   const [typeFilter, setTypeFilter] = useState(initialType);
   const [tabCounts, setTabCounts] = useState({ total: 0, doctor: 0, lab: 0, refunds: 0 });
 
@@ -156,30 +163,30 @@ export default function SuperAdminAppointments() {
   }, [navigate]);
 
   useEffect(() => {
-    if (tabParam === "lab") {
+    if (tabParam === "doctor") {
+      setTypeFilter("consult");
+    } else if (tabParam === "lab") {
       setTypeFilter("test");
     } else if (tabParam === "refunds") {
       setTypeFilter("refunds");
-    } else if (tabParam === "all") {
+    } else {
       setTypeFilter("all");
-    } else if (tabParam === "doctor") {
-      setTypeFilter("consult");
     }
   }, [tabParam]);
 
   const handleTabChange = (newTab) => {
-    if (newTab === "lab") {
+    if (newTab === "doctor") {
+      setTypeFilter("consult");
+      setSearchParams({ tab: "doctor" });
+    } else if (newTab === "lab") {
       setTypeFilter("test");
       setSearchParams({ tab: "lab" });
     } else if (newTab === "refunds") {
       setTypeFilter("refunds");
       setSearchParams({ tab: "refunds" });
-    } else if (newTab === "all") {
-      setTypeFilter("all");
-      setSearchParams({ tab: "all" });
     } else {
-      setTypeFilter("consult");
-      setSearchParams({ tab: "doctor" });
+      setTypeFilter("all");
+      setSearchParams({});
     }
     setPage(1);
   };
@@ -359,20 +366,38 @@ export default function SuperAdminAppointments() {
       )
     )
       return;
+
+    const targetId = selectedAppt.id;
+    const targetNum = selectedAppt.appointment_number;
+    setShowDetailModal(false);
+    setAppointments((prev) =>
+      prev.filter(
+        (a) =>
+          String(a.id) !== String(targetId) &&
+          String(a.appointment_number) !== String(targetNum) &&
+          String(a.appointment_number) !== String(targetId)
+      )
+    );
+    setTotal((prev) => Math.max(0, prev - 1));
+
     try {
       const res = await fetch(
-        `${API_URL}/api/appointments/${selectedAppt.id}`,
+        `${API_URL}/api/appointments/${targetId}`,
         {
           method: "DELETE",
           headers: authHeaders(),
         },
       );
       const data = await res.json();
-      if (!res.ok) return toast.error(data.message || "Failed to delete");
-      toast.success("Appointment deleted");
-      setShowDetailModal(false);
+      if (!res.ok) {
+        fetchAppointments();
+        return toast.error(data.message || "Failed to delete");
+      }
+      toast.success("Appointment deleted successfully");
       fetchAppointments();
+      fetchTabCounts();
     } catch {
+      fetchAppointments();
       toast.error("Network error");
     }
   };
@@ -381,16 +406,34 @@ export default function SuperAdminAppointments() {
   const handleQuickDelete = async (appt) => {
     if (!confirm(`Permanently delete appointment for "${appt.patientName}"?`))
       return;
+
+    const targetId = appt.id;
+    const targetNum = appt.appointment_number;
+    setAppointments((prev) =>
+      prev.filter(
+        (a) =>
+          String(a.id) !== String(targetId) &&
+          String(a.appointment_number) !== String(targetNum) &&
+          String(a.appointment_number) !== String(targetId)
+      )
+    );
+    setTotal((prev) => Math.max(0, prev - 1));
+
     try {
-      const res = await fetch(`${API_URL}/api/appointments/${appt.id}`, {
+      const res = await fetch(`${API_URL}/api/appointments/${targetId}`, {
         method: "DELETE",
         headers: authHeaders(),
       });
       const data = await res.json();
-      if (!res.ok) return toast.error(data.message || "Failed to delete");
-      toast.success("Appointment deleted");
+      if (!res.ok) {
+        fetchAppointments();
+        return toast.error(data.message || "Failed to delete");
+      }
+      toast.success("Appointment deleted successfully");
       fetchAppointments();
+      fetchTabCounts();
     } catch {
+      fetchAppointments();
       toast.error("Network error");
     }
   };
@@ -524,6 +567,28 @@ export default function SuperAdminAppointments() {
           <div className="flex items-center gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/80 overflow-x-auto">
             <button
               type="button"
+              onClick={() => handleTabChange("all")}
+              className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
+                typeFilter === "all"
+                  ? "bg-slate-900 text-white shadow-md shadow-slate-900/20 scale-[1.01]"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+              }`}
+            >
+              <ClipboardList size={16} />
+              <span>All Bookings</span>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
+                  typeFilter === "all"
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-200/80 text-slate-700"
+                }`}
+              >
+                {tabCounts.total || total}
+              </span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => handleTabChange("doctor")}
               className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
                 typeFilter === "consult"
@@ -585,28 +650,6 @@ export default function SuperAdminAppointments() {
                 }`}
               >
                 {tabCounts.refunds || 0}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleTabChange("all")}
-              className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${
-                typeFilter === "all"
-                  ? "bg-slate-900 text-white shadow-md shadow-slate-900/20 scale-[1.01]"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-              }`}
-            >
-              <ClipboardList size={15} />
-              <span>All Bookings</span>
-              <span
-                className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
-                  typeFilter === "all"
-                    ? "bg-white/20 text-white"
-                    : "bg-slate-200/80 text-slate-700"
-                }`}
-              >
-                {tabCounts.total || total}
               </span>
             </button>
           </div>

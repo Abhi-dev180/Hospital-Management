@@ -303,17 +303,33 @@ export default function AdminAppointments() {
   const handleDelete = async () => {
     if (!selectedAppt) return;
     if (!confirm(`Permanently delete appointment for "${selectedAppt.patientName}"?`)) return;
+
+    const targetId = selectedAppt.id;
+    const targetNum = selectedAppt.appointment_number;
+    setShowDetailModal(false);
+    setAppointments((prev) =>
+      prev.filter(
+        (a) =>
+          String(a.id) !== String(targetId) &&
+          String(a.appointment_number) !== String(targetNum) &&
+          String(a.appointment_number) !== String(targetId)
+      )
+    );
+
     try {
-      const res = await fetch(`${API_URL}/api/appointments/${selectedAppt.id}`, {
+      const res = await fetch(`${API_URL}/api/appointments/${targetId}`, {
         method: 'DELETE',
         headers: authHeaders()
       });
       const data = await res.json();
-      if (!res.ok) return toast.error(data.message || 'Failed to delete');
-      toast.success('Appointment deleted');
-      setShowDetailModal(false);
+      if (!res.ok) {
+        refreshAppointments();
+        return toast.error(data.message || 'Failed to delete');
+      }
+      toast.success('Appointment deleted successfully');
       refreshAppointments();
     } catch {
+      refreshAppointments();
       toast.error('Network error');
     }
   };
@@ -321,16 +337,32 @@ export default function AdminAppointments() {
   // ─── Quick Delete ───────────────────────────────────────────
   const handleQuickDelete = async (appt) => {
     if (!confirm(`Permanently delete appointment for "${appt.patientName}"?`)) return;
+
+    const targetId = appt.id;
+    const targetNum = appt.appointment_number;
+    setAppointments((prev) =>
+      prev.filter(
+        (a) =>
+          String(a.id) !== String(targetId) &&
+          String(a.appointment_number) !== String(targetNum) &&
+          String(a.appointment_number) !== String(targetId)
+      )
+    );
+
     try {
-      const res = await fetch(`${API_URL}/api/appointments/${appt.id}`, {
+      const res = await fetch(`${API_URL}/api/appointments/${targetId}`, {
         method: 'DELETE',
         headers: authHeaders()
       });
       const data = await res.json();
-      if (!res.ok) return toast.error(data.message || 'Failed to delete');
-      toast.success('Appointment deleted');
+      if (!res.ok) {
+        refreshAppointments();
+        return toast.error(data.message || 'Failed to delete');
+      }
+      toast.success('Appointment deleted successfully');
       refreshAppointments();
     } catch {
+      refreshAppointments();
       toast.error('Network error');
     }
   };
@@ -546,7 +578,7 @@ export default function AdminAppointments() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return appointments.filter(a => {
+    const result = appointments.filter(a => {
       const matchStatus = statusFilter === 'all' || a.status === statusFilter;
       const isLabTest = a.appointmentType === 'Lab Test' || Boolean(a.serviceName);
       const isRefunded = a.status === 'Cancelled' || (a.refundAmount && a.refundAmount > 0) || a.refundStatus === 'Refunded';
@@ -568,22 +600,25 @@ export default function AdminAppointments() {
     });
 
     return [...result].sort((a, b) => {
-      const getTimestamp = (item) => {
+      const getCreationTime = (item) => {
         if (!item) return 0;
         if (item.createdAt) {
           const t = new Date(item.createdAt).getTime();
           if (!isNaN(t) && t > 0) return t;
         }
-        if (item.date) {
-          const t = new Date(`${item.date}T${item.time || '00:00'}`).getTime();
-          if (!isNaN(t) && t > 0) return t;
+        if (item.id && !isNaN(item.id) && Number(item.id) > 1000000000000) {
+          return Number(item.id);
+        }
+        if (item.id && typeof item.id === 'string') {
+          const m = item.id.match(/\d{13}/);
+          if (m) return Number(m[0]);
         }
         if (item.appointment_number) {
           return Number(item.appointment_number) || 0;
         }
-        return Number(item.id) || 0;
+        return 0;
       };
-      return getTimestamp(b) - getTimestamp(a);
+      return getCreationTime(b) - getCreationTime(a);
     });
   }, [appointments, search, statusFilter, typeFilter]);
 

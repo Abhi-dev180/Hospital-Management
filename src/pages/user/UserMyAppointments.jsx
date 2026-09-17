@@ -70,15 +70,19 @@ export default function UserMyAppointmentsList() {
 
   // ─── Master Section Tabs ────────────────────────────────────
   const [searchParams, setSearchParams] = useSearchParams();
-  const rawTab = searchParams.get('tab'); // 'doctor' | 'lab' | 'refunds' | 'all'
-  const activeTab = rawTab === 'lab' ? 'lab' : (rawTab === 'refunds' ? 'refunds' : (rawTab === 'all' ? 'all' : 'doctor'));
+  const rawTab = searchParams.get('tab'); // 'all' | 'doctor' | 'lab' | 'refunds'
+  const activeTab = rawTab === 'doctor' ? 'doctor' : (rawTab === 'lab' ? 'lab' : (rawTab === 'refunds' ? 'refunds' : 'all'));
 
   const handleTabChange = (tabKey) => {
     setPage(1);
     setSearchParams(
       (prev) => {
         const p = new URLSearchParams(prev);
-        p.set('tab', tabKey);
+        if (tabKey === 'all') {
+          p.delete('tab');
+        } else {
+          p.set('tab', tabKey);
+        }
         return p;
       },
       { replace: true }
@@ -360,22 +364,25 @@ export default function UserMyAppointmentsList() {
     });
 
     return [...result].sort((a, b) => {
-      const getTimestamp = (item) => {
+      const getCreationTime = (item) => {
         if (!item) return 0;
         if (item.createdAt) {
           const t = new Date(item.createdAt).getTime();
           if (!isNaN(t) && t > 0) return t;
         }
-        if (item.date) {
-          const t = new Date(`${item.date}T${item.time || '00:00'}`).getTime();
-          if (!isNaN(t) && t > 0) return t;
+        if (item.id && !isNaN(item.id) && Number(item.id) > 1000000000000) {
+          return Number(item.id);
+        }
+        if (item.id && typeof item.id === 'string') {
+          const m = item.id.match(/\d{13}/);
+          if (m) return Number(m[0]);
         }
         if (item.appointment_number) {
           return Number(item.appointment_number) || 0;
         }
-        return Number(item.id) || 0;
+        return 0;
       };
-      return getTimestamp(b) - getTimestamp(a);
+      return getCreationTime(b) - getCreationTime(a);
     });
   }, [apptsList, activeTab, statusFilter, search]);
 
@@ -408,6 +415,26 @@ export default function UserMyAppointmentsList() {
         {/* ─── Master Section Switcher Tabs ─────────────────────── */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 mb-6 pb-4 border-b border-slate-200/80">
           <div className="flex items-center gap-1.5 sm:gap-2 p-1 sm:p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/80 overflow-x-auto scrollbar-none w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => handleTabChange('all')}
+              className={`inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex-1 sm:flex-initial ${
+                activeTab === 'all'
+                  ? 'bg-slate-900 text-white shadow-md shadow-slate-900/20 scale-[1.01]'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              }`}
+            >
+              <ClipboardList size={15} />
+              <span>All Bookings</span>
+              <span
+                className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10.5px] sm:text-[11px] font-extrabold ${
+                  activeTab === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-700'
+                }`}
+              >
+                {totalCount}
+              </span>
+            </button>
+
             <button
               type="button"
               onClick={() => handleTabChange('doctor')}
@@ -465,26 +492,6 @@ export default function UserMyAppointmentsList() {
                 }`}
               >
                 {refundCount}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleTabChange('all')}
-              className={`inline-flex items-center justify-center gap-2 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all whitespace-nowrap flex-1 sm:flex-initial ${
-                activeTab === 'all'
-                  ? 'bg-slate-900 text-white shadow-md shadow-slate-900/20 scale-[1.01]'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-              }`}
-            >
-              <ClipboardList size={15} />
-              <span>All</span>
-              <span
-                className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10.5px] sm:text-[11px] font-extrabold ${
-                  activeTab === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-700'
-                }`}
-              >
-                {totalCount}
               </span>
             </button>
           </div>

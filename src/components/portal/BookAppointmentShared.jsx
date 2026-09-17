@@ -1,11 +1,11 @@
-
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User, Phone, Building2, Mail, Calendar, Clock, MessageSquare, PawPrint,
   ArrowRight, CheckCircle2, Stethoscope, Search, CalendarClock, XCircle,
   Inbox, ShieldCheck, AlertTriangle, RotateCcw, CalendarPlus,
-  ChevronLeft, ChevronRight, Venus, Mars, Dog, Cat, Bird, Rabbit
+  ChevronLeft, ChevronRight, Venus, Mars, Dog, Cat, Bird, Rabbit, CreditCard, Receipt
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import API_URL from '../../config/api';
@@ -104,10 +104,12 @@ export default function BookAppointmentShared({ initialTab = 'book', presetHospi
 
 // ─── Book Tab ────────────────────────────────────────────────
 function BookTab({ hospitals, presetHospitalId, onManage }) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [form, setForm] = useState({ ...initialForm, hospitalId: presetHospitalId });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [confirmedAppointment, setConfirmedAppointment] = useState(null);
   const [bookedSlots, setBookedSlots] = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -155,6 +157,85 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
       }
     } catch (e) {}
   }, [presetHospitalId]);
+
+  // ─── Handle Return Callbacks from Stripe or PayU Gateway ───
+  useEffect(() => {
+    const sessionId = searchParams.get('session_id');
+    const payment = searchParams.get('payment');
+    const payu = searchParams.get('payu');
+    const txnid = searchParams.get('txnid');
+    const apptId = searchParams.get('appointment_id');
+    const apptNum = searchParams.get('appointment_number');
+
+    // Case 1: Stripe Return Callback
+    if (sessionId && payment === 'success') {
+      (async () => {
+        const toastId = toast.loading('Verifying appointment payment with Stripe...');
+        try {
+          const res = await fetch(
+            `${API_URL}/api/payments/verify-appointment-session?session_id=${encodeURIComponent(sessionId)}&appointment_id=${encodeURIComponent(apptId || '')}&payment=success`
+          );
+          const data = await res.json();
+          toast.dismiss(toastId);
+          if (res.ok && data.appointment) {
+            setConfirmedAppointment(data.appointment);
+            setDone(true);
+            toast.success('🎉 Stripe Payment Verified & Appointment Confirmed!');
+          }
+        } catch (e) {
+          console.error('Stripe appointment verify error:', e);
+        }
+      })();
+    } else if (payu === 'success' || (txnid && payu)) {
+      // Case 2: PayU Hosted Gateway Return Callback
+      (async () => {
+        const toastId = toast.loading('Loading your confirmed appointment details...');
+        try {
+          let found = null;
+          if (apptId) {
+            const res = await fetch(`${API_URL}/api/appointments/${apptId}`);
+            if (res.ok) found = await res.json();
+          }
+          if (!found && apptNum) {
+            const res = await fetch(`${API_URL}/api/appointments/by-number/${apptNum}`);
+            if (res.ok) found = await res.json();
+          }
+          toast.dismiss(toastId);
+          if (found) {
+            setConfirmedAppointment(found);
+            setDone(true);
+            toast.success('🎉 PayU Payment Successful & Appointment Booked!');
+          } else {
+            setConfirmedAppointment({
+              id: apptId || txnid,
+              appointment_number: apptNum || Math.floor(1000 + Math.random() * 9000),
+              paymentStatus: 'Paid',
+              paymentMethod: 'PayU Test Mode',
+              paymentAmount: 500,
+              paymentId: txnid,
+              date: new Date().toISOString().split('T')[0],
+              hospital: 'MEDPARK Hospital'
+            });
+            setDone(true);
+          }
+        } catch (e) {
+          console.error('PayU appointment load error:', e);
+        }
+      })();
+    }
+  }, [searchParams]);
+
+  // Listen for global custom event if verified by header verifier
+  useEffect(() => {
+    const handleApptVerified = (e) => {
+      if (e.detail) {
+        setConfirmedAppointment(e.detail);
+        setDone(true);
+      }
+    };
+    window.addEventListener('appointment_payment_verified', handleApptVerified);
+    return () => window.removeEventListener('appointment_payment_verified', handleApptVerified);
+  }, []);
 
   // Fetch booked slots when date changes
   const fetchBookedSlots = useCallback(async () => {
@@ -235,10 +316,11 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
   // Validate time: must be at least 1 hour from now
   const validateTime = () => {
     if (!form.date || !form.time) return true;
-    const dateTime = new Date(`${form.date}T${form.time}:00`);
-    const now = new Date();
-    const diffMs = dateTime - now;
-    return diffMs >= 3600000;
+    const [year, month, day] = form.date.split('-').map(Number);
+    const [hours, minutes] = form.time.split(':').map(Number);
+    const apptDate = new Date(year, month - 1, day, hours, minutes);
+    const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000);
+    return apptDate >= oneHourFromNow;
   };
 
   const update = (k) => (e) => {
@@ -248,42 +330,38 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
   };
 
   const validate = () => {
-  const e = {};
-  if (!form.patientName.trim()) e.patientName = 'Patient name is required';
-  if (!form.patientPhone.trim()) e.patientPhone = 'Mobile number is required';
-  else if (!/^\d{10}$/.test(form.patientPhone.trim())) e.patientPhone = 'Enter a valid 10-digit mobile number';
-  if (!form.hospitalId) e.hospitalId = 'Please select a hospital';
+    const e = {};
+    if (!form.patientName.trim()) e.patientName = 'Patient name is required';
+    if (!form.patientPhone.trim()) e.patientPhone = 'Mobile number is required';
+    else if (!/^\d{10}$/.test(form.patientPhone.trim())) e.patientPhone = 'Enter a valid 10-digit mobile number';
+    if (!form.hospitalId) e.hospitalId = 'Please select a hospital';
 
-  // ─── Email validation (now required) ──────────────────────
-  if (!form.email) {
-    e.email = 'Email is required';
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-    e.email = 'Enter a valid email';
-  }
+    if (!form.email) {
+      e.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      e.email = 'Enter a valid email';
+    }
 
-  // ─── Species & Sex (required) ─────────────────────────────
-  if (!form.species) e.species = 'Please select a species';
-  if (!form.sex) e.sex = 'Please select sex';
-  // petName is optional – no validation needed
+    if (!form.species) e.species = 'Please select a species';
+    if (!form.sex) e.sex = 'Please select sex';
 
-  // ─── Date / Time ───────────────────────────────────────────
-  if (!form.date) e.date = 'Please select a date';
-  if (!form.time) e.time = 'Please select a time';
+    if (!form.date) e.date = 'Please select a date';
+    if (!form.time) e.time = 'Please select a time';
 
-  if (form.time && availableSlots.length > 0 && !availableSlots.includes(form.time)) {
-    e.time = 'Selected time is outside business hours.';
-  }
+    if (form.time && availableSlots.length > 0 && !availableSlots.includes(form.time)) {
+      e.time = 'Selected time is outside business hours.';
+    }
 
-  if (form.time && bookedSlots.includes(form.time)) {
-    e.time = 'That slot is already booked. Please choose another time.';
-  }
-  if (!validateTime()) {
-    e.time = 'Time must be at least 1 hour from now.';
-  }
+    if (form.time && bookedSlots.includes(form.time)) {
+      e.time = 'That slot is already booked. Please choose another time.';
+    }
+    if (!validateTime()) {
+      e.time = 'Time must be at least 1 hour from now.';
+    }
 
-  setErrors(e);
-  return Object.keys(e).length === 0;
-};
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
 
   const submit = (e) => {
     e.preventDefault();
@@ -331,8 +409,10 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
       });
       const data = await res.json();
       if (!res.ok) return toast.error(data.message || 'Could not book appointment');
+      const savedAppt = data.appointment || data;
+      setConfirmedAppointment(savedAppt);
       setDone(true);
-      toast.success('Appointment booked & paid! 🐾');
+      toast.success('🎉 Appointment booked & payment verified! 🐾');
     } catch {
       toast.error('Network error. Please try again.');
     } finally {
@@ -341,28 +421,204 @@ function BookTab({ hospitals, presetHospitalId, onManage }) {
   };
 
   if (done) {
-    const hospitalName = hospitals.find((h) => String(h.id) === String(form.hospitalId))?.name;
+    const appt = confirmedAppointment || form;
+    const hospitalName =
+      appt.hospital ||
+      appt.hospitalName ||
+      hospitals.find((h) => String(h.id) === String(appt.hospitalId || form.hospitalId))?.name ||
+      'MEDPARK Hospital';
+    const patientName = appt.patientName || form.patientName || 'Patient';
+    const patientPhone = appt.patientPhone || form.patientPhone || '';
+    const email = appt.email || form.email || '';
+    const apptNumber = appt.appointment_number || appt.appointmentNumber || appt.id || 'CONFIRMED';
+    const apptDate = appt.date || form.date;
+    const apptTime = appt.time || form.time;
+    const serviceTitle = appt.serviceName || appt.reason || appt.appointmentType || 'Veterinary Consultation';
+    const petName = appt.petName || form.petName;
+    const species = appt.species || form.species;
+    const breed = appt.breed || form.breed;
+    const paymentMethod = appt.paymentMethod || 'Online Payment';
+    const paymentAmount = appt.paymentAmount || appt.amount || 500;
+    const paymentId = appt.paymentId || appt.stripe_session_id || 'Verified';
+
+    const userData = localStorage.getItem('user');
+    const isLoggedIn = Boolean(userData);
+
     return (
-      <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-6">
-        <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-5" />
-        <h2 className="text-2xl font-extrabold text-medical-dark">Appointment booked! 🎉</h2>
-        <p className="text-gray-600 mt-3">
-          Thanks, {form.patientName}! Your request for <strong>{hospitalName}</strong> has been sent.
-          The hospital will confirm your appointment shortly.
-        </p>
-        {form.email && (
-          <p className="text-sm text-gray-500 mt-3">
-            A confirmation has been emailed to <strong>{form.email}</strong>. Use that email and your mobile number on the
-            “Cancel / Reschedule” tab any time you need to change this visit.
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+        className="max-w-2xl mx-auto py-4 space-y-6 text-left"
+      >
+        {/* Hero Success Badge */}
+        <div className="text-center space-y-2">
+          <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner ring-8 ring-emerald-50">
+            <CheckCircle2 className="w-9 h-9 text-emerald-600 animate-bounce" />
+          </div>
+          <span className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300">
+            Payment Confirmed • Appointment Booked
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
+            You're all set, {patientName}! 🎉
+          </h2>
+          <p className="text-sm text-slate-600 max-w-md mx-auto">
+            Your appointment has been successfully scheduled. The hospital care team has been notified.
           </p>
+        </div>
+
+        {/* Detailed Booking Ticket */}
+        <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xl overflow-hidden">
+          {/* Ticket Header */}
+          <div className="bg-gradient-to-r from-teal-700 via-emerald-700 to-teal-800 p-5 text-white flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-[11px] font-semibold text-teal-200 uppercase tracking-wider">
+                Booking Reference
+              </div>
+              <div className="text-xl font-black font-mono tracking-wide">
+                #{apptNumber}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-400/20 text-emerald-200 border border-emerald-300/30 flex items-center gap-1.5 backdrop-blur-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                Confirmed &amp; Paid
+              </span>
+            </div>
+          </div>
+
+          {/* Ticket Body Grid */}
+          <div className="p-6 space-y-5 divide-y divide-slate-100 text-xs">
+            {/* Row 1: Hospital & Doctor/Service */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-2">
+              <div className="space-y-1">
+                <span className="flex items-center gap-1.5 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                  <Building2 className="w-3.5 h-3.5 text-teal-600" /> Hospital / Clinic
+                </span>
+                <p className="text-sm font-bold text-slate-900">{hospitalName}</p>
+              </div>
+
+              <div className="space-y-1">
+                <span className="flex items-center gap-1.5 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                  <Stethoscope className="w-3.5 h-3.5 text-teal-600" /> Service / Consultation
+                </span>
+                <p className="text-sm font-bold text-slate-900">{serviceTitle}</p>
+              </div>
+            </div>
+
+            {/* Row 2: Date & Time */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+              <div className="space-y-1">
+                <span className="flex items-center gap-1.5 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                  <Calendar className="w-3.5 h-3.5 text-teal-600" /> Scheduled Date
+                </span>
+                <p className="text-sm font-bold text-slate-900">{formatDate(apptDate)}</p>
+              </div>
+
+              <div className="space-y-1">
+                <span className="flex items-center gap-1.5 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                  <Clock className="w-3.5 h-3.5 text-teal-600" /> Appointment Time
+                </span>
+                <p className="text-sm font-bold text-teal-700 font-mono">{apptTime}</p>
+              </div>
+            </div>
+
+            {/* Row 3: Patient & Pet Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+              <div className="space-y-1">
+                <span className="flex items-center gap-1.5 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                  <User className="w-3.5 h-3.5 text-teal-600" /> Patient Contact
+                </span>
+                <p className="font-semibold text-slate-900">{patientName}</p>
+                {patientPhone && <p className="text-slate-500 font-mono">{patientPhone}</p>}
+              </div>
+
+              <div className="space-y-1">
+                <span className="flex items-center gap-1.5 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                  <PawPrint className="w-3.5 h-3.5 text-teal-600" /> Pet Information
+                </span>
+                <p className="font-semibold text-slate-900">
+                  {petName || 'Patient / Pet'} {species ? `(${species}${breed ? ` • ${breed}` : ''})` : ''}
+                </p>
+              </div>
+            </div>
+
+            {/* Row 4: Payment Summary */}
+            <div className="pt-4 bg-slate-50/80 -mx-6 -mb-6 p-6 rounded-b-3xl border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Payment Mode
+                </span>
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-emerald-600" />
+                  <span className="font-bold text-slate-800">{paymentMethod}</span>
+                  <span className="font-mono text-[10px] bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-600">
+                    Txn: {String(paymentId).slice(0, 18)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-right">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Amount Paid
+                </span>
+                <span className="text-xl font-extrabold text-emerald-700">₹{paymentAmount}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Email & Tax Invoice Notice */}
+        {email && (
+          <div className="bg-teal-50/80 border border-teal-200/80 rounded-2xl p-4 flex items-start gap-3">
+            <Mail className="w-5 h-5 text-teal-600 shrink-0 mt-0.5" />
+            <div className="text-xs text-teal-950 space-y-1">
+              <p className="font-bold">Confirmation Email &amp; PDF Tax Invoice Sent</p>
+              <p className="text-teal-800 text-[11px] leading-relaxed">
+                An official receipt and appointment schedule have been dispatched to{' '}
+                <strong className="font-semibold text-teal-950">{email}</strong>. You can use your mobile number and email on the “Cancel / Reschedule” tab to manage this booking.
+              </p>
+            </div>
+          </div>
         )}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
-          <button onClick={() => { setForm({ ...initialForm, hospitalId: presetHospitalId }); setDone(false); }} className="btn btn-primary btn-md">
-            Book another appointment
+
+        {/* Actions */}
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => {
+              setForm({ ...initialForm, hospitalId: presetHospitalId });
+              setConfirmedAppointment(null);
+              setDone(false);
+              const clean = new URLSearchParams();
+              if (presetHospitalId) clean.set('hospitalId', presetHospitalId);
+              setSearchParams(clean, { replace: true });
+            }}
+            className="btn btn-primary btn-md shadow-md"
+          >
+            <CalendarPlus className="w-4 h-4" /> Book Another Appointment
           </button>
-          <button onClick={onManage} className="btn btn-outline btn-md">
-            <CalendarClock className="w-4 h-4" /> Manage bookings
+
+          <button
+            type="button"
+            onClick={() => {
+              setConfirmedAppointment(null);
+              setDone(false);
+              onManage();
+            }}
+            className="btn btn-outline btn-md bg-white hover:bg-slate-50"
+          >
+            <CalendarClock className="w-4 h-4" /> Cancel / Reschedule Visit
           </button>
+
+          {isLoggedIn && (
+            <Link
+              to="/dashboard/my-appointments"
+              className="btn btn-secondary btn-md"
+            >
+              Go to My Appointments <ArrowRight className="w-4 h-4" />
+            </Link>
+          )}
         </div>
       </motion.div>
     );

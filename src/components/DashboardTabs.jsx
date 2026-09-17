@@ -37,7 +37,7 @@ const ROLE_TABS = {
     { name: 'Overview', to: '/dashboard', icon: LayoutDashboard },
     { name: 'Lab Catalog', to: '/dashboard/services', icon: FlaskConical },
     { name: 'Book Consult', to: '/dashboard/book-appointment', icon: Stethoscope },
-    { name: 'Doctor Appointments', to: '/dashboard/my-appointments?tab=doctor', icon: CalendarCheck },
+    { name: 'Appointments', to: '/dashboard/my-appointments', icon: CalendarCheck },
     { name: 'Lab Bookings', to: '/dashboard/my-appointments?tab=lab', icon: FlaskConical },
     { name: 'Refunds & Settlements', to: '/dashboard/my-appointments?tab=refunds', icon: DollarSign },
     { name: 'Explore Hospitals', to: '/dashboard/explore-hospitals', icon: Building2 },
@@ -113,10 +113,31 @@ export default function DashboardTabs({ role }) {
     if (to.includes('?tab=doctor')) {
       return (
         location.pathname === '/dashboard/my-appointments' &&
-        (location.search.includes('tab=doctor') ||
-          (!location.search.includes('tab=lab') &&
-            !location.search.includes('tab=refunds') &&
-            !location.search.includes('tab=all')))
+        location.search.includes('tab=doctor')
+      );
+    }
+    if (to === '/superadmin/appointments') {
+      return (
+        location.pathname === '/superadmin/appointments' &&
+        !location.search.includes('tab=lab') &&
+        !location.search.includes('tab=refunds') &&
+        !location.search.includes('tab=doctor')
+      );
+    }
+    if (to === '/admin/appointments') {
+      return (
+        location.pathname === '/admin/appointments' &&
+        !location.search.includes('tab=lab') &&
+        !location.search.includes('tab=refunds') &&
+        !location.search.includes('tab=doctor')
+      );
+    }
+    if (to === '/dashboard/my-appointments') {
+      return (
+        location.pathname === '/dashboard/my-appointments' &&
+        !location.search.includes('tab=lab') &&
+        !location.search.includes('tab=refunds') &&
+        !location.search.includes('tab=doctor')
       );
     }
     if (to === '/superadmin') {

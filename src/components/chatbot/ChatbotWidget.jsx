@@ -6,45 +6,69 @@ import {
   MessageSquare, X, Send, Bot, User, Sparkles, ChevronDown, ChevronUp,
   Maximize2, Minimize2, Trash2, Calendar, Stethoscope, TestTube2,
   PhoneCall, ShieldAlert, ArrowRight, ExternalLink, RefreshCw,
-  Building2, CreditCard, CheckCircle2, Clock, FileText, Volume2, VolumeX, QrCode, MapPin, Copy, Check
+  Building2, CreditCard, CheckCircle2, Clock, FileText, Volume2, VolumeX, QrCode, MapPin, Copy, Check, Star,
+  Pill, Utensils, Bell, BellRing, Activity, LayoutGrid, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import API_URL from '../../config/api';
 import AppointmentPaymentModal from '../AppointmentPaymentModal';
+import AppointmentFeedbackModal from '../portal/AppointmentFeedbackModal';
+import MedicineReminderModal from './MedicineReminderModal';
+
+const ALL_WELCOME_REPLIES = [
+  '⭐ Rate & Review Visit',
+  '⏱️ Live OPD Queue Tracker',
+  '🔄 Reschedule Appointment',
+  '💊 Medicine & Pill Alarms',
+  '🥗 Diet & Post-Surgery Plans',
+  '🩺 Book Doctor Appointment',
+  '🔍 Track My Appointment',
+  '🧪 Lab Tests & Fasting Rules',
+  '💎 Full Body Health Checkup',
+  '💰 Doctor Consultation Fees',
+  '📋 Preparation & Documents',
+  '🕒 Hospital Visiting Hours',
+  '🏥 Find Accredited Hospitals',
+  '❌ Cancel & 100% Refund',
+  '🚨 Emergency Helplines'
+];
 
 export default function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [quickMenuOpen, setQuickMenuOpen] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [pendingBookingDetails, setPendingBookingDetails] = useState(null);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [feedbackAppt, setFeedbackAppt] = useState(null);
+  const [medicineReminderModalOpen, setMedicineReminderModalOpen] = useState(false);
+  const [initialMedicineName, setInitialMedicineName] = useState('');
+  const [initialDosage, setInitialDosage] = useState('');
   const [showAllHospitalsMap, setShowAllHospitalsMap] = useState({});
   const [showAllServicesMap, setShowAllServicesMap] = useState({});
   const [copiedId, setCopiedId] = useState(null);
   const [messages, setMessages] = useState(() => {
+    const defaultWelcome = {
+      id: 'welcome_1',
+      sender: 'bot',
+      text: `👋 **Hello! I am MediBot, your 24/7 Hospital & Medical Assistant.**\n\nHow can I assist you today? You can reschedule appointments, check your live OPD token & waiting time, set medicine reminders, explore diet & care guides, rate your doctor visit, or get emergency help!`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      quickReplies: ALL_WELCOME_REPLIES
+    };
+
     try {
       const saved = sessionStorage.getItem('medibot_messages');
-      if (saved) return JSON.parse(saved);
-    } catch (_) {}
-    return [
-      {
-        id: 'welcome_1',
-        sender: 'bot',
-        text: `👋 **Hello! I am MediBot, your 24/7 Hospital & Medical Assistant.**\n\nHow can I assist you today? You can ask me to book appointments, track an existing booking, check diagnostic test fasting rules, vaccination schedules, health packages, doctor fees, or get emergency help!`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        quickReplies: [
-          '🩺 Book Doctor Appointment',
-          '🧪 Lab Tests & Fasting Rules',
-          '💎 Full Body Health Checkup',
-          '💉 Vaccination Schedules',
-          '🌸 Maternity & Delivery',
-          '🏠 Home Blood Collection',
-          '👴 Senior Citizen Care',
-          '💰 Doctor Consultation Fees',
-          '🛡️ Insurance & Cashless TPA',
-          '🔍 Track My Appointment',
-          '🚨 Emergency Helplines'
-        ]
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Always ensure the first welcome message contains all latest quick reply features
+          if (parsed[0]?.id === 'welcome_1') {
+            parsed[0].quickReplies = ALL_WELCOME_REPLIES;
+          }
+          return parsed;
+        }
       }
-    ];
+    } catch (_) {}
+    return [defaultWelcome];
   });
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,7 +83,21 @@ export default function ChatbotWidget() {
   });
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const bottomScrollRef = useRef(null);
+  const topScrollRef = useRef(null);
   const navigate = useNavigate();
+
+  const scrollBottomBar = (direction) => {
+    if (bottomScrollRef.current) {
+      bottomScrollRef.current.scrollBy({ left: direction === 'left' ? -220 : 220, behavior: 'smooth' });
+    }
+  };
+
+  const scrollTopBar = (direction) => {
+    if (topScrollRef.current) {
+      topScrollRef.current.scrollBy({ left: direction === 'left' ? -220 : 220, behavior: 'smooth' });
+    }
+  };
 
   // Save conversation in sessionStorage
   useEffect(() => {
@@ -89,6 +127,38 @@ export default function ChatbotWidget() {
       setHasUnread(false);
     }
   }, [isOpen]);
+
+  // Interval checker for Medicine Reminders (every 30 seconds)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      try {
+        const saved = localStorage.getItem('medibot_medicine_reminders');
+        if (!saved) return;
+        const list = JSON.parse(saved);
+        if (!Array.isArray(list)) return;
+
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        const currentTime = `${hh}:${mm}`;
+
+        const dueMeds = list.filter(r => r.enabled && (r.rawTime === currentTime || r.rawTime === `${now.getHours()}:${mm}`));
+        if (dueMeds.length > 0) {
+          playChime();
+          dueMeds.forEach(med => {
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification(`💊 Time for Medicine: ${med.medicine}`, {
+                body: `Scheduled: ${med.timing} (${med.foodTiming}). Please take your prescribed dose.`,
+                icon: '/favicon.ico'
+              });
+            }
+          });
+        }
+      } catch (_) {}
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Play subtle feedback chime
   const playChime = () => {
@@ -152,6 +222,7 @@ export default function ChatbotWidget() {
           intent: data.intent,
           quickReplies: data.quickReplies || [],
           appointment: data.appointment || null,
+          tokenData: data.tokenData || null,
           paymentDetails: data.paymentDetails || null,
           nextOptions: data.nextOptions || null,
           services: data.services || null,
@@ -204,20 +275,17 @@ export default function ChatbotWidget() {
         sender: 'bot',
         text: `🧹 **Chat history cleared.**\n\nHow can I help you today? Feel free to ask about doctors, available appointment slots, lab tests, or hospital information!`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        quickReplies: [
-          '🩺 Book Doctor Appointment',
-          '🧪 Lab Tests & Pricing',
-          '🔍 Track My Appointment',
-          '🚨 Emergency Helplines'
-        ]
+        quickReplies: ALL_WELCOME_REPLIES
       }
     ];
     setMessages(welcome);
     setChatContext({});
     setPendingBookingDetails(null);
+    setFeedbackAppt(null);
     setShowAllHospitalsMap({});
     setShowAllServicesMap({});
     setCopiedId(null);
+    setQuickMenuOpen(false);
     sessionStorage.removeItem('medibot_messages');
     sessionStorage.removeItem('medibot_context');
   };
@@ -229,6 +297,27 @@ export default function ChatbotWidget() {
         setPendingBookingDetails(action.bookingData);
       }
       setPaymentModalOpen(true);
+      return;
+    }
+    if (action.type === 'open_reminder_modal') {
+      setInitialMedicineName(action.medicineName || '');
+      setInitialDosage(action.defaultDosage || '');
+      setMedicineReminderModalOpen(true);
+      return;
+    }
+    if (action.type === 'open_feedback_modal') {
+      if (action.appointment) {
+        setFeedbackAppt(action.appointment);
+      } else {
+        setFeedbackAppt({
+          id: action.appointmentId,
+          appointment_number: action.appointmentNumber,
+          appointmentNumber: action.appointmentNumber,
+          hospital: action.hospital,
+          doctorName: action.doctorName
+        });
+      }
+      setFeedbackModalOpen(true);
       return;
     }
     if (action.type === 'download_invoice' || action.actionType === 'download_invoice') {
@@ -514,6 +603,152 @@ export default function ChatbotWidget() {
                 </div>
               </div>
 
+              {/* ─── Top Quick Action Shortcuts Bar (Scrollable with Navigation Arrows) ─── */}
+              <div className="relative flex items-center bg-slate-100/95 border-b border-slate-200/90 text-[10.5px]">
+                <button
+                  type="button"
+                  onClick={() => scrollTopBar('left')}
+                  className="h-full px-1.5 py-2 hover:bg-slate-200/80 text-slate-500 hover:text-slate-800 transition cursor-pointer shrink-0 z-1 flex items-center justify-center"
+                  title="Scroll Left"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+
+                <div
+                  ref={topScrollRef}
+                  className="flex items-center gap-1.5 px-1 py-2 overflow-x-auto no-scrollbar scroll-smooth flex-1 min-w-0"
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleSend('⭐ Rate & Review Visit')}
+                    className="px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-bold transition shrink-0 shadow-2xs active:scale-95 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <Star className="w-3 h-3 fill-white text-white" />
+                    <span>⭐ Rate Visit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSend('Track my live OPD token and waiting time')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <Clock className="w-3 h-3 text-emerald-600" />
+                    <span>⏱️ OPD Queue</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSend('I want to reschedule my appointment')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <RefreshCw className="w-3 h-3 text-medical-blue" />
+                    <span>🔄 Reschedule</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInitialMedicineName('');
+                      setInitialDosage('');
+                      setMedicineReminderModalOpen(true);
+                    }}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-teal-50 text-slate-700 hover:text-teal-700 border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <Pill className="w-3 h-3 text-teal-600" />
+                    <span>💊 Pill Alarms</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSend('Tell me about diet and post-surgery recovery plans')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-green-50 text-slate-700 hover:text-green-700 border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <Utensils className="w-3 h-3 text-green-600" />
+                    <span>🥗 Diet & Care</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSend('Book Doctor Appointment')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <Stethoscope className="w-3 h-3 text-medical-blue" />
+                    <span>Book Doctor</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSend('Track my appointment')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <span>🔍 Track</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSend('Lab Tests & Fasting Rules')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-purple-50 text-slate-700 hover:text-purple-700 border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <TestTube2 className="w-3 h-3 text-purple-600" />
+                    <span>Lab Tests</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSend('What full body master health checkup packages do you offer?')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-cyan-50 text-slate-700 hover:text-cyan-700 border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <span>💎 Health Checkup</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSend('What are the doctor consultation fees by department?')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-amber-50 text-slate-700 hover:text-amber-700 border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <span>💰 Doctor Fees</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSend('What documents do I need to bring for my appointment?')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <span>📋 Preparation & Docs</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSend('What are the hospital visiting hours?')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <span>🕒 Visiting Hours</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSend('Find accredited hospitals')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <Building2 className="w-3 h-3 text-medical-blue" />
+                    <span>🏥 Hospitals</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSend('Cancel my appointment and process refund')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <X className="w-3 h-3 text-rose-500" />
+                    <span>❌ Cancel Booking</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSend('Emergency Helplines')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <ShieldAlert className="w-3 h-3 text-rose-600" />
+                    <span>🚨 Emergency</span>
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => scrollTopBar('right')}
+                  className="h-full px-1.5 py-2 hover:bg-slate-200/80 text-slate-500 hover:text-slate-800 transition cursor-pointer shrink-0 z-1 flex items-center justify-center"
+                  title="Scroll Right"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
               {/* ─── Message Stream ─────────────────────────────────── */}
               <div className="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-3.5 bg-slate-50/60">
                 {messages.map((msg) => {
@@ -726,6 +961,87 @@ export default function ChatbotWidget() {
                             </div>
                           )}
 
+                          {/* ─── Interactive Live OPD Token Card ─── */}
+                          {msg.tokenData && (
+                            <div className="mt-3 p-3.5 rounded-2xl bg-gradient-to-b from-slate-900 via-slate-950 to-blue-950 text-white shadow-md border border-blue-500/30 space-y-3">
+                              <div className="flex items-center justify-between gap-2 border-b border-white/15 pb-2.5">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="h-8 w-8 rounded-xl bg-blue-500/20 ring-1 ring-blue-400/40 flex items-center justify-center text-blue-300 shrink-0">
+                                    <Clock className="w-4 h-4 text-blue-400" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <h5 className="font-extrabold text-xs text-white truncate flex items-center gap-1">
+                                      <span>Live OPD Queue Status</span>
+                                    </h5>
+                                    <p className="text-[10px] text-blue-200/80 truncate">
+                                      Ref #{msg.tokenData.appointmentNumber}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="flex flex-col items-end shrink-0">
+                                  <span className="px-2.5 py-1 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-xs shadow-md">
+                                    Token #{msg.tokenData.tokenNumber}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Queue Progress Stats Grid */}
+                              <div className="grid grid-cols-3 gap-2 text-center bg-white/10 backdrop-blur-xs p-2.5 rounded-xl border border-white/10">
+                                <div>
+                                  <span className="text-[9.5px] text-blue-200/70 block">Serving Now</span>
+                                  <span className="font-extrabold text-amber-300 text-xs sm:text-sm">
+                                    #{msg.tokenData.currentServing}
+                                  </span>
+                                </div>
+                                <div className="border-x border-white/10 px-1">
+                                  <span className="text-[9.5px] text-blue-200/70 block">Ahead</span>
+                                  <span className="font-extrabold text-white text-xs sm:text-sm">
+                                    {msg.tokenData.patientsAhead} {msg.tokenData.patientsAhead === 1 ? 'pt' : 'pts'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-[9.5px] text-blue-200/70 block">Est. Wait</span>
+                                  <span className="font-extrabold text-emerald-300 text-xs sm:text-sm">
+                                    ~{msg.tokenData.estimatedWaitMins}m
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Location & Doctor Info */}
+                              <div className="space-y-1 text-[11px] text-blue-100 bg-white/5 p-2 rounded-xl border border-white/5">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-blue-300/80 text-[10px]">Doctor / Dept:</span>
+                                  <span className="font-bold text-white truncate max-w-[180px]">{msg.tokenData.doctorName}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-blue-300/80 text-[10px]">Room / Wing:</span>
+                                  <span className="font-bold text-amber-200 truncate max-w-[180px]">{msg.tokenData.roomNumber}</span>
+                                </div>
+                              </div>
+
+                              {/* Action buttons */}
+                              <div className="grid grid-cols-2 gap-1.5 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleSend(`Reschedule #${msg.tokenData.appointmentNumber}`)}
+                                  className="p-1.5 bg-white/15 hover:bg-white/25 text-white rounded-xl font-bold text-[10.5px] transition flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  <RefreshCw className="w-3 h-3 text-blue-300" />
+                                  <span>Reschedule</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSend(`Cancel #${msg.tokenData.appointmentNumber}`)}
+                                  className="p-1.5 bg-rose-500/25 hover:bg-rose-500/40 text-rose-200 border border-rose-400/30 rounded-xl font-bold text-[10.5px] transition flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  <X className="w-3 h-3 text-rose-300" />
+                                  <span>Cancel</span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
                           {/* ─── Interactive Appointment & Payment Details Card ─── */}
                           {msg.appointment && (
                             <div className="mt-3 p-3 rounded-2xl bg-gradient-to-b from-slate-50 to-blue-50/40 border border-slate-200/90 shadow-2xs space-y-2.5 text-slate-800">
@@ -814,33 +1130,92 @@ export default function ChatbotWidget() {
                               </div>
 
                               {/* ─── Next Action Options ─── */}
-                              <div className="space-y-1.5 pt-1">
-                                <div className="flex items-center justify-between text-[10.5px] font-bold text-slate-600 px-0.5">
-                                  <span>👉 Next Steps for Your Visit:</span>
+                              <div className="space-y-2 pt-1">
+                                <div className="flex items-center justify-between text-[10.5px] font-bold text-slate-700 px-0.5">
+                                  <span>👉 Quick Actions for Booking #{msg.appointment.appointment_number || msg.appointment.id}:</span>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                {/* Row 1: Live OPD Token & Reschedule */}
+                                <div className="grid grid-cols-2 gap-1.5">
                                   <button
                                     type="button"
-                                    onClick={() => handleActionClick({ type: 'download_invoice', appointmentId: msg.appointment.id })}
+                                    onClick={() => handleSend(`Track my live OPD token #${msg.appointment.appointment_number || msg.appointment.id}`)}
                                     className="p-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl font-bold text-[11px] transition shadow-2xs active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
                                   >
-                                    <FileText className="w-3.5 h-3.5" />
-                                    <span>Download Invoice (PDF)</span>
+                                    <Clock className="w-3.5 h-3.5" />
+                                    <span>⏱️ Live OPD Queue</span>
                                   </button>
 
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSend(`Reschedule #${msg.appointment.appointment_number || msg.appointment.id}`)}
+                                    className="p-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold text-[11px] transition shadow-2xs active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                                  >
+                                    <RefreshCw className="w-3.5 h-3.5" />
+                                    <span>🔄 Reschedule Slot</span>
+                                  </button>
+                                </div>
+
+                                {/* Row 2: Medicine Reminder Alarm & Diet / Recovery Care */}
+                                <div className="grid grid-cols-2 gap-1.5">
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      navigate(`/dashboard/my-appointments?id=${msg.appointment.id}`);
-                                      if (window.innerWidth < 640) setIsOpen(false);
+                                      setInitialMedicineName('');
+                                      setInitialDosage('');
+                                      setMedicineReminderModalOpen(true);
                                     }}
-                                    className="p-2 bg-medical-blue hover:bg-medical-dark text-white rounded-xl font-bold text-[11px] transition shadow-2xs active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                                    className="p-2 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 rounded-xl font-bold text-[11px] transition active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
                                   >
-                                    <Calendar className="w-3.5 h-3.5" />
-                                    <span>Open in Portal</span>
+                                    <Pill className="w-3.5 h-3.5 text-teal-600" />
+                                    <span>💊 Set Pill Alarm</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSend('Tell me about diet and post-surgery recovery plans')}
+                                    className="p-2 bg-green-50 hover:bg-green-100 text-green-800 border border-green-200 rounded-xl font-bold text-[11px] transition active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                                  >
+                                    <Utensils className="w-3.5 h-3.5 text-green-600" />
+                                    <span>🥗 Diet & Care</span>
                                   </button>
                                 </div>
+
+                                {/* Row 3: Tax Invoice & 1-Click Cancel Booking */}
+                                <div className="grid grid-cols-2 gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleActionClick({ type: 'download_invoice', appointmentId: msg.appointment.id, appointmentNumber: msg.appointment.appointment_number })}
+                                    className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold text-[11px] transition active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                                  >
+                                    <FileText className="w-3.5 h-3.5 text-slate-600" />
+                                    <span>📄 Tax Invoice</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSend(`Cancel #${msg.appointment.appointment_number || msg.appointment.id}`)}
+                                    className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl font-bold text-[11px] transition active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                                  >
+                                    <X className="w-3.5 h-3.5 text-rose-500" />
+                                    <span>❌ Cancel Booking</span>
+                                  </button>
+                                </div>
+
+                                {/* Row 4: Rate Visit (if completed) */}
+                                {msg.appointment.status === 'Completed' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setFeedbackAppt(msg.appointment);
+                                      setFeedbackModalOpen(true);
+                                    }}
+                                    className="w-full p-2.5 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl font-bold text-xs transition shadow-sm active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                                  >
+                                    <Star className="w-4 h-4 fill-white text-white" />
+                                    <span>⭐ Rate & Give Visit Feedback</span>
+                                  </button>
+                                )}
 
                                 <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
                                   <button
@@ -878,11 +1253,15 @@ export default function ChatbotWidget() {
                                 className={`w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-white font-bold text-xs shadow-xs hover:shadow transition-all cursor-pointer ${
                                   msg.action.type === 'open_payment_modal'
                                     ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-medical-blue hover:from-emerald-700 hover:to-blue-700 ring-2 ring-emerald-400/40 animate-pulse'
+                                    : msg.action.type === 'open_feedback_modal'
+                                    ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 ring-2 ring-amber-300 shadow-sm'
                                     : 'bg-gradient-to-r from-medical-dark to-medical-blue hover:from-blue-900 hover:to-medical-blue'
                                 }`}
                               >
                                 {msg.action.type === 'open_payment_modal' ? (
                                   <CreditCard className="w-4 h-4 text-amber-300" />
+                                ) : msg.action.type === 'open_feedback_modal' ? (
+                                  <Star className="w-4 h-4 fill-amber-200 text-amber-200" />
                                 ) : null}
                                 <span>{msg.action.label || (msg.action.type === 'emergency_call' ? '🚨 Call Emergency Now' : '👉 Proceed / Open Page')}</span>
                                 <ArrowRight className="w-3.5 h-3.5" />
@@ -896,28 +1275,41 @@ export default function ChatbotWidget() {
                         {msg.timestamp}
                       </span>
 
-                      {/* Quick Reply Chips (Only for latest bot message) */}
+                      {/* Quick Reply Chips (Horizontally Scrollable Carousel with Sideways Hint) */}
                       {!isUser && msg.quickReplies && msg.quickReplies.length > 0 && (
-                        <div className="flex items-center gap-1.5 flex-wrap mt-2 max-w-full">
-                          {msg.quickReplies.map((qr, qIdx) => (
-                            <button
-                              key={qIdx}
-                              type="button"
-                              onClick={() => handleQuickReplyClick(qr, msg)}
-                              className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer shrink-0 ${
-                                qr.includes('Pay Online') || qr.includes('Instant UPI')
-                                  ? 'bg-gradient-to-r from-emerald-50 to-blue-50 text-emerald-800 border border-emerald-300 hover:border-emerald-500 font-bold'
-                                  : 'bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200 hover:border-medical-blue/40'
-                              }`}
-                            >
-                              {qr}
-                            </button>
-                          ))}
+                        <div className="mt-2.5 max-w-full w-full">
+                          <div className="flex items-center justify-between text-[10px] text-slate-500 font-semibold px-0.5 mb-1.5">
+                            <span className="flex items-center gap-1">
+                              <span>💡 Suggested Options</span>
+                              <span className="text-[9px] text-slate-400 font-normal">(Scroll sideways ↔)</span>
+                            </span>
+                            <span className="px-1.5 py-0.2 rounded-full bg-slate-200/80 text-[9px] font-bold text-slate-600">
+                              {msg.quickReplies.length} options
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 pt-0.5 no-scrollbar scroll-smooth">
+                            {msg.quickReplies.map((qr, qIdx) => (
+                              <button
+                                key={qIdx}
+                                type="button"
+                                onClick={() => handleQuickReplyClick(qr, msg)}
+                                className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer shrink-0 whitespace-nowrap flex items-center gap-1 ${
+                                  qr.includes('Pay Online') || qr.includes('Instant UPI')
+                                    ? 'bg-gradient-to-r from-emerald-50 to-blue-50 text-emerald-800 border border-emerald-300 hover:border-emerald-500 font-bold'
+                                    : qr.includes('⭐') || qr.includes('Rate') || qr.includes('Feedback') || qr.includes('Review')
+                                    ? 'bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100 text-amber-900 border border-amber-300 hover:border-amber-500 font-bold shadow-2xs'
+                                    : 'bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200 hover:border-medical-blue/40 shadow-2xs'
+                                }`}
+                              >
+                                <span>{qr}</span>
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       )}
-                      </div>
-                    );
-                  })}
+                    </div>
+                  );
+                })}
 
                 {/* Typing Animation */}
                 {loading && (
@@ -936,21 +1328,372 @@ export default function ChatbotWidget() {
                 <div ref={messagesEndRef} />
               </div>
 
+              {/* ─── Animated Quick Features Menu Drawer / Popover ─── */}
+              <AnimatePresence>
+                {quickMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white/98 backdrop-blur-md border-t border-slate-200/90 shadow-xl overflow-hidden shrink-0 z-10"
+                  >
+                    <div className="p-3 max-h-[290px] overflow-y-auto no-scrollbar space-y-2">
+                      <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                        <div className="flex items-center gap-1.5">
+                          <LayoutGrid className="w-3.5 h-3.5 text-medical-blue" />
+                          <span className="font-extrabold text-xs text-slate-900">All MediBot Features & Shortcuts</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setQuickMenuOpen(false)}
+                          className="p-1 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-1.5 text-xs">
+                        {/* 1. OPD Queue */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickMenuOpen(false);
+                            handleSend('Track my live OPD token and waiting time');
+                          }}
+                          className="p-2 rounded-xl bg-emerald-50/70 hover:bg-emerald-100/70 border border-emerald-200/80 text-left transition flex items-start gap-2 cursor-pointer group"
+                        >
+                          <Clock className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-900 block group-hover:text-emerald-800 text-[11px] truncate">⏱️ OPD Queue</span>
+                            <span className="text-[9.5px] text-slate-500 block truncate">Live token & wait</span>
+                          </div>
+                        </button>
+
+                        {/* 2. Reschedule & Cancel */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickMenuOpen(false);
+                            handleSend('I want to reschedule my appointment');
+                          }}
+                          className="p-2 rounded-xl bg-blue-50/70 hover:bg-blue-100/70 border border-blue-200/80 text-left transition flex items-start gap-2 cursor-pointer group"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5 text-medical-blue shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-900 block group-hover:text-medical-dark text-[11px] truncate">🔄 Reschedule</span>
+                            <span className="text-[9.5px] text-slate-500 block truncate">Change slot / Cancel</span>
+                          </div>
+                        </button>
+
+                        {/* 3. Medicine Alarms */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickMenuOpen(false);
+                            setInitialMedicineName('');
+                            setInitialDosage('');
+                            setMedicineReminderModalOpen(true);
+                          }}
+                          className="p-2 rounded-xl bg-teal-50/70 hover:bg-teal-100/70 border border-teal-200/80 text-left transition flex items-start gap-2 cursor-pointer group"
+                        >
+                          <Pill className="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-900 block group-hover:text-teal-800 text-[11px] truncate">💊 Pill Alarms</span>
+                            <span className="text-[9.5px] text-slate-500 block truncate">Prescription reminders</span>
+                          </div>
+                        </button>
+
+                        {/* 4. Diet & Recovery */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickMenuOpen(false);
+                            handleSend('Tell me about diet and post-surgery recovery plans');
+                          }}
+                          className="p-2 rounded-xl bg-green-50/70 hover:bg-green-100/70 border border-green-200/80 text-left transition flex items-start gap-2 cursor-pointer group"
+                        >
+                          <Utensils className="w-3.5 h-3.5 text-green-600 shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-900 block group-hover:text-green-800 text-[11px] truncate">🥗 Diet & Care</span>
+                            <span className="text-[9.5px] text-slate-500 block truncate">Diabetic, post-surgery</span>
+                          </div>
+                        </button>
+
+                        {/* 5. Rate & Review */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickMenuOpen(false);
+                            handleSend('⭐ Rate & Review Visit');
+                          }}
+                          className="p-2 rounded-xl bg-amber-50/70 hover:bg-amber-100/70 border border-amber-200/80 text-left transition flex items-start gap-2 cursor-pointer group"
+                        >
+                          <Star className="w-3.5 h-3.5 text-amber-600 fill-amber-500 shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-900 block group-hover:text-amber-800 text-[11px] truncate">⭐ Rate Visit</span>
+                            <span className="text-[9.5px] text-slate-500 block truncate">Review consultation</span>
+                          </div>
+                        </button>
+
+                        {/* 6. Book Doctor */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickMenuOpen(false);
+                            handleSend('Book Doctor Appointment');
+                          }}
+                          className="p-2 rounded-xl bg-indigo-50/70 hover:bg-indigo-100/70 border border-indigo-200/80 text-left transition flex items-start gap-2 cursor-pointer group"
+                        >
+                          <Stethoscope className="w-3.5 h-3.5 text-indigo-600 shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-900 block group-hover:text-indigo-800 text-[11px] truncate">🩺 Book Doctor</span>
+                            <span className="text-[9.5px] text-slate-500 block truncate">Find specialists</span>
+                          </div>
+                        </button>
+
+                        {/* 7. Lab Tests */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickMenuOpen(false);
+                            handleSend('Lab Tests & Fasting Rules');
+                          }}
+                          className="p-2 rounded-xl bg-purple-50/70 hover:bg-purple-100/70 border border-purple-200/80 text-left transition flex items-start gap-2 cursor-pointer group"
+                        >
+                          <TestTube2 className="w-3.5 h-3.5 text-purple-600 shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-900 block group-hover:text-purple-800 text-[11px] truncate">🧪 Lab Tests</span>
+                            <span className="text-[9.5px] text-slate-500 block truncate">CBC, LFT & fasting</span>
+                          </div>
+                        </button>
+
+                        {/* 8. Emergency */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickMenuOpen(false);
+                            handleSend('Emergency Helplines');
+                          }}
+                          className="p-2 rounded-xl bg-rose-50/70 hover:bg-rose-100/70 border border-rose-200/80 text-left transition flex items-start gap-2 cursor-pointer group"
+                        >
+                          <ShieldAlert className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-900 block group-hover:text-rose-800 text-[11px] truncate">🚨 Emergency</span>
+                            <span className="text-[9.5px] text-slate-500 block truncate">24/7 Helpline & ICU</span>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* ─── Persistent Bottom Quick Actions Dock (Scrollable with Navigation Arrows) ─── */}
+              <div className="relative flex items-center bg-slate-100/95 border-t border-slate-200/90 text-[10.5px] px-1 py-1">
+                {/* Menu Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setQuickMenuOpen(!quickMenuOpen)}
+                  className={`px-2 py-1.5 rounded-lg font-bold transition shrink-0 flex items-center gap-1 cursor-pointer shadow-2xs mr-1 ${
+                    quickMenuOpen
+                      ? 'bg-slate-900 text-white ring-1 ring-slate-800'
+                      : 'bg-gradient-to-r from-medical-dark to-medical-blue text-white hover:opacity-95'
+                  }`}
+                  title="Explore All MediBot Features"
+                >
+                  <LayoutGrid className="w-3 h-3 text-amber-300" />
+                  <span>⚡ Menu</span>
+                </button>
+
+                {/* Left Scroll Chevron */}
+                <button
+                  type="button"
+                  onClick={() => scrollBottomBar('left')}
+                  className="p-1 rounded-md hover:bg-slate-200/80 text-slate-500 hover:text-slate-800 transition cursor-pointer shrink-0"
+                  title="Scroll Left"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Horizontally Scrollable Option Pills */}
+                <div
+                  ref={bottomScrollRef}
+                  className="flex items-center gap-1.5 px-1 overflow-x-auto no-scrollbar scroll-smooth flex-1 min-w-0"
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleSend('⭐ Rate & Review Visit')}
+                    className="px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold transition shrink-0 shadow-2xs cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <Star className="w-2.5 h-2.5 fill-white text-white" />
+                    <span>⭐ Rate Visit</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSend('Track my live OPD token and waiting time')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <Clock className="w-2.5 h-2.5 text-emerald-600" />
+                    <span>⏱️ OPD Queue</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSend('I want to reschedule my appointment')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <RefreshCw className="w-2.5 h-2.5 text-medical-blue" />
+                    <span>🔄 Reschedule</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInitialMedicineName('');
+                      setInitialDosage('');
+                      setMedicineReminderModalOpen(true);
+                    }}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-teal-50 text-slate-700 hover:text-teal-700 border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <Pill className="w-2.5 h-2.5 text-teal-600" />
+                    <span>💊 Pill Alarms</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSend('Tell me about diet and post-surgery recovery plans')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-green-50 text-slate-700 hover:text-green-700 border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <Utensils className="w-2.5 h-2.5 text-green-600" />
+                    <span>🥗 Diet & Care</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSend('Book Doctor Appointment')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <Stethoscope className="w-2.5 h-2.5 text-medical-blue" />
+                    <span>Book Doctor</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSend('Track my appointment')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <span>🔍 Track</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSend('Lab Tests & Fasting Rules')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-purple-50 text-slate-700 hover:text-purple-700 border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <TestTube2 className="w-2.5 h-2.5 text-purple-600" />
+                    <span>Lab Tests</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSend('What full body master health checkup packages do you offer?')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-cyan-50 text-slate-700 hover:text-cyan-700 border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <span>💎 Health Checkup</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSend('What are the doctor consultation fees by department?')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-amber-50 text-slate-700 hover:text-amber-700 border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <span>💰 Doctor Fees</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSend('What documents do I need to bring for my appointment?')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <span>📋 Preparation & Docs</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSend('What are the hospital visiting hours?')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <span>🕒 Visiting Hours</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSend('Find accredited hospitals')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <Building2 className="w-2.5 h-2.5 text-medical-blue" />
+                    <span>🏥 Hospitals</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSend('Cancel my appointment and process refund')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <X className="w-2.5 h-2.5 text-rose-500" />
+                    <span>❌ Cancel Booking</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSend('Emergency Helplines')}
+                    className="px-2.5 py-1 rounded-full bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 font-semibold transition shrink-0 cursor-pointer flex items-center gap-1 whitespace-nowrap"
+                  >
+                    <ShieldAlert className="w-2.5 h-2.5 text-rose-600" />
+                    <span>🚨 Emergency</span>
+                  </button>
+                </div>
+
+                {/* Right Scroll Chevron */}
+                <button
+                  type="button"
+                  onClick={() => scrollBottomBar('right')}
+                  className="p-1 rounded-md hover:bg-slate-200/80 text-slate-500 hover:text-slate-800 transition cursor-pointer shrink-0"
+                  title="Scroll Right"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
               {/* ─── Chat Input Bar ─────────────────────────────────── */}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleSend();
                 }}
-                className="p-2.5 sm:p-3 bg-white border-t border-slate-200/90 flex items-center gap-2"
+                className="p-2.5 sm:p-3 bg-white border-t border-slate-200/90 flex items-center gap-1.5 sm:gap-2"
               >
+                <button
+                  type="button"
+                  onClick={() => setQuickMenuOpen(!quickMenuOpen)}
+                  className={`p-2 rounded-xl border transition cursor-pointer shrink-0 flex items-center justify-center ${
+                    quickMenuOpen
+                      ? 'bg-medical-dark text-white border-medical-dark shadow-xs'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                  }`}
+                  title={quickMenuOpen ? 'Close Features Menu' : 'Open Features Menu'}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </button>
                 <input
                   ref={inputRef}
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask MediBot... (e.g. 'Book doctor', '#1042', 'Lab tests')"
-                  className="flex-1 bg-slate-100 hover:bg-slate-50 focus:bg-white text-slate-800 text-xs px-3.5 py-2.5 rounded-xl border border-transparent focus:border-medical-blue/40 focus:ring-2 focus:ring-medical-blue/20 outline-none transition"
+                  className="flex-1 min-w-0 bg-slate-100 hover:bg-slate-50 focus:bg-white text-slate-800 text-xs px-3.5 py-2.5 rounded-xl border border-transparent focus:border-medical-blue/40 focus:ring-2 focus:ring-medical-blue/20 outline-none transition"
                 />
                 <button
                   type="submit"
@@ -972,6 +1715,25 @@ export default function ChatbotWidget() {
         onClose={() => setPaymentModalOpen(false)}
         bookingDetails={pendingBookingDetails}
         onPaymentSuccess={handlePaymentSuccess}
+      />
+
+      {/* ─── In-Chat Appointment Visit Feedback Modal ─── */}
+      <AppointmentFeedbackModal
+        isOpen={feedbackModalOpen}
+        onClose={() => setFeedbackModalOpen(false)}
+        appointment={feedbackAppt}
+        onFeedbackSubmitted={(fb) => {
+          setFeedbackModalOpen(false);
+          handleSend(`⭐ Feedback submitted (${fb.rating} Stars): "${fb.feedbackText || fb.message || 'Great consultation and care'}"`);
+        }}
+      />
+
+      {/* ─── In-Chat Medicine & Pill Reminder Modal ─── */}
+      <MedicineReminderModal
+        isOpen={medicineReminderModalOpen}
+        onClose={() => setMedicineReminderModalOpen(false)}
+        initialMedicine={initialMedicineName}
+        initialDosage={initialDosage}
       />
     </>
   );

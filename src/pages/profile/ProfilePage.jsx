@@ -116,6 +116,9 @@ export default function ProfilePage() {
           localStorage.setItem('user', JSON.stringify(merged));
           setUser(merged);
           setOriginalEmail(merged.email || '');
+          if (merged.password) {
+            setCurrentPassword(merged.password);
+          }
           setForm({
             name: merged.name || merged.contactName || '',
             email: merged.email || '',
@@ -152,6 +155,9 @@ export default function ProfilePage() {
     const parsed = JSON.parse(userData);
     setUser(parsed);
     setOriginalEmail(parsed.email || '');
+    if (parsed.password) {
+      setCurrentPassword(parsed.password);
+    }
     setForm({
       name: parsed.name || parsed.contactName || '',
       email: parsed.email || '',
@@ -339,7 +345,12 @@ export default function ProfilePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to change password');
       toast.success('Password changed successfully');
-      setCurrentPassword('');
+      const updatedUser = { ...user, password: newPassword };
+      try {
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      } catch (_) {}
+      setUser(updatedUser);
+      setCurrentPassword(newPassword);
       setNewPassword('');
       setConfirmPassword('');
       setShowPassword(false);
@@ -1054,13 +1065,16 @@ export default function ProfilePage() {
                   type={showCurrentPw ? 'text' : 'password'}
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Current account password"
+                  autoComplete="current-password"
                   className="portal-input w-full pr-10 text-sm"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowCurrentPw(!showCurrentPw)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 cursor-pointer"
+                  title={showCurrentPw ? 'Hide password' : 'Show password'}
                 >
                   {showCurrentPw ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -1073,6 +1087,8 @@ export default function ProfilePage() {
                   type={showNewPw ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password (min. 6 characters)"
+                  autoComplete="new-password"
                   className="portal-input w-full pr-10 text-sm"
                   required
                   minLength="6"
@@ -1080,7 +1096,8 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => setShowNewPw(!showNewPw)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 cursor-pointer"
+                  title={showNewPw ? 'Hide password' : 'Show password'}
                 >
                   {showNewPw ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -1093,13 +1110,16 @@ export default function ProfilePage() {
                   type={showConfirmPw ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter new password"
+                  autoComplete="new-password"
                   className="portal-input w-full pr-10 text-sm"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPw(!showConfirmPw)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 cursor-pointer"
+                  title={showConfirmPw ? 'Hide password' : 'Show password'}
                 >
                   {showConfirmPw ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
