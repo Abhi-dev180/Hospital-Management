@@ -59,7 +59,7 @@ export default function HMSIntegrationAnimation() {
   ];
 
   return (
-    <div className="w-full bg-[#fdfbf7] rounded-3xl border border-[#ede8de] p-6 sm:p-10 md:p-12 shadow-sm my-12 overflow-hidden">
+    <div className="w-full bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-10 md:p-12 shadow-sm my-12 overflow-hidden">
       <div className="flex flex-col lg:flex-row items-center justify-between gap-10 lg:gap-16">
         
         {/* Left Side: Deep PMS Integration Text & Features */}
@@ -69,7 +69,7 @@ export default function HMSIntegrationAnimation() {
               <Sparkles className="w-4 h-4 text-medical-blue animate-pulse" />
               SMART HOSPITAL ECOSYSTEM
             </div>
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-medical-dark tracking-tight">
               Seamless Connection Across All Hospital Care Units
             </h3>
           </div>
@@ -87,22 +87,22 @@ export default function HMSIntegrationAnimation() {
                   transition={{ duration: 0.2 }}
                   className={`p-3.5 rounded-2xl cursor-pointer transition-all duration-300 ${
                     isHovered
-                      ? 'bg-white shadow-md border border-medical-blue/30 text-gray-900'
-                      : 'hover:bg-white/60 text-gray-700'
+                      ? 'bg-blue-50/50 shadow-md border border-medical-blue/30 text-gray-900'
+                      : 'hover:bg-slate-50 text-gray-700'
                   }`}
                 >
                   <div className="flex items-start gap-3.5">
                     <div className={`mt-1 p-2 rounded-xl transition-colors ${
-                      isHovered ? 'bg-medical-blue text-white' : 'bg-gray-100 text-gray-600'
+                      isHovered ? 'bg-medical-blue text-white' : 'bg-slate-100 text-slate-600'
                     }`}>
                       <FeatureIcon className="w-4 h-4" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2 font-bold text-gray-900 text-base">
+                      <div className="flex items-center gap-2 font-bold text-slate-900 text-base">
                         <span className="inline-block w-2 h-2 rounded-full bg-medical-blue"></span>
                         {item.title}
                       </div>
-                      <p className="text-sm text-gray-500 mt-0.5 leading-relaxed">
+                      <p className="text-sm text-slate-500 mt-0.5 leading-relaxed">
                         {item.subtitle}
                       </p>
                     </div>
@@ -128,7 +128,7 @@ export default function HMSIntegrationAnimation() {
                 cx="200" 
                 cy="200" 
                 r="130" 
-                stroke="#e2ded4" 
+                stroke="#cbd5e1" 
                 strokeWidth="1.5" 
                 strokeDasharray="4 4"
                 className="opacity-70"
@@ -139,7 +139,7 @@ export default function HMSIntegrationAnimation() {
                 cx="200" 
                 cy="200" 
                 r="70" 
-                stroke="#eee9de" 
+                stroke="#e2e8f0" 
                 strokeWidth="1" 
               />
 
@@ -172,7 +172,7 @@ export default function HMSIntegrationAnimation() {
                       y1="200"
                       x2={node.x}
                       y2={node.y}
-                      stroke="#e5e0d3"
+                      stroke="#e2e8f0"
                       strokeWidth="1.5"
                     />
 
@@ -229,16 +229,16 @@ export default function HMSIntegrationAnimation() {
                 ]
               }}
               transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 sm:w-24 sm:h-24 bg-gray-800 text-white rounded-3xl flex flex-col items-center justify-center shadow-xl border border-gray-700 z-20 cursor-pointer group"
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 sm:w-24 sm:h-24 bg-medical-dark text-white rounded-3xl flex flex-col items-center justify-center shadow-xl border border-blue-900/40 z-20 cursor-pointer group"
             >
               <div className="relative">
-                <Sparkles className="w-8 h-8 sm:w-9 sm:h-9 text-blue-400 group-hover:rotate-45 transition-transform duration-500" />
+                <Sparkles className="w-8 h-8 sm:w-9 sm:h-9 text-sky-300 group-hover:rotate-45 transition-transform duration-500" />
                 <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-sky-400"></span>
                 </span>
               </div>
-              <span className="text-[9px] sm:text-[10px] font-extrabold tracking-wider mt-1 text-sky-300 text-center leading-tight">
+              <span className="text-[9px] sm:text-[10px] font-extrabold tracking-wider mt-1 text-sky-200 text-center leading-tight">
                 MEDPARK<br/>CARE HUB
               </span>
             </motion.div>

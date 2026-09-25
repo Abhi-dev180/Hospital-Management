@@ -5,9 +5,29 @@ import { RefreshCw } from 'lucide-react';
 export default function PlanExpiredModal({ isOpen, onClose, subscription, user }) {
   const navigate = useNavigate();
 
-  const isUserActive = user?.isExpired === false || user?.subscription_status === 'active' || user?.plan_status === 'active' || subscription?.status === 'active';
+  if (!isOpen) return null;
+  if (user?.role === 'superadmin') return null;
 
-  if (!isOpen || isUserActive) return null;
+  // Extract expiry date and check actual validity
+  const rawDate = subscription?.expiry_date || user?.planEnd || user?.plan_end || user?.expiryDate;
+  let isDateExpired = false;
+  if (rawDate) {
+    const expTime = new Date(rawDate).getTime();
+    if (!isNaN(expTime)) {
+      isDateExpired = expTime < Date.now();
+    }
+  }
+
+  const isExplicitlyExpired =
+    user?.isExpired === true ||
+    user?.subscription_status === 'expired' ||
+    user?.plan_status === 'expired' ||
+    subscription?.status === 'expired';
+
+  const isActuallyExpired = isDateExpired || isExplicitlyExpired;
+
+  // If plan is not actually expired and date is future, don't show
+  if (!isActuallyExpired) return null;
 
   // Extract plan key and resolve plan name & interval label
   const rawPlanKey = (subscription?.plan_key || user?.planKey || user?.plan_key || 'quarterly').toLowerCase();
@@ -25,10 +45,9 @@ export default function PlanExpiredModal({ isOpen, onClose, subscription, user }
   const planMeta = getPlanMeta(rawPlanKey);
 
   // Format expiry date
-  const rawDate = subscription?.expiry_date || user?.planEnd || user?.plan_end || user?.expiryDate || '2026-08-23';
   let formattedDate = 'August 23, 2026';
   try {
-    const d = new Date(rawDate);
+    const d = new Date(rawDate || '2026-08-23');
     if (!isNaN(d.getTime())) {
       formattedDate = d.toLocaleDateString('en-US', {
         month: 'long',

@@ -1,11 +1,13 @@
 import HomeHero from '../../components/QuickLinks/HomeHero';
 import HomeStats from '../../components/QuickLinks/HomeStats';
+import HomeDoctorsCarousel from '../../components/QuickLinks/HomeDoctorsCarousel';
 import HMSIntegrationAnimation from '../../components/QuickLinks/HMSIntegrationAnimation';
 import HomePracticeAreas from '../../components/QuickLinks/HomePracticeAreas';
+import HomeHospitalLocator from '../../components/QuickLinks/HomeHospitalLocator';
+import HomeLabCatalogue from '../../components/QuickLinks/HomeLabCatalogue';
 import HomeHealthPackages from '../../components/QuickLinks/HomeHealthPackages';
 import HomeTestimonials from '../../components/QuickLinks/HomeTestimonials';
-// import PublicFeedbackForm from '../components/PublicFeedbackFor';
-import PublicFeedbackForm from "../../components/portal/PublicFeedbackForm";
+import PublicFeedbackForm from '../../components/portal/PublicFeedbackForm';
 import HomeFAQ from '../../components/QuickLinks/HomeFAQ';
 
 export default function Home() {
@@ -17,25 +19,33 @@ export default function Home() {
       {/* 2. Key Stats Bar */}
       <HomeStats />
 
-      {/* 3. Deep HMS Integration Animation */}
+      {/* 3. Top Specialist Doctors Carousel */}
+      <HomeDoctorsCarousel />
+
+      {/* 4. Deep HMS Integration Animation */}
       <section className="py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <HMSIntegrationAnimation />
       </section>
 
-      {/* 4. Specialization Practice Areas */}
+      {/* 5. Specialization Practice Areas */}
       <HomePracticeAreas />
 
-      {/* 5. Health Packages & Video Showcase */}
+      {/* 6. Interactive Hospital Network Locator & City Filter */}
+      <HomeHospitalLocator />
+
+      {/* 7. Diagnostic Lab Tests Catalogue with Original vs Discounted Pricing */}
+      <HomeLabCatalogue />
+
+      {/* 7. Health Packages & Video Showcase */}
       <HomeHealthPackages />
 
-      {/* 6. Patient Reviews */}
+      {/* 8. Patient Reviews */}
       <HomeTestimonials />
-   
 
-      {/* 7. Frequently Asked Questions */}
+      {/* 9. Frequently Asked Questions */}
       <HomeFAQ />
 
-      {/* 7. Patient Reviews */}
+      {/* 10. Public Feedback Form */}
       <PublicFeedbackForm />
     </div>
   );

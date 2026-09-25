@@ -51,12 +51,12 @@ export default function AppointmentPaymentModal({ isOpen, onClose, bookingDetail
 
   // Custom Hospital UPI ID & Payee Name
   const upiId = 'rajdevfree2@okaxis';
-  const payeeName = 'MEDPARK Pet Hospital Portal';
+  const payeeName = 'MEDPARK Super Specialty Hospital';
 
   // Amount calculation
   const amountInr = Number(bookingDetails.amount || bookingDetails.servicePrice || 500);
-  const serviceTitle = bookingDetails.serviceName || bookingDetails.appointmentType || 'Veterinary Consultation';
-  const patientTitle = bookingDetails.petName ? `${bookingDetails.petName} (${bookingDetails.patientName})` : bookingDetails.patientName;
+  const serviceTitle = bookingDetails.serviceName || bookingDetails.appointmentType || 'Medical Consultation / Diagnostic Test';
+  const patientTitle = bookingDetails.patientName;
 
   // NPCI UPI URI Scheme
   const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${amountInr}&cu=INR&tn=${encodeURIComponent(`Appointment Fee - ${serviceTitle}`)}`;
@@ -662,16 +662,24 @@ export default function AppointmentPaymentModal({ isOpen, onClose, bookingDetail
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-100 my-8">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto"
+    >
+      <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-100 my-8 relative">
         
         {/* Header Banner */}
         <div className="bg-gradient-to-r from-teal-700 via-emerald-700 to-indigo-800 p-6 text-white relative">
           <button
+            type="button"
             onClick={onClose}
-            className="absolute top-4 right-4 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition text-white"
+            aria-label="Close payment modal"
+            title="Close"
+            className="absolute top-4 right-4 z-20 p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all shadow-md hover:scale-105 border border-white/30 cursor-pointer flex items-center justify-center"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 stroke-[2.5]" />
           </button>
           
           <div className="flex items-center gap-2 mb-1 text-teal-200 text-xs font-semibold uppercase tracking-wider">
@@ -1367,9 +1375,16 @@ export default function AppointmentPaymentModal({ isOpen, onClose, bookingDetail
           )}
         </div>
 
-        {/* Footer info */}
-        <div className="p-3 bg-slate-50 border-t border-slate-100 text-center text-[11px] text-slate-500">
-          🔒 256-bit Encrypted Stripe &amp; UPI Payment Gateway • Instant Confirmation
+        {/* Footer info & Close */}
+        <div className="p-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3 text-[11px] text-slate-500">
+          <span className="flex items-center gap-1">🔒 256-bit Encrypted Payment Gateway</span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition cursor-pointer flex items-center gap-1 shadow-2xs text-xs"
+          >
+            <X className="w-3.5 h-3.5 stroke-[2.5]" /> Close
+          </button>
         </div>
 
       </div>

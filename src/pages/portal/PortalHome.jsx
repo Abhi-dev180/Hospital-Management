@@ -31,6 +31,9 @@ import heroVideo from '../../../assets/new.mp4';
 import BookDemoSection from '../../components/portal/BookDemoSection';
 import HMSIntegrationAnimation from '../../components/QuickLinks/HMSIntegrationAnimation';
 import PortalSpecialties from '../../components/portal/PortalSpecialties';
+import HomeDoctorsCarousel from '../../components/QuickLinks/HomeDoctorsCarousel';
+import HomeHospitalLocator from '../../components/QuickLinks/HomeHospitalLocator';
+import HomeLabCatalogue from '../../components/QuickLinks/HomeLabCatalogue';
 import PortalFAQ from '../../components/portal/PortalFAQ';
 import PublicFeedbackForm from '../../components/portal/PublicFeedbackForm';
 
@@ -310,6 +313,12 @@ export default function PortalHome() {
       <PortalSpecialties />
       <HMSIntegrationAnimation />
 
+      {/* ───────────── TOP SPECIALIST DOCTORS CAROUSEL ───────────── */}
+      <HomeDoctorsCarousel />
+
+      {/* ───────────── INTERACTIVE HOSPITAL LOCATOR & CITY FILTER ───────────── */}
+      <HomeHospitalLocator />
+
       {/* ───────────── HOW IT WORKS ───────────── */}
       <section id="how-it-works" className="scroll-mt-20 py-20 bg-white border-t border-gray-100">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
@@ -413,6 +422,9 @@ export default function PortalHome() {
           </div>
         </div>
       </section>
+
+      {/* ───────────── DIAGNOSTIC LAB TEST CATALOGUE ───────────── */}
+      <HomeLabCatalogue />
 
       {/* Video banner (UI reference from existing Home) */}
       <section className="py-20 bg-slate-900 text-white relative overflow-hidden">

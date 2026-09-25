@@ -78,10 +78,10 @@ export default function UserServices() {
     patientName: '',
     patientPhone: '',
     email: '',
-    petName: '',
-    species: 'Dog',
-    sex: 'Male',
-    breed: '',
+    age: '',
+    gender: 'Male',
+    sampleType: 'Home Sample Collection',
+    address: '',
     reason: ''
   });
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -195,9 +195,8 @@ export default function UserServices() {
     setPaymentBookingDetails({
       ...payload,
       hospitalName: hospObj ? hospObj.name : 'Selected Hospital',
-      patientName: bookForm.patientName,
-      patientPhone: bookForm.patientPhone,
-      petName: bookForm.petName,
+      patientName: bookForm.patientName || user?.name || 'Patient',
+      patientPhone: bookForm.patientPhone || user?.mobile || '',
       serviceName: bookingService?.name || 'Lab Diagnostic Test',
       appointmentType: 'Lab Test',
       date: bookForm.date,
@@ -235,7 +234,7 @@ export default function UserServices() {
 
       const data = await res.json();
       if (res.ok) {
-        toast.success(`Lab test appointment booked & paid for ${bookForm.petName}! 🎉`);
+        toast.success(`Lab test appointment booked & paid successfully! 🎉`);
         setBookingSuccess(data.appointment);
       } else {
         toast.error(data.message || 'Failed to book test appointment');
@@ -584,12 +583,12 @@ export default function UserServices() {
                       <span className="font-bold text-slate-800">{bookingSuccess.date} at {bookingSuccess.time}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">Pet Name:</span>
-                      <span className="font-bold text-slate-800">{bookingSuccess.petName} ({bookingSuccess.species})</span>
+                      <span className="text-slate-500">Patient:</span>
+                      <span className="font-bold text-slate-800">{bookingSuccess.patientName || user?.name} ({bookForm.gender || 'Patient'})</span>
                     </div>
                     {bookingService.fastingRequired && (
                       <div className="mt-2 pt-2 border-t border-amber-200 bg-amber-50 p-2 rounded-xl text-amber-900">
-                        <strong>⚠️ Fasting Reminder:</strong> {bookingService.fastingDetails || 'Please fast pet before visit'}
+                        <strong>⚠️ Fasting Guidance:</strong> {bookingService.fastingDetails || 'Please maintain required fasting prior to sample collection.'}
                       </div>
                     )}
                   </div>
@@ -641,7 +640,7 @@ export default function UserServices() {
                       <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                       <div>
                         <p className="font-bold">Important Test Preparation:</p>
-                        <p>{bookingService.fastingDetails || 'Please ensure pet is fasted prior to test collection.'}</p>
+                        <p>{bookingService.fastingDetails || 'Please maintain required fasting prior to sample collection.'}</p>
                       </div>
                     </div>
                   )}
@@ -650,7 +649,7 @@ export default function UserServices() {
                     {/* Select Hospital */}
                     <div>
                       <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        Select Providing Hospital *
+                        Select Diagnostic Centre / Hospital *
                       </label>
                       <select
                         value={bookForm.hospitalId}
@@ -672,49 +671,48 @@ export default function UserServices() {
                       </select>
                     </div>
 
-                    {/* Pet Details */}
+                    {/* Patient Details */}
                     <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-3">
                       <p className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                        <PawPrint className="w-4 h-4 text-blue-600" /> Pet Information
+                        <User className="w-4 h-4 text-blue-600" /> Patient Information
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Pet Name *</label>
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Patient Name *</label>
                           <input
                             type="text"
-                            placeholder="e.g. Bruno, Bella"
-                            value={bookForm.petName}
-                            onChange={(e) => setBookForm({ ...bookForm, petName: e.target.value })}
+                            placeholder="e.g. Rahul Sharma"
+                            value={bookForm.patientName}
+                            onChange={(e) => setBookForm({ ...bookForm, patientName: e.target.value })}
                             required
                             className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none bg-white focus:border-blue-500"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Species *</label>
-                          <select
-                            value={bookForm.species}
-                            onChange={(e) => setBookForm({ ...bookForm, species: e.target.value })}
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none bg-white focus:border-blue-500 font-medium"
-                          >
-                            <option value="Dog">Dog</option>
-                            <option value="Cat">Cat</option>
-                            <option value="Bird">Bird</option>
-                            <option value="Rabbit">Rabbit</option>
-                            <option value="Horse">Horse</option>
-                            <option value="Other">Other</option>
-                          </select>
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Mobile (10-digit) *</label>
+                          <input
+                            type="text"
+                            placeholder="9876543210"
+                            maxLength={10}
+                            value={bookForm.patientPhone}
+                            onChange={(e) => setBookForm({ ...bookForm, patientPhone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                            required
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none bg-white focus:border-blue-500"
+                          />
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Breed (Optional)</label>
-                          <input
-                            type="text"
-                            placeholder="e.g. Golden Retriever"
-                            value={bookForm.breed}
-                            onChange={(e) => setBookForm({ ...bookForm, breed: e.target.value })}
-                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none bg-white focus:border-blue-500"
-                          />
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">Gender</label>
+                          <select
+                            value={bookForm.gender}
+                            onChange={(e) => setBookForm({ ...bookForm, gender: e.target.value })}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none bg-white focus:border-blue-500 font-medium"
+                          >
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                          </select>
                         </div>
                       </div>
                     </div>

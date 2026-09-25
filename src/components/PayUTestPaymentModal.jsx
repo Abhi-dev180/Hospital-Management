@@ -127,7 +127,7 @@ export default function PayUTestPaymentModal({
         body: JSON.stringify({
           txnid: data.txnid,
           amount,
-          planKey: plan.key || 'yearly',
+          planKey: plan.key || 'quarterly',
           booking,
           status: 'success',
           isSimulated: true
@@ -137,17 +137,50 @@ export default function PayUTestPaymentModal({
       const verifyData = await verifyRes.json();
       if (verifyRes.ok) {
         toast.success(`🎉 PayU Payment Successful! (Txn: ${data.txnid})`, { id: toastId });
+
+        // Update stored user in localStorage with new active plan and new expiry date
+        try {
+          const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+          const newExp = verifyData.expiryDate || verifyData.subscription?.expiry_date || verifyData.user?.planEnd || verifyData.user?.plan_end;
+          const mergedUser = {
+            ...storedUser,
+            ...(verifyData.user || {}),
+            isExpired: false,
+            subscription_status: 'active',
+            plan_status: 'active',
+            planKey: plan.key || plan.planKey || storedUser.planKey || 'quarterly',
+            plan_key: plan.key || plan.planKey || storedUser.plan_key || 'quarterly',
+            planEnd: newExp || storedUser.planEnd,
+            plan_end: newExp || storedUser.plan_end,
+            subscription: verifyData.subscription || {
+              plan_key: plan.key || 'quarterly',
+              expiry_date: newExp,
+              status: 'active',
+              amount: plan.amount
+            }
+          };
+          localStorage.setItem('user', JSON.stringify(mergedUser));
+          window.dispatchEvent(new Event('storage'));
+          window.dispatchEvent(new CustomEvent('user_subscription_updated', { detail: verifyData }));
+        } catch (e) {
+          console.error('Error updating localStorage after PayU payment:', e);
+        }
+
         if (onPaymentSuccess) {
-          onPaymentSuccess(data.txnid);
+          onPaymentSuccess(data.txnid, verifyData);
         }
         setTimeout(() => {
           if (onClose) onClose();
           if (token) {
-            navigate(`/register/${token}?plan=${plan.key || 'yearly'}&payu=success`);
+            navigate(`/register/${token}?plan=${plan.key || 'quarterly'}&payu=success`);
           } else if (user?.role === 'superadmin') {
             navigate('/superadmin/registrations');
+          } else if (isRenewal || window.location.pathname.includes('profile')) {
+            navigate('/profile#subscription');
+          } else if (user?.role === 'admin') {
+            navigate('/admin');
           } else {
-            navigate('/register');
+            navigate('/profile');
           }
         }, 1200);
       } else {
@@ -156,9 +189,46 @@ export default function PayUTestPaymentModal({
     } catch (err) {
       console.warn('[PayU subscription error]:', err);
       toast.success('🎉 PayU Payment Verified (Test Simulation)!', { id: toastId });
+      try {
+        const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const futureDate = new Date();
+        const pk = (plan.key || 'quarterly').toLowerCase();
+        if (pk.includes('month')) futureDate.setDate(futureDate.getDate() + 30);
+        else if (pk.includes('year') || pk.includes('annual')) futureDate.setDate(futureDate.getDate() + 365);
+        else futureDate.setDate(futureDate.getDate() + 90);
+        const newExp = futureDate.toISOString();
+
+        const mergedUser = {
+          ...storedUser,
+          isExpired: false,
+          subscription_status: 'active',
+          plan_status: 'active',
+          planKey: plan.key || 'quarterly',
+          plan_key: plan.key || 'quarterly',
+          planEnd: newExp,
+          plan_end: newExp,
+          subscription: {
+            plan_key: plan.key || 'quarterly',
+            expiry_date: newExp,
+            status: 'active',
+            amount: plan.amount || 200
+          }
+        };
+        localStorage.setItem('user', JSON.stringify(mergedUser));
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new CustomEvent('user_subscription_updated', { detail: { user: mergedUser } }));
+      } catch (e) {
+        console.error('Local fallback update error:', e);
+      }
       setTimeout(() => {
         if (onClose) onClose();
-        navigate(token ? `/register/${token}?plan=${plan.key || 'yearly'}` : '/register');
+        if (token) {
+          navigate(`/register/${token}?plan=${plan.key || 'quarterly'}`);
+        } else if (user?.role === 'admin' || isRenewal) {
+          navigate('/profile#subscription');
+        } else {
+          navigate('/profile');
+        }
       }, 1000);
     } finally {
       setSubmitting(false);
@@ -240,16 +310,24 @@ export default function PayUTestPaymentModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100 my-8">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto"
+    >
+      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100 my-8 relative">
         
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-teal-700 via-emerald-700 to-teal-800 p-6 text-white relative">
           <button
+            type="button"
             onClick={onClose}
-            className="absolute top-4 right-4 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition text-white"
+            aria-label="Close payment modal"
+            title="Close"
+            className="absolute top-4 right-4 z-20 p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all shadow-md hover:scale-105 border border-white/30 cursor-pointer flex items-center justify-center"
           >
-            <X size={18} />
+            <X className="w-5 h-5 stroke-[2.5]" />
           </button>
           <div className="flex items-center gap-1.5 text-xs text-teal-200 font-semibold uppercase tracking-wider mb-1">
             <ShieldCheck size={14} className="text-emerald-300" /> PayU Sandbox Checkout
@@ -536,6 +614,18 @@ export default function PayUTestPaymentModal({
             </div>
           )}
 
+        </div>
+
+        {/* Modal Footer with Close */}
+        <div className="p-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3 text-[11px] text-slate-500">
+          <span className="flex items-center gap-1">🔒 PayU 256-bit Encrypted Checkout</span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition cursor-pointer flex items-center gap-1 shadow-2xs text-xs"
+          >
+            <X className="w-3.5 h-3.5 stroke-[2.5]" /> Close
+          </button>
         </div>
       </div>
     </div>

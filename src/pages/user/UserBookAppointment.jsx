@@ -12,6 +12,7 @@ export default function UserBookAppointment() {
 
   const presetHospitalId = location.state?.preselectedHospitalId || searchParams.get('hospitalId') || '';
   const initialTab = searchParams.get('tab') === 'manage' ? 'manage' : 'book';
+  const isLab = searchParams.get('service') === 'lab' || Boolean(searchParams.get('test'));
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -24,8 +25,12 @@ export default function UserBookAppointment() {
 
   return (
     <DashboardLayout
-      title="Book an Appointment"
-      subtitle="Schedule your doctor consultation with real-time slot booking and instant confirmation."
+      title={isLab ? "Book Diagnostic Lab Test" : "Book an Appointment"}
+      subtitle={
+        isLab
+          ? "Order NABL certified diagnostic blood tests & health checkup packages with free home collection."
+          : "Schedule your doctor consultation with real-time slot booking and instant confirmation."
+      }
       user={user}
     >
       <DashboardTabs role="user" />

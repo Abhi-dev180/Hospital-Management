@@ -17,6 +17,7 @@ import FloatingScrollTop from "./components/FloatingScrollTop";
 import ChatbotWidget from "./components/chatbot/ChatbotWidget";
 import PlanExpiredModal from "./components/PlanExpiredModal";
 import useStripeSessionVerifier from "./hooks/useStripeSessionVerifier";
+import API_URL from "./config/api";
 
 // ─── Lazy imports ───────────────────────────────────────────────
 const Home = lazy(() => import("./pages/QuickPages/Home"));
@@ -71,6 +72,7 @@ function AppRoutes() {
         <Route path="/about" element={<Navigate to="/#about" replace />} />
         <Route path="/book-demo" element={<Navigate to="/#book-demo" replace />} />
         <Route path="/appointment" element={<BookAppointmentPage />} />
+        <Route path="/book-appointment" element={<Navigate to="/appointment" replace />} />
         <Route path="/schedule/:token" element={<SchedulePage />} />
         <Route path="/register/:token" element={<RegisterPage />} />
         <Route path="/medpark" element={<Home />} />
@@ -131,20 +133,23 @@ function AppContent() {
         const stored = localStorage.getItem('user');
         if (stored) {
           const u = JSON.parse(stored);
-          const isExplicitlyActive = u?.isExpired === false || u?.subscription_status === 'active' || u?.plan_status === 'active';
+          if (u?.role === 'superadmin') {
+            setExpiredUser(null);
+            return;
+          }
 
           const rawExp = u?.planEnd || u?.plan_end || u?.subscription?.expiry_date || u?.expiryDate;
           const expTime = rawExp ? new Date(rawExp).getTime() : 0;
           const now = Date.now();
 
-          // If plan is explicitly active and has a valid future expiry (or no past expiry), do NOT show expiry modal
-          if (isExplicitlyActive && (!expTime || expTime > now)) {
-            setExpiredUser(null);
-            return;
-          }
+          const isDatePassed = expTime > 0 && expTime < now;
+          const isExplicitlyExpired =
+            u?.isExpired === true ||
+            u?.subscription_status === 'expired' ||
+            u?.plan_status === 'expired' ||
+            u?.subscription?.status === 'expired';
 
-          // Show modal only if user is explicitly expired or date is past
-          const isExp = u?.isExpired === true || (expTime > 0 && expTime < now);
+          const isExp = isDatePassed || isExplicitlyExpired;
           if (isExp) setExpiredUser(u);
           else setExpiredUser(null);
         } else {
@@ -156,6 +161,28 @@ function AppContent() {
     };
 
     checkUserExpiry();
+
+    const syncProfileWithBackend = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      try {
+        const res = await fetch(`${API_URL}/api/users/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+            const merged = { ...currentUser, ...data.user };
+            localStorage.setItem('user', JSON.stringify(merged));
+            checkUserExpiry();
+          }
+        }
+      } catch (_) {}
+    };
+
+    syncProfileWithBackend();
+
     window.addEventListener('storage', checkUserExpiry);
     window.addEventListener('user_subscription_updated', checkUserExpiry);
     return () => {

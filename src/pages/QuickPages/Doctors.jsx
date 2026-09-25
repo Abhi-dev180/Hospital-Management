@@ -341,7 +341,7 @@ export default function Doctors() {
                       Profile & Video
                     </button>
                     <Link
-                      to="/book-appointment"
+                      to={`/appointment?doctor=${encodeURIComponent(doc.name)}&specialty=${encodeURIComponent(doc.spec)}`}
                       className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-medical-blue hover:bg-medical-dark transition shadow-md shadow-medical-blue/20"
                     >
                       Book Consult <ArrowRight className="w-3.5 h-3.5" />
@@ -402,7 +402,7 @@ export default function Doctors() {
                   <p className="text-sm text-gray-700 mt-1">Consultation Fee: <span className="text-medical-dark font-extrabold">{activeDoctorModal.fee}</span></p>
                 </div>
                 <Link
-                  to="/book-appointment"
+                  to={`/appointment?doctor=${encodeURIComponent(activeDoctorModal.name)}&specialty=${encodeURIComponent(activeDoctorModal.spec)}`}
                   onClick={() => setActiveDoctorModal(null)}
                   className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-medical-blue hover:bg-medical-dark text-white font-bold text-sm transition shadow-lg shadow-medical-blue/20"
                 >

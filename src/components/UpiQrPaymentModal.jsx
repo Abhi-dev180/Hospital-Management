@@ -263,21 +263,28 @@ export default function UpiQrPaymentModal({ isOpen, onClose, plan, user, registr
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-[460px] w-full overflow-hidden border border-slate-100 relative">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200 overflow-y-auto"
+    >
+      <div className="bg-white rounded-3xl shadow-2xl max-w-[460px] w-full overflow-hidden border border-slate-100 relative my-8">
         {/* Header Banner */}
         <div className="bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-600 p-5 text-white relative">
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-4 right-4 text-white/80 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+            aria-label="Close payment modal"
+            title="Close"
+            className="absolute top-4 right-4 z-20 p-2 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all shadow-md hover:scale-105 border border-white/30 cursor-pointer flex items-center justify-center"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 stroke-[2.5]" />
           </button>
           <div className="flex items-center gap-2 text-xs font-semibold bg-white/20 px-3 py-1 rounded-full w-fit mb-2 backdrop-blur-md">
             <Sparkles className="w-3.5 h-3.5" /> Select Payment Method
           </div>
-          <h3 className="text-xl font-extrabold tracking-tight">UPI QR Code & Razorpay Test</h3>
+          <h3 className="text-xl font-extrabold tracking-tight">UPI QR Code &amp; Razorpay Test</h3>
           <p className="text-xs text-blue-100 mt-1">100% Free UPI QR or Razorpay Test Sandbox</p>
         </div>
 
@@ -476,6 +483,18 @@ export default function UpiQrPaymentModal({ isOpen, onClose, plan, user, registr
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Modal Footer with Close */}
+            <div className="p-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3 text-[11px] text-slate-500">
+              <span className="flex items-center gap-1">🔒 100% Secure UPI / RZP Sandbox</span>
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-3.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition cursor-pointer flex items-center gap-1 shadow-2xs text-xs"
+              >
+                <X className="w-3.5 h-3.5 stroke-[2.5]" /> Close
+              </button>
             </div>
           </div>
         ) : (

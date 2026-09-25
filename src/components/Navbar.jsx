@@ -38,6 +38,10 @@ export default function Navbar() {
   const [canScrollNavLeft, setCanScrollNavLeft] = useState(false);
   const [canScrollNavRight, setCanScrollNavRight] = useState(false);
 
+  const publicScrollRef = useRef(null);
+  const [canScrollPublicLeft, setCanScrollPublicLeft] = useState(false);
+  const [canScrollPublicRight, setCanScrollPublicRight] = useState(false);
+
   const isSuperAdmin = user?.role === 'superadmin';
   const isAdmin = user?.role === 'admin';
 
@@ -76,15 +80,32 @@ export default function Navbar() {
     setCanScrollNavRight(scrollLeft < scrollWidth - clientWidth - 6);
   };
 
+  const updatePublicScrollState = () => {
+    if (!publicScrollRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = publicScrollRef.current;
+    setCanScrollPublicLeft(scrollLeft > 6);
+    setCanScrollPublicRight(scrollLeft < scrollWidth - clientWidth - 6);
+  };
+
   useEffect(() => {
     updateNavScrollState();
+    updatePublicScrollState();
     const el = navScrollRef.current;
-    if (!el) return;
-    el.addEventListener('scroll', updateNavScrollState, { passive: true });
-    window.addEventListener('resize', updateNavScrollState);
+    const pEl = publicScrollRef.current;
+
+    if (el) el.addEventListener('scroll', updateNavScrollState, { passive: true });
+    if (pEl) pEl.addEventListener('scroll', updatePublicScrollState, { passive: true });
+
+    const handleResize = () => {
+      updateNavScrollState();
+      updatePublicScrollState();
+    };
+
+    window.addEventListener('resize', handleResize);
     return () => {
-      el.removeEventListener('scroll', updateNavScrollState);
-      window.removeEventListener('resize', updateNavScrollState);
+      if (el) el.removeEventListener('scroll', updateNavScrollState);
+      if (pEl) pEl.removeEventListener('scroll', updatePublicScrollState);
+      window.removeEventListener('resize', handleResize);
     };
   }, [location.pathname, user?.role]);
 
@@ -96,11 +117,27 @@ export default function Navbar() {
     });
   };
 
+  const scrollPublic = (direction) => {
+    if (!publicScrollRef.current) return;
+    publicScrollRef.current.scrollBy({
+      left: direction === 'left' ? -220 : 220,
+      behavior: 'smooth'
+    });
+  };
+
   const handleNavWheel = (e) => {
     if (!navScrollRef.current) return;
     if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && navScrollRef.current.scrollWidth > navScrollRef.current.clientWidth) {
       e.preventDefault();
       navScrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
+  const handlePublicWheel = (e) => {
+    if (!publicScrollRef.current) return;
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && publicScrollRef.current.scrollWidth > publicScrollRef.current.clientWidth) {
+      e.preventDefault();
+      publicScrollRef.current.scrollLeft += e.deltaY;
     }
   };
 
@@ -236,6 +273,9 @@ export default function Navbar() {
   const publicLinks = [
     { name: 'Features', id: 'features' },
     { name: 'Specialties', id: 'specialties' },
+    { name: 'Top Doctors', id: 'doctors' },
+    { name: 'Hospitals', id: 'hospitals' },
+    { name: 'Lab Tests', id: 'lab-tests' },
     { name: 'How It Works', id: 'how-it-works' },
     { name: 'About', id: 'about' },
     { name: 'FAQ', id: 'faq' },
@@ -307,25 +347,55 @@ export default function Navbar() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center justify-end gap-2 lg:gap-3 font-medium text-xs lg:text-sm text-gray-600 min-w-0 flex-1 ml-3">
             {!showDashboardNav && (
-              <div className="flex items-center gap-1.5 lg:gap-2">
-                {publicLinks.map((link) =>
-                  link.cta ? (
-                    <button
-                      key={link.name}
-                      onClick={() => handleNav(link)}
-                      className="inline-flex items-center justify-center px-4 lg:px-5 py-2 rounded-full text-xs lg:text-sm font-semibold text-white bg-medical-blue hover:bg-medical-dark transition-all shadow-xs hover:shadow active:scale-95 cursor-pointer shrink-0"
-                    >
-                      {link.name}
-                    </button>
-                  ) : (
-                    <button
-                      key={link.name}
-                      onClick={() => handleNav(link)}
-                      className="transition-colors hover:text-medical-blue cursor-pointer py-1 px-2.5 rounded-lg text-xs lg:text-sm hover:bg-blue-50/50"
-                    >
-                      {link.name}
-                    </button>
-                  )
+              <div className="relative flex items-center min-w-0 flex-1 max-w-full group/publicNav">
+                {canScrollPublicLeft && (
+                  <button
+                    type="button"
+                    onClick={() => scrollPublic('left')}
+                    title="Scroll navigation left"
+                    aria-label="Scroll left"
+                    className="absolute -left-1 z-30 h-6 w-6 rounded-full bg-white/95 shadow-md border border-slate-200 text-slate-700 hover:text-medical-blue hover:bg-white flex items-center justify-center cursor-pointer transition-all active:scale-95"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
+                <div
+                  ref={publicScrollRef}
+                  onWheel={handlePublicWheel}
+                  className="flex items-center gap-1 lg:gap-1.5 overflow-x-auto no-scrollbar overscroll-x-contain scroll-smooth whitespace-nowrap py-1 px-1 flex-1 min-w-0 justify-end"
+                >
+                  {publicLinks.map((link) =>
+                    link.cta ? (
+                      <button
+                        key={link.name}
+                        onClick={() => handleNav(link)}
+                        className="inline-flex items-center justify-center px-3.5 lg:px-4.5 py-1.5 rounded-full text-xs lg:text-sm font-semibold text-white bg-medical-blue hover:bg-medical-dark transition-all shadow-xs hover:shadow active:scale-95 cursor-pointer shrink-0"
+                      >
+                        {link.name}
+                      </button>
+                    ) : (
+                      <button
+                        key={link.name}
+                        onClick={() => handleNav(link)}
+                        className="transition-colors hover:text-medical-blue cursor-pointer py-1 px-2.5 rounded-lg text-xs lg:text-sm hover:bg-blue-50/50 shrink-0 whitespace-nowrap text-slate-700 font-medium"
+                      >
+                        {link.name}
+                      </button>
+                    )
+                  )}
+                </div>
+
+                {canScrollPublicRight && (
+                  <button
+                    type="button"
+                    onClick={() => scrollPublic('right')}
+                    title="Scroll navigation right"
+                    aria-label="Scroll right"
+                    className="absolute -right-1 z-30 h-6 w-6 rounded-full bg-white/95 shadow-md border border-slate-200 text-slate-700 hover:text-medical-blue hover:bg-white flex items-center justify-center cursor-pointer transition-all active:scale-95"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
                 )}
               </div>
             )}

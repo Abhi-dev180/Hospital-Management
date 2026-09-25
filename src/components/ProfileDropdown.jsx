@@ -165,20 +165,21 @@ export default function ProfileDropdown({ user: initialUser, onLogout }) {
   const planKey = (effectiveSub?.plan_key || user.planKey || user.plan_key || 'basic').toLowerCase();
   const rawExpiry = effectiveSub?.expiry_date || user.planEnd || user.plan_end || user.expiryDate;
 
-  const isExplicitlyActive =
-    user.isExpired === false ||
-    user.subscription_status === 'active' ||
-    user.plan_status === 'active' ||
-    effectiveSub?.status === 'active';
-
-  let isExpired = false;
-  if (!isExplicitlyActive) {
-    if (rawExpiry) {
-      isExpired = new Date(rawExpiry).getTime() < Date.now();
-    } else if (effectiveSub?.status === 'expired' || user.isExpired || user.planStatus === 'expired') {
-      isExpired = true;
+  let isDateExpired = false;
+  if (rawExpiry) {
+    const expTime = new Date(rawExpiry).getTime();
+    if (!isNaN(expTime)) {
+      isDateExpired = expTime < Date.now();
     }
   }
+
+  const isExplicitlyExpired =
+    user.isExpired === true ||
+    user.subscription_status === 'expired' ||
+    user.plan_status === 'expired' ||
+    effectiveSub?.status === 'expired';
+
+  const isExpired = user.role !== 'superadmin' && (isDateExpired || isExplicitlyExpired);
 
   let planTitle = 'Basic Plan';
   let planInterval = 'Standard tier';

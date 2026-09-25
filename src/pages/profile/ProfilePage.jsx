@@ -139,6 +139,7 @@ export default function ProfilePage() {
           if (data.subscription) {
             setSubscription(data.subscription);
           }
+          window.dispatchEvent(new Event('storage'));
         }
       }
     } catch (e) {
@@ -374,23 +375,24 @@ export default function ProfilePage() {
   // Calculate Subscription Info
   const effectiveSub = subscription || user?.subscription;
   const planKey = (effectiveSub?.plan_key || user?.planKey || user?.plan_key || 'quarterly').toLowerCase();
-  const rawExpiry = effectiveSub?.expiry_date || user?.planEnd || user?.plan_end || '2026-08-23';
+  const rawExpiry = effectiveSub?.expiry_date || user?.planEnd || user?.plan_end || user?.expiryDate;
   const rawStart = effectiveSub?.start_date || user?.planStart || user?.plan_start;
 
-  const isExplicitlyActive =
-    user?.isExpired === false ||
-    user?.subscription_status === 'active' ||
-    user?.plan_status === 'active' ||
-    effectiveSub?.status === 'active';
-
-  let isExpired = false;
-  if (!isExplicitlyActive) {
-    if (rawExpiry) {
-      isExpired = new Date(rawExpiry).getTime() < Date.now();
-    } else if (effectiveSub?.status === 'expired' || user?.isExpired || user?.planStatus === 'expired') {
-      isExpired = true;
+  let isDateExpired = false;
+  if (rawExpiry) {
+    const expTime = new Date(rawExpiry).getTime();
+    if (!isNaN(expTime)) {
+      isDateExpired = expTime < Date.now();
     }
   }
+
+  const isExplicitlyExpired =
+    user?.isExpired === true ||
+    user?.subscription_status === 'expired' ||
+    user?.plan_status === 'expired' ||
+    effectiveSub?.status === 'expired';
+
+  const isExpired = user?.role !== 'superadmin' && (isDateExpired || isExplicitlyExpired);
 
   const getPlanMeta = (k) => {
     if (k.includes('month')) return { title: 'Monthly Plan', interval: 'Billed every 30 days', price: '₹9,999 / mo' };
@@ -1202,13 +1204,13 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-blue-400 shrink-0" />
-                    <span>Valid Until: <strong className={isExpired ? 'text-red-700 font-bold' : 'text-white'}>{fmtDate(rawExpiry)}</strong></span>
+                    <span>Valid Until: <strong className={isExpired ? 'text-red-700 font-bold' : 'text-white'}>{fmtDate(rawExpiry)}{isExpired ? ' (Expired)' : ''}</strong></span>
                   </div>
                   {daysRemaining !== null && (
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-blue-400 shrink-0" />
-                      <span>Remaining: <strong className={daysRemaining > 0 ? (isExpired ? 'text-slate-900' : 'text-emerald-300') : 'text-red-400'}>
-                        {daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Expired'}
+                      <span>Remaining: <strong className={daysRemaining > 0 && !isExpired ? (isExpired ? 'text-slate-900' : 'text-emerald-300') : 'text-red-400 font-bold'}>
+                        {daysRemaining > 0 && !isExpired ? `${daysRemaining} days remaining` : 'Expired (Renewal Required)'}
                       </strong></span>
                     </div>
                   )}
@@ -1224,7 +1226,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0" />
-                    <span>License State: <strong className="text-emerald-400">Verified & Active</strong></span>
+                    <span>License State: <strong className={isExpired ? 'text-red-400 font-bold' : 'text-emerald-400'}>{isExpired ? 'Expired / Inactive' : 'Verified & Active'}</strong></span>
                   </div>
                 </div>
               </div>
@@ -1269,8 +1271,9 @@ export default function ProfilePage() {
                 <tbody className="divide-y divide-slate-100">
                   {subscriptionsList.length > 0 ? (
                     subscriptionsList.map((sub, idx) => {
+                      const isPastSub = sub.expiry_date ? new Date(sub.expiry_date).getTime() < Date.now() : isExpired;
                       const sStatus = sub.status || 'active';
-                      const isAct = sStatus === 'active';
+                      const isAct = sStatus === 'active' && !isPastSub;
                       const planTitle = (sub.plan_key || planKey || 'quarterly').replace('_', ' ').toUpperCase();
                       const amt = sub.amount ? (sub.amount > 1000 ? sub.amount / 100 : sub.amount) : 200;
                       return (

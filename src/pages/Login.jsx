@@ -138,13 +138,18 @@ export default function Login() {
       toast.success(isLogin ? 'Successfully logged in!' : 'Successfully registered!');
       window.dispatchEvent(new Event('storage'));
 
-      const isExplicitlyActive = data.user.isExpired === false || data.user.subscription_status === 'active' || data.user.plan_status === 'active';
       const rawExp = data.user.planEnd || data.user.plan_end || data.user.subscription?.expiry_date || data.user.expiryDate;
       const expTime = rawExp ? new Date(rawExp).getTime() : 0;
       const now = Date.now();
 
-      // User is expired ONLY if not explicitly active AND (isExpired is true or expiry date is in past)
-      const isExpired = !isExplicitlyActive && (data.user.isExpired === true || (expTime > 0 && expTime < now));
+      const isDatePassed = expTime > 0 && expTime < now;
+      const isExplicitlyExpired =
+        data.user.isExpired === true ||
+        data.user.subscription_status === 'expired' ||
+        data.user.plan_status === 'expired' ||
+        data.user.subscription?.status === 'expired';
+
+      const isExpired = data.user.role !== 'superadmin' && (isDatePassed || isExplicitlyExpired);
 
       if (isExpired) {
         setExpiredModalUser(data.user);

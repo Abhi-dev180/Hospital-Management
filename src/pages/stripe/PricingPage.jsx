@@ -278,8 +278,39 @@ export default function PricingPage() {
                         const verifyData = await verifyRes.json();
                         if(verifyRes.ok) {
                             toast.success('Payment Successful!', { id: 'cf_verify' });
+                            try {
+                              const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+                              const newExp = verifyData.expiryDate || verifyData.subscription?.expiry_date || verifyData.user?.planEnd || verifyData.user?.plan_end;
+                              const mergedUser = {
+                                ...storedUser,
+                                ...(verifyData.user || {}),
+                                isExpired: false,
+                                subscription_status: 'active',
+                                plan_status: 'active',
+                                planKey: paymentPlanKey,
+                                plan_key: paymentPlanKey,
+                                planEnd: newExp || storedUser.planEnd,
+                                plan_end: newExp || storedUser.plan_end,
+                                subscription: verifyData.subscription || {
+                                  plan_key: paymentPlanKey,
+                                  expiry_date: newExp,
+                                  status: 'active'
+                                }
+                              };
+                              localStorage.setItem('user', JSON.stringify(mergedUser));
+                              window.dispatchEvent(new Event('storage'));
+                              window.dispatchEvent(new CustomEvent('user_subscription_updated', { detail: verifyData }));
+                            } catch (e) {
+                              console.error('Error saving updated user after Cashfree:', e);
+                            }
                             setTimeout(() => {
-                                navigate(body.successPath || `/register/${token}?plan=${paymentPlanKey}`);
+                                if (token) {
+                                  navigate(body.successPath || `/register/${token}?plan=${paymentPlanKey}`);
+                                } else if (user?.role === 'admin' || isRenewal) {
+                                  navigate('/profile#subscription');
+                                } else {
+                                  navigate('/profile');
+                                }
                             }, 1500);
                         } else {
                             throw new Error(verifyData.message);
@@ -327,8 +358,39 @@ export default function PricingPage() {
               const verifyData = await verifyRes.json();
               if (verifyRes.ok) {
                 toast.success('Payment Successful!', { id: 'upi_verify' });
+                try {
+                  const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+                  const newExp = verifyData.expiryDate || verifyData.subscription?.expiry_date || verifyData.user?.planEnd || verifyData.user?.plan_end;
+                  const mergedUser = {
+                    ...storedUser,
+                    ...(verifyData.user || {}),
+                    isExpired: false,
+                    subscription_status: 'active',
+                    plan_status: 'active',
+                    planKey: paymentPlanKey,
+                    plan_key: paymentPlanKey,
+                    planEnd: newExp || storedUser.planEnd,
+                    plan_end: newExp || storedUser.plan_end,
+                    subscription: verifyData.subscription || {
+                      plan_key: paymentPlanKey,
+                      expiry_date: newExp,
+                      status: 'active'
+                    }
+                  };
+                  localStorage.setItem('user', JSON.stringify(mergedUser));
+                  window.dispatchEvent(new Event('storage'));
+                  window.dispatchEvent(new CustomEvent('user_subscription_updated', { detail: verifyData }));
+                } catch (e) {
+                  console.error('Error saving updated user after Razorpay:', e);
+                }
                 setTimeout(() => {
-                  navigate(body.successPath || `/register/${token}?plan=${paymentPlanKey}`);
+                  if (token) {
+                    navigate(body.successPath || `/register/${token}?plan=${paymentPlanKey}`);
+                  } else if (user?.role === 'admin' || isRenewal) {
+                    navigate('/profile#subscription');
+                  } else {
+                    navigate('/profile');
+                  }
                 }, 1500);
               } else {
                  throw new Error(verifyData.message);
@@ -380,8 +442,40 @@ export default function PricingPage() {
         const verifyData = await verifyRes.json();
         if (verifyRes.ok) {
           toast.success('🎉 PayU Payment Successful (Test Mode)!', { id: 'payu_init' });
+          try {
+            const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+            const newExp = verifyData.expiryDate || verifyData.subscription?.expiry_date || verifyData.user?.planEnd || verifyData.user?.plan_end;
+            const mergedUser = {
+              ...storedUser,
+              ...(verifyData.user || {}),
+              isExpired: false,
+              subscription_status: 'active',
+              plan_status: 'active',
+              planKey: paymentPlanKey,
+              plan_key: paymentPlanKey,
+              planEnd: newExp || storedUser.planEnd,
+              plan_end: newExp || storedUser.plan_end,
+              subscription: verifyData.subscription || {
+                plan_key: paymentPlanKey,
+                expiry_date: newExp,
+                status: 'active',
+                amount: data.amount
+              }
+            };
+            localStorage.setItem('user', JSON.stringify(mergedUser));
+            window.dispatchEvent(new Event('storage'));
+            window.dispatchEvent(new CustomEvent('user_subscription_updated', { detail: verifyData }));
+          } catch (e) {
+            console.error('Error saving updated user after PayU:', e);
+          }
           setTimeout(() => {
-            navigate(body.successPath || `/register/${token}?plan=${paymentPlanKey}`);
+            if (token) {
+              navigate(body.successPath || `/register/${token}?plan=${paymentPlanKey}`);
+            } else if (user?.role === 'admin' || isRenewal) {
+              navigate('/profile#subscription');
+            } else {
+              navigate('/profile');
+            }
           }, 1500);
         } else {
           throw new Error(verifyData.message || 'PayU verification failed');
@@ -601,18 +695,26 @@ export default function PricingPage() {
         {/* Payment Selection Modal */}
         <AnimatePresence>
           {showPaymentModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+            <div
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setShowPaymentModal(false);
+              }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto"
+            >
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl relative"
+                className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl relative border border-slate-100 my-8"
               >
                 <button 
+                  type="button"
                   onClick={() => setShowPaymentModal(false)}
-                  className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition"
+                  aria-label="Close payment options"
+                  title="Close"
+                  className="absolute top-4 right-4 z-10 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition shadow-2xs cursor-pointer flex items-center justify-center"
                 >
-                  <X size={20} />
+                  <X className="w-5 h-5 stroke-[2.5]" />
                 </button>
                 <h2 className="text-2xl font-black text-slate-900 mb-2">How would you like to pay?</h2>
                 <p className="text-slate-500 text-sm mb-6">Select a secure payment method below to complete your subscription.</p>
