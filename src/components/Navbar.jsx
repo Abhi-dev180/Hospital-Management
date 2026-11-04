@@ -4,7 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Menu, X, LayoutDashboard, Video, ClipboardCheck, Users,
   FlaskConical, ShieldCheck, Building2, CalendarCheck, Calendar,
-  Mail, Star, Clock, Stethoscope, ChevronLeft, ChevronRight, DollarSign
+  Mail, Star, Clock, Stethoscope, ChevronLeft, ChevronRight, DollarSign,
+  Sparkles, HeartPulse, HelpCircle, Info, ExternalLink, ArrowRight,
+  LogIn, PhoneCall
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import medicalLogo from '../assets/sign.jpeg';
@@ -13,14 +15,17 @@ import useAdminBadges from '../hooks/useAdminBadges';
 import ProfileDropdown from './ProfileDropdown';
 
 // ─── NavBadge ──────────────────────────────────────────────────
-function NavBadge({ count, className = '' }) {
+function NavBadge({ count, className = '', active = false }) {
   if (!count) return null;
   return (
     <span
       title={`${count} new`}
-      className={`inline-flex items-center justify-center min-w-[16px] h-[16px] sm:min-w-[18px] sm:h-[18px] px-1 rounded-full
-        bg-red-600 text-white text-[9px] sm:text-[10px] font-black leading-none shadow-xs ring-2 ring-white
-        animate-pulse ${className}`}
+      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full
+        text-[10px] font-black leading-none transition-all shadow-xs shrink-0 ${
+          active
+            ? 'bg-white text-blue-700 ring-2 ring-white/60'
+            : 'bg-rose-500 text-white ring-2 ring-white shadow-rose-500/30 animate-pulse'
+        } ${className}`}
     >
       {count > 99 ? '99+' : count}
     </span>
@@ -51,9 +56,9 @@ export default function Navbar() {
   // ─── Scroll shadow ──────────────────────────────────────────
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      setScrolled(window.scrollY > 15);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -109,10 +114,11 @@ export default function Navbar() {
     };
   }, [location.pathname, user?.role]);
 
+
   const scrollNav = (direction) => {
     if (!navScrollRef.current) return;
     navScrollRef.current.scrollBy({
-      left: direction === 'left' ? -220 : 220,
+      left: direction === 'left' ? -240 : 240,
       behavior: 'smooth'
     });
   };
@@ -120,7 +126,7 @@ export default function Navbar() {
   const scrollPublic = (direction) => {
     if (!publicScrollRef.current) return;
     publicScrollRef.current.scrollBy({
-      left: direction === 'left' ? -220 : 220,
+      left: direction === 'left' ? -240 : 240,
       behavior: 'smooth'
     });
   };
@@ -271,23 +277,26 @@ export default function Navbar() {
   const logoRedirect = user ? getDashboardLink() : '/';
 
   const publicLinks = [
-    { name: 'Features', id: 'features' },
-    { name: 'Specialties', id: 'specialties' },
-    { name: 'Top Doctors', id: 'doctors' },
-    { name: 'Hospitals', id: 'hospitals' },
-    { name: 'Lab Tests', id: 'lab-tests' },
-    { name: 'How It Works', id: 'how-it-works' },
-    { name: 'About', id: 'about' },
-    { name: 'FAQ', id: 'faq' },
-    { name: 'Feedback', id: 'feedback' },
-    { name: 'Contact', route: '/contact' },
-    { name: 'Book Appointment', route: '/appointment' },
-    { name: 'Book a Demo', id: 'book-demo', cta: true }
+    { name: 'Features', id: 'features', icon: Sparkles },
+    { name: 'Specialties', id: 'specialties', icon: HeartPulse },
+    { name: 'Top Doctors', id: 'doctors', icon: Users },
+    { name: 'Hospitals', id: 'hospitals', icon: Building2 },
+    { name: 'Lab Tests', id: 'lab-tests', icon: FlaskConical },
+    { name: 'How It Works', id: 'how-it-works', icon: Clock },
+    { name: 'About', id: 'about', icon: Info },
+    { name: 'FAQ', id: 'faq', icon: HelpCircle },
+    { name: 'Feedback', id: 'feedback', icon: Star },
+    { name: 'Contact', route: '/contact', icon: PhoneCall },
+    { name: 'Book Appointment', route: '/appointment', highlight: true, icon: CalendarCheck },
+    { name: 'Book a Demo', id: 'book-demo', cta: true, icon: Video }
   ];
 
   const handleNav = (link) => {
     setIsOpen(false);
-    if (link.route) { navigate(link.route); return; }
+    if (link.route) {
+      navigate(link.route);
+      return;
+    }
     if (location.pathname === '/') {
       const el = document.getElementById(link.id);
       if (el) {
@@ -302,342 +311,493 @@ export default function Navbar() {
   const activeBadges = isSuperAdmin ? superBadges : (isAdmin ? adminBadges : {});
 
   return (
-    <header
-      className={`sticky top-0 z-50 bg-white/95 backdrop-blur-md transition-all duration-300 ${
-        scrolled ? 'shadow-md border-transparent' : 'border-b border-gray-100'
-      }`}
-    >
-      {/* Scroll Progress Bar (Lower baseline) */}
-      <motion.div
-        className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-400 origin-left z-50 pointer-events-none shadow-xs"
-        style={{ scaleX: scrollYProgress }}
-      />
-      <div className="max-w-[1720px] mx-auto px-2.5 sm:px-4 lg:px-6">
-        <div className="flex justify-between items-center min-h-[64px] sm:min-h-[72px] py-2 gap-2 sm:gap-4">
-          {/* Logo & Role Portal Badge */}
-          <div className="flex-shrink-0 flex items-center gap-2.5 min-w-0">
-            <Link to={logoRedirect} className="flex items-center gap-2 min-w-0 group">
-              <img
-                src={medicalLogo}
-                alt="Medpark logo"
-                className="h-8 sm:h-9 w-auto object-contain shrink-0 transition-transform duration-300 group-hover:scale-105"
-              />
-              <span className="font-extrabold text-base sm:text-xl lg:text-2xl tracking-tight text-gray-900 truncate">
-                MEDPARK
-                <span className="text-red-500 text-xs sm:text-sm align-top ml-0.5 sm:ml-1">✚</span>
-              </span>
-            </Link>
-            {isSuperAdmin && (
-              <span className="hidden xl:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-2xs">
-                🛡️ Super Admin
-              </span>
-            )}
-            {isAdmin && (
-              <span className="hidden xl:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200 shadow-2xs">
-                🏥 Hospital Admin
-              </span>
-            )}
-            {user && !isSuperAdmin && !isAdmin && (
-              <span className="hidden xl:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
-                👤 Patient Portal
-              </span>
-            )}
-          </div>
+    <>
+      <header
+        className={`sticky top-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? 'bg-white/95 backdrop-blur-xl shadow-[0_10px_30px_-10px_rgba(15,23,42,0.08)] border-b border-slate-200/80'
+            : 'bg-white/85 backdrop-blur-md border-b border-slate-100/90'
+        }`}
+      >
+        {/* Scroll Progress Bar with gentle glow */}
+        <motion.div
+          className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-400 origin-left z-50 pointer-events-none shadow-[0_0_10px_rgba(37,99,235,0.4)]"
+          style={{ scaleX: scrollYProgress }}
+        />
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center justify-end gap-2 lg:gap-3 font-medium text-xs lg:text-sm text-gray-600 min-w-0 flex-1 ml-3">
-            {!showDashboardNav && (
-              <div className="relative flex items-center min-w-0 flex-1 max-w-full group/publicNav">
-                {canScrollPublicLeft && (
-                  <button
-                    type="button"
-                    onClick={() => scrollPublic('left')}
-                    title="Scroll navigation left"
-                    aria-label="Scroll left"
-                    className="absolute -left-1 z-30 h-6 w-6 rounded-full bg-white/95 shadow-md border border-slate-200 text-slate-700 hover:text-medical-blue hover:bg-white flex items-center justify-center cursor-pointer transition-all active:scale-95"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </button>
-                )}
-
-                <div
-                  ref={publicScrollRef}
-                  onWheel={handlePublicWheel}
-                  className="flex items-center gap-1 lg:gap-1.5 overflow-x-auto no-scrollbar overscroll-x-contain scroll-smooth whitespace-nowrap py-1 px-1 flex-1 min-w-0 justify-end"
-                >
-                  {publicLinks.map((link) =>
-                    link.cta ? (
-                      <button
-                        key={link.name}
-                        onClick={() => handleNav(link)}
-                        className="inline-flex items-center justify-center px-3.5 lg:px-4.5 py-1.5 rounded-full text-xs lg:text-sm font-semibold text-white bg-medical-blue hover:bg-medical-dark transition-all shadow-xs hover:shadow active:scale-95 cursor-pointer shrink-0"
-                      >
-                        {link.name}
-                      </button>
-                    ) : (
-                      <button
-                        key={link.name}
-                        onClick={() => handleNav(link)}
-                        className="transition-colors hover:text-medical-blue cursor-pointer py-1 px-2.5 rounded-lg text-xs lg:text-sm hover:bg-blue-50/50 shrink-0 whitespace-nowrap text-slate-700 font-medium"
-                      >
-                        {link.name}
-                      </button>
-                    )
-                  )}
+        <div className="max-w-[1780px] mx-auto px-3 sm:px-5 lg:px-7">
+          <div className="flex justify-between items-center min-h-[64px] sm:min-h-[72px] py-2 gap-2 sm:gap-4">
+            
+            {/* ── Brand Logo & Live Portal Indicator ── */}
+            <div className="flex-shrink-0 flex items-center gap-3 min-w-0">
+              <Link
+                to={logoRedirect}
+                className="flex items-center gap-2.5 min-w-0 group cursor-pointer select-none"
+              >
+                <div className="relative flex items-center justify-center p-1 rounded-xl bg-gradient-to-tr from-blue-50 to-slate-100 border border-slate-200/70 shadow-2xs group-hover:border-blue-300 transition-colors">
+                  <img
+                    src={medicalLogo}
+                    alt="Medpark logo"
+                    className="h-7 sm:h-8 w-auto object-contain shrink-0 transition-transform duration-300 group-hover:scale-110"
+                  />
                 </div>
+                <div className="flex items-center">
+                  <span className="font-extrabold text-base sm:text-xl lg:text-2xl tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 bg-clip-text text-transparent truncate">
+                    MEDPARK
+                  </span>
+                  <span className="ml-1 inline-flex items-center justify-center px-1.5 py-0.2 rounded-md bg-rose-500 text-white font-black text-[9px] sm:text-[11px] shadow-2xs">
+                    ✚
+                  </span>
+                </div>
+              </Link>
 
-                {canScrollPublicRight && (
-                  <button
-                    type="button"
-                    onClick={() => scrollPublic('right')}
-                    title="Scroll navigation right"
-                    aria-label="Scroll right"
-                    className="absolute -right-1 z-30 h-6 w-6 rounded-full bg-white/95 shadow-md border border-slate-200 text-slate-700 hover:text-medical-blue hover:bg-white flex items-center justify-center cursor-pointer transition-all active:scale-95"
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            )}
+              {/* Role portal status badge */}
+              {isSuperAdmin && (
+                <div className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 border border-indigo-200/80 shadow-2xs">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-600"></span>
+                  </span>
+                  <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Super Admin</span>
+                </div>
+              )}
 
-            {showDashboardNav ? (
-              <>
-                <div className="relative flex items-center min-w-0 flex-1 max-w-full group/nav">
-                  {canScrollNavLeft && (
+              {isAdmin && (
+                <div className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-gradient-to-r from-blue-50 to-cyan-50 text-blue-700 border border-blue-200/80 shadow-2xs">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+                  </span>
+                  <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Hospital Admin</span>
+                </div>
+              )}
+
+              {user && !isSuperAdmin && !isAdmin && (
+                <div className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border border-emerald-200/80 shadow-2xs">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-600"></span>
+                  </span>
+                  <Stethoscope className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Patient Portal</span>
+                </div>
+              )}
+            </div>
+
+            {/* ── Desktop Navigation ── */}
+            <nav className="hidden md:flex items-center justify-end gap-2 lg:gap-3 font-medium text-xs lg:text-sm text-gray-600 min-w-0 flex-1 ml-3">
+              
+              {/* Public Navigation Container */}
+              {!showDashboardNav && (
+                <div className="relative flex items-center min-w-0 flex-1 max-w-full group/publicNav">
+                  {/* Left edge fade */}
+                  {canScrollPublicLeft && (
+                    <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white via-white/80 to-transparent pointer-events-none z-20" />
+                  )}
+
+                  {canScrollPublicLeft && (
                     <button
                       type="button"
-                      onClick={() => scrollNav('left')}
+                      onClick={() => scrollPublic('left')}
                       title="Scroll navigation left"
                       aria-label="Scroll left"
-                      className="absolute -left-1 z-30 h-6 w-6 rounded-full bg-white/95 shadow-md border border-slate-200 text-slate-700 hover:text-medical-blue hover:bg-white flex items-center justify-center cursor-pointer transition-all active:scale-95"
+                      className="absolute -left-1 z-30 h-7 w-7 rounded-full bg-white/95 shadow-md border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-300 flex items-center justify-center cursor-pointer transition-all active:scale-95"
                     >
-                      <ChevronLeft className="w-3.5 h-3.5" />
+                      <ChevronLeft className="w-4 h-4" />
                     </button>
                   )}
 
                   <div
-                    ref={navScrollRef}
-                    onWheel={handleNavWheel}
-                    className="flex items-center gap-1 lg:gap-1.5 overflow-x-auto no-scrollbar overscroll-x-contain scroll-smooth whitespace-nowrap py-1 px-1 flex-1 min-w-0"
+                    ref={publicScrollRef}
+                    onWheel={handlePublicWheel}
+                    className="flex items-center gap-1.5 lg:gap-2 overflow-x-auto no-scrollbar overscroll-x-contain scroll-smooth whitespace-nowrap py-1 px-1 flex-1 min-w-0 justify-end"
                   >
-                    {dashboardLinks.map((link) => {
-                      const active = isTabActive(link.to);
+                    {publicLinks.map((link) => {
+                      if (link.cta) {
+                        return (
+                          <button
+                            key={link.name}
+                            onClick={() => handleNav(link)}
+                            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs lg:text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-sm shadow-blue-500/25 hover:shadow-md hover:shadow-blue-500/35 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer shrink-0"
+                          >
+                            <Video className="w-3.5 h-3.5" />
+                            <span>{link.name}</span>
+                          </button>
+                        );
+                      }
+
+                      if (link.highlight) {
+                        return (
+                          <button
+                            key={link.name}
+                            onClick={() => handleNav(link)}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs lg:text-sm font-semibold text-blue-700 bg-blue-50/90 hover:bg-blue-100/90 border border-blue-200/90 shadow-2xs transition-all hover:scale-[1.02] active:scale-95 cursor-pointer shrink-0"
+                          >
+                            <CalendarCheck className="w-3.5 h-3.5 text-blue-600" />
+                            <span>{link.name}</span>
+                          </button>
+                        );
+                      }
+
                       const Icon = link.icon;
-                      const badgeCount = link.badge ? activeBadges[link.badge] : 0;
                       return (
-                        <Link
+                        <button
                           key={link.name}
-                          to={link.to}
-                          className={`relative inline-flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0 z-10 ${
-                            active
-                              ? 'text-white font-bold'
-                              : 'text-slate-800 hover:text-medical-blue hover:bg-slate-100/70'
-                          }`}
+                          onClick={() => handleNav(link)}
+                          className="inline-flex items-center gap-1.5 transition-all duration-200 text-slate-700 hover:text-blue-700 hover:bg-slate-100/80 cursor-pointer py-1.5 px-3 rounded-lg text-xs lg:text-sm shrink-0 whitespace-nowrap font-medium"
                         >
-                          {active && (
-                            <motion.div
-                              layoutId="navbarActivePill"
-                              transition={{ type: 'spring', stiffness: 450, damping: 35 }}
-                              className="absolute inset-0 bg-medical-blue rounded-xl shadow-xs -z-10"
-                            />
-                          )}
-                          {Icon && <Icon className="w-3.5 h-3.5 shrink-0" />}
+                          {Icon && <Icon className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-500" />}
                           <span>{link.name}</span>
-                          {badgeCount > 0 && (
-                            <span
-                              className={`inline-flex items-center justify-center px-1.5 py-0.2 text-[10px] font-black rounded-full leading-tight transition-colors ${
-                                active ? 'bg-white text-blue-700' : 'bg-rose-500 text-white shadow-2xs'
-                              }`}
-                            >
-                              {badgeCount > 99 ? '99+' : badgeCount}
-                            </span>
-                          )}
-                        </Link>
+                        </button>
                       );
                     })}
                   </div>
 
-                  {canScrollNavRight && (
+                  {/* Right edge fade */}
+                  {canScrollPublicRight && (
+                    <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white via-white/80 to-transparent pointer-events-none z-20" />
+                  )}
+
+                  {canScrollPublicRight && (
                     <button
                       type="button"
-                      onClick={() => scrollNav('right')}
+                      onClick={() => scrollPublic('right')}
                       title="Scroll navigation right"
                       aria-label="Scroll right"
-                      className="absolute -right-1 z-30 h-6 w-6 rounded-full bg-white/95 shadow-md border border-slate-200 text-slate-700 hover:text-medical-blue hover:bg-white flex items-center justify-center cursor-pointer transition-all active:scale-95"
+                      className="absolute -right-1 z-30 h-7 w-7 rounded-full bg-white/95 shadow-md border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-300 flex items-center justify-center cursor-pointer transition-all active:scale-95"
                     >
-                      <ChevronRight className="w-3.5 h-3.5" />
+                      <ChevronRight className="w-4 h-4" />
                     </button>
                   )}
                 </div>
+              )}
 
-                <div className="flex items-center gap-2 ml-1.5 pl-3 border-l border-slate-200/90 shrink-0">
-                  <ProfileDropdown user={user} onLogout={handleLogout} />
-                </div>
-              </>
-            ) : user ? (
-              <div className="flex items-center gap-3 ml-2 shrink-0">
-                <ProfileDropdown user={user} onLogout={handleLogout} />
-                <Link
-                  to={getDashboardLink()}
-                  className="text-medical-blue hover:text-medical-dark transition-colors font-semibold px-3 py-1.5 bg-blue-50/80 rounded-xl text-xs lg:text-sm border border-blue-100"
-                >
-                  Dashboard →
-                </Link>
-              </div>
-            ) : (
-              <Link
-                to="/login"
-                className="ml-2 inline-flex items-center justify-center px-5 py-2 border border-transparent rounded-xl shadow-2xs text-xs lg:text-sm font-medium text-white bg-medical-dark hover:bg-medical-blue transition-all active:scale-95 shrink-0"
-              >
-                Login →
-              </Link>
-            )}
-          </nav>
-
-          {/* Mobile Header */}
-          <div className="md:hidden flex items-center gap-2 shrink-0">
-            {user && <ProfileDropdown user={user} onLogout={handleLogout} />}
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              aria-label="Toggle navigation"
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-800 shadow-2xs hover:border-medical-blue hover:text-medical-blue transition-colors focus:outline-none cursor-pointer"
-            >
-              {isOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile Drawer */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className="md:hidden bg-white border-t border-gray-100 shadow-xl overflow-hidden"
-          >
-            <div className="px-4 pt-3 pb-6 space-y-2 flex flex-col max-h-[85vh] overflow-y-auto">
-              {user ? (
+              {/* Dashboard Navigation Container */}
+              {showDashboardNav ? (
                 <>
-                  <Link
-                    to="/profile"
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-gradient-to-r from-blue-50/90 to-slate-50 border border-blue-100/90 mb-2 hover:border-medical-blue/40 transition-all group"
-                  >
-                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-medical-dark to-medical-blue text-white font-bold uppercase shadow-2xs group-hover:scale-105 transition-transform shrink-0">
-                      {user?.name?.charAt(0) || 'U'}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <p className="font-bold text-gray-900 truncate text-sm group-hover:text-medical-blue transition-colors">
-                          {user?.name}
-                        </p>
-                        <span className="text-[10px] font-bold text-medical-blue bg-blue-100/80 px-2 py-0.5 rounded-full capitalize shrink-0">
-                          {user?.role}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-500 truncate mt-0.5">
-                        {user?.hospital || user?.email}
-                      </p>
-                    </div>
-                  </Link>
+                  <div className="relative flex items-center min-w-0 flex-1 max-w-full group/nav">
+                    {/* Left edge fade */}
+                    {canScrollNavLeft && (
+                      <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white via-white/80 to-transparent pointer-events-none z-20" />
+                    )}
 
-                  {showDashboardNav ? (
-                    <>
+                    {canScrollNavLeft && (
+                      <button
+                        type="button"
+                        onClick={() => scrollNav('left')}
+                        title="Scroll navigation left"
+                        aria-label="Scroll left"
+                        className="absolute -left-1 z-30 h-7 w-7 rounded-full bg-white/95 shadow-md border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-300 flex items-center justify-center cursor-pointer transition-all active:scale-95"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                    )}
+
+                    <div
+                      ref={navScrollRef}
+                      onWheel={handleNavWheel}
+                      className="flex items-center gap-1 lg:gap-1.5 overflow-x-auto no-scrollbar overscroll-x-contain scroll-smooth whitespace-nowrap py-1 px-1 flex-1 min-w-0"
+                    >
                       {dashboardLinks.map((link) => {
+                        const active = isTabActive(link.to);
                         const Icon = link.icon;
                         const badgeCount = link.badge ? activeBadges[link.badge] : 0;
-                        const active = isTabActive(link.to);
                         return (
                           <Link
                             key={link.name}
                             to={link.to}
-                            onClick={() => setIsOpen(false)}
-                            className={`flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl text-sm font-medium transition ${
+                            className={`relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 shrink-0 z-10 ${
                               active
-                                ? 'text-medical-blue bg-blue-50/80 font-bold'
-                                : 'text-gray-700 hover:text-medical-blue hover:bg-gray-50'
+                                ? 'text-white font-bold'
+                                : 'text-slate-700 hover:text-blue-700 hover:bg-slate-100/80'
                             }`}
                           >
-                            <span className="flex items-center gap-2.5">
-                              {Icon && <Icon className="w-4 h-4 text-slate-500" />}
-                              {link.name}
-                            </span>
-                            {badgeCount > 0 && (
-                              <span className="inline-flex items-center justify-center px-2 py-0.5 bg-rose-500 text-white text-xs font-black rounded-full shadow-2xs">
-                                {badgeCount > 99 ? '99+' : badgeCount}
-                              </span>
+                            {active && (
+                              <motion.div
+                                layoutId="navbarActivePill"
+                                transition={{ type: 'spring', stiffness: 450, damping: 35 }}
+                                className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-xs -z-10"
+                              />
                             )}
+                            {Icon && <Icon className="w-3.5 h-3.5 shrink-0" />}
+                            <span>{link.name}</span>
+                            <NavBadge count={badgeCount} active={active} />
                           </Link>
                         );
                       })}
+                    </div>
+
+                    {/* Right edge fade */}
+                    {canScrollNavRight && (
+                      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white via-white/80 to-transparent pointer-events-none z-20" />
+                    )}
+
+                    {canScrollNavRight && (
+                      <button
+                        type="button"
+                        onClick={() => scrollNav('right')}
+                        title="Scroll navigation right"
+                        aria-label="Scroll right"
+                        className="absolute -right-1 z-30 h-7 w-7 rounded-full bg-white/95 shadow-md border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-300 flex items-center justify-center cursor-pointer transition-all active:scale-95"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Actions & Profile in Dashboard mode */}
+                  <div className="flex items-center gap-2 ml-1.5 pl-3 border-l border-slate-200/90 shrink-0">
+                    <Link
+                      to="/"
+                      title="View public website"
+                      className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50/70 border border-transparent hover:border-blue-200/70 transition-all"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Website</span>
+                    </Link>
+                    <ProfileDropdown user={user} onLogout={handleLogout} />
+                  </div>
+                </>
+              ) : user ? (
+                /* User logged in, but browsing public pages */
+                <div className="flex items-center gap-2.5 ml-2 shrink-0">
+                  <Link
+                    to={getDashboardLink()}
+                    className="inline-flex items-center gap-1.5 text-blue-700 hover:text-blue-800 transition-all font-semibold px-3.5 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 rounded-xl text-xs lg:text-sm border border-blue-200/80 shadow-2xs hover:scale-[1.02] active:scale-95"
+                  >
+                    <LayoutDashboard className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Dashboard</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                  <ProfileDropdown user={user} onLogout={handleLogout} />
+                </div>
+              ) : (
+                /* Public Visitor (Not logged in) */
+                <Link
+                  to="/login"
+                  className="ml-2 inline-flex items-center gap-1.5 justify-center px-4.5 py-2 rounded-xl shadow-xs text-xs lg:text-sm font-semibold text-white bg-slate-900 hover:bg-blue-900 transition-all hover:scale-[1.02] active:scale-95 shrink-0"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Login</span>
+                </Link>
+              )}
+            </nav>
+
+            {/* ── Mobile Right Actions (Profile & Hamburger) ── */}
+            <div className="md:hidden flex items-center gap-2 shrink-0">
+              {user && <ProfileDropdown user={user} onLogout={handleLogout} />}
+              <button
+                onClick={() => setIsOpen(!isOpen)}
+                aria-label="Toggle navigation"
+                aria-expanded={isOpen}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50/80 text-slate-800 shadow-2xs hover:border-blue-400 hover:text-blue-600 transition-all focus:outline-none cursor-pointer active:scale-95"
+              >
+                {isOpen ? <X size={20} className="text-slate-800" /> : <Menu size={20} className="text-slate-800" />}
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* ── Mobile Navigation Drawer & Backdrop ── */}
+      <AnimatePresence>
+        {isOpen && (
+          <div className="fixed inset-0 z-40 md:hidden">
+            {/* Backdrop Scrim */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setIsOpen(false)}
+              className="absolute inset-0 bg-slate-950/40 backdrop-blur-xs"
+            />
+
+            {/* Drawer Sheet */}
+            <motion.div
+              initial={{ opacity: 0, y: -16, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -16, scale: 0.98 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="relative mx-3 mt-20 bg-white rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden max-h-[82vh] flex flex-col"
+            >
+              {/* Drawer Content */}
+              <div className="p-4 space-y-3 overflow-y-auto">
+                
+                {/* User Card when logged in */}
+                {user && (
+                  <Link
+                    to="/profile"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-r from-blue-50/90 via-indigo-50/40 to-slate-50 border border-blue-100 hover:border-blue-300 transition-all group"
+                  >
+                    <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-700 to-indigo-600 text-white font-black text-base uppercase shadow-sm group-hover:scale-105 transition-transform shrink-0">
+                      {user?.name?.charAt(0) || 'U'}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="font-bold text-slate-900 truncate text-sm group-hover:text-blue-700 transition-colors">
+                          {user?.name}
+                        </p>
+                        <span className="text-[10px] font-bold text-blue-700 bg-blue-100/90 px-2.5 py-0.5 rounded-full capitalize shrink-0 border border-blue-200/60">
+                          {user?.role}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 truncate mt-0.5">
+                        {user?.hospital || user?.email}
+                      </p>
+                    </div>
+                  </Link>
+                )}
+
+                {/* Dashboard Navigation Items */}
+                {showDashboardNav ? (
+                  <div className="space-y-1">
+                    <div className="px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                      Dashboard Navigation
+                    </div>
+                    {dashboardLinks.map((link) => {
+                      const Icon = link.icon;
+                      const badgeCount = link.badge ? activeBadges[link.badge] : 0;
+                      const active = isTabActive(link.to);
+                      return (
+                        <Link
+                          key={link.name}
+                          to={link.to}
+                          onClick={() => setIsOpen(false)}
+                          className={`flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition ${
+                            active
+                              ? 'text-white bg-gradient-to-r from-blue-600 to-indigo-600 shadow-sm'
+                              : 'text-slate-700 hover:text-blue-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2.5">
+                            {Icon && <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-slate-400'}`} />}
+                            {link.name}
+                          </span>
+                          <NavBadge count={badgeCount} active={active} />
+                        </Link>
+                      );
+                    })}
+
+                    <div className="pt-2 border-t border-slate-100 flex flex-col gap-1">
+                      <Link
+                        to="/"
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                      >
+                        <ExternalLink className="w-4 h-4 text-slate-400" />
+                        <span>Visit Public Website</span>
+                      </Link>
+
                       <button
                         onClick={() => {
                           handleLogout();
                           setIsOpen(false);
                         }}
-                        className="w-full text-left block px-3.5 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                        className="w-full text-left flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                       >
-                        Logout
+                        <LogIn className="w-4 h-4 text-rose-500 rotate-180" />
+                        <span>Logout</span>
                       </button>
-                    </>
-                  ) : (
-                    <>
+                    </div>
+                  </div>
+                ) : (
+                  /* Public Navigation Items */
+                  <div className="space-y-1">
+                    {user && (
                       <NavLink
                         to={getDashboardLink()}
                         onClick={() => setIsOpen(false)}
-                        className={({ isActive }) =>
-                          `block px-3.5 py-2.5 rounded-xl text-sm font-medium transition ${
-                            isActive
-                              ? 'text-medical-blue bg-blue-50/80 font-semibold'
-                              : 'text-medical-blue bg-blue-50/30 hover:bg-blue-50'
-                          }`
-                        }
+                        className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-bold text-blue-700 bg-blue-50/80 border border-blue-200/80 mb-2 shadow-2xs"
                       >
-                        Dashboard
+                        <span className="flex items-center gap-2">
+                          <LayoutDashboard className="w-4 h-4 text-blue-600" />
+                          <span>Go to Dashboard</span>
+                        </span>
+                        <ArrowRight className="w-4 h-4" />
                       </NavLink>
+                    )}
+
+                    <div className="px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                      Explore Medpark
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-1">
+                      {publicLinks.map((link) => {
+                        if (link.cta || link.highlight) return null;
+                        const Icon = link.icon;
+                        return (
+                          <button
+                            key={link.name}
+                            onClick={() => handleNav(link)}
+                            className="flex items-center gap-2.5 w-full text-left px-3.5 py-2 rounded-xl text-sm font-medium text-slate-700 hover:text-blue-700 hover:bg-slate-50 transition cursor-pointer"
+                          >
+                            {Icon && <Icon className="w-4 h-4 text-slate-400" />}
+                            <span>{link.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Action buttons inside drawer */}
+                    <div className="pt-2 border-t border-slate-100 space-y-2">
                       <button
-                        onClick={() => {
-                          handleLogout();
-                          setIsOpen(false);
-                        }}
-                        className="w-full text-left block px-3.5 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                        onClick={() => handleNav({ route: '/appointment' })}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-all cursor-pointer shadow-2xs"
                       >
-                        Logout
+                        <CalendarCheck className="w-4 h-4 text-blue-600" />
+                        <span>Book Appointment</span>
                       </button>
-                    </>
-                  )}
-                </>
-              ) : (
-                <>
-                  {publicLinks.map((link) => (
-                    <button
-                      key={link.name}
-                      onClick={() => handleNav(link)}
-                      className={`block w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer ${
-                        link.cta
-                          ? 'text-white bg-medical-blue hover:bg-medical-dark text-center shadow-xs font-semibold mt-1'
-                          : 'text-gray-700 hover:text-medical-blue hover:bg-gray-50'
-                      }`}
-                    >
-                      {link.name}
-                    </button>
-                  ))}
-                  <Link
-                    to="/login"
-                    onClick={() => setIsOpen(false)}
-                    className="mt-2 block w-full text-center px-4 py-3 border border-transparent rounded-xl shadow-xs text-sm font-medium text-white bg-medical-dark hover:bg-medical-blue transition-colors"
-                  >
-                    Login
-                  </Link>
-                </>
-              )}
-            </div>
-          </motion.div>
+
+                      <button
+                        onClick={() => handleNav({ id: 'book-demo' })}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md shadow-blue-500/25 transition-all cursor-pointer"
+                      >
+                        <Video className="w-4 h-4" />
+                        <span>Book a Live Demo</span>
+                      </button>
+
+                      {!user ? (
+                        <Link
+                          to="/login"
+                          onClick={() => setIsOpen(false)}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-slate-900 hover:bg-blue-900 transition-all shadow-xs"
+                        >
+                          <LogIn className="w-4 h-4" />
+                          <span>Login to Portal</span>
+                        </Link>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            handleLogout();
+                            setIsOpen(false);
+                          }}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        >
+                          <LogIn className="w-4 h-4 text-rose-500 rotate-180" />
+                          <span>Logout</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Support Hotline pill in mobile drawer */}
+                <div className="pt-2">
+                  <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-slate-50 border border-slate-200/70 text-slate-500 text-xs font-medium">
+                    <HeartPulse className="w-3.5 h-3.5 text-rose-500" />
+                    <span>24/7 Helpline: 1800-MEDPARK</span>
+                  </div>
+                </div>
+
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
-    </header>
+    </>
   );
 }
