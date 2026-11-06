@@ -1275,35 +1275,89 @@ export default function ChatbotWidget() {
                         {msg.timestamp}
                       </span>
 
-                      {/* Quick Reply Chips (Horizontally Scrollable Carousel with Sideways Hint) */}
+                      {/* Quick Reply Chips (Horizontally Scrollable Carousel with Left/Right Arrow Navigation) */}
                       {!isUser && msg.quickReplies && msg.quickReplies.length > 0 && (
                         <div className="mt-2.5 max-w-full w-full">
                           <div className="flex items-center justify-between text-[10px] text-slate-500 font-semibold px-0.5 mb-1.5">
                             <span className="flex items-center gap-1">
                               <span>💡 Suggested Options</span>
-                              <span className="text-[9px] text-slate-400 font-normal">(Scroll sideways ↔)</span>
                             </span>
-                            <span className="px-1.5 py-0.2 rounded-full bg-slate-200/80 text-[9px] font-bold text-slate-600">
-                              {msg.quickReplies.length} options
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 pt-0.5 no-scrollbar scroll-smooth">
-                            {msg.quickReplies.map((qr, qIdx) => (
+                            <div className="flex items-center gap-1">
                               <button
-                                key={qIdx}
                                 type="button"
-                                onClick={() => handleQuickReplyClick(qr, msg)}
-                                className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer shrink-0 whitespace-nowrap flex items-center gap-1 ${
-                                  qr.includes('Pay Online') || qr.includes('Instant UPI')
-                                    ? 'bg-gradient-to-r from-emerald-50 to-blue-50 text-emerald-800 border border-emerald-300 hover:border-emerald-500 font-bold'
-                                    : qr.includes('⭐') || qr.includes('Rate') || qr.includes('Feedback') || qr.includes('Review')
-                                    ? 'bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100 text-amber-900 border border-amber-300 hover:border-amber-500 font-bold shadow-2xs'
-                                    : 'bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200 hover:border-medical-blue/40 shadow-2xs'
-                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const container = document.getElementById(`quick-replies-${msg.id}`);
+                                  if (container) container.scrollBy({ left: -180, behavior: 'smooth' });
+                                }}
+                                className="h-5 w-5 rounded-full bg-slate-200/90 hover:bg-slate-300 text-slate-600 hover:text-slate-900 flex items-center justify-center transition cursor-pointer shadow-2xs active:scale-90"
+                                title="Scroll Options Left"
                               >
-                                <span>{qr}</span>
+                                <ChevronLeft className="w-3.5 h-3.5" />
                               </button>
-                            ))}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const container = document.getElementById(`quick-replies-${msg.id}`);
+                                  if (container) container.scrollBy({ left: 180, behavior: 'smooth' });
+                                }}
+                                className="h-5 w-5 rounded-full bg-slate-200/90 hover:bg-slate-300 text-slate-600 hover:text-slate-900 flex items-center justify-center transition cursor-pointer shadow-2xs active:scale-90"
+                                title="Scroll Options Right"
+                              >
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </button>
+                              <span className="px-1.5 py-0.2 rounded-full bg-slate-200/80 text-[9px] font-bold text-slate-600 ml-0.5">
+                                {msg.quickReplies.length} options
+                              </span>
+                            </div>
+                          </div>
+                          <div className="relative flex items-center group/carousel">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const container = document.getElementById(`quick-replies-${msg.id}`);
+                                if (container) container.scrollBy({ left: -180, behavior: 'smooth' });
+                              }}
+                              className="absolute -left-1 z-10 h-7 w-7 rounded-full bg-white/95 hover:bg-white text-slate-700 hover:text-medical-blue shadow-md border border-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-90 opacity-90 hover:opacity-100"
+                              title="Previous Options"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <div
+                              id={`quick-replies-${msg.id}`}
+                              className="flex items-center gap-1.5 overflow-x-auto px-6 pb-2 pt-0.5 no-scrollbar scroll-smooth w-full"
+                            >
+                              {msg.quickReplies.map((qr, qIdx) => (
+                                <button
+                                  key={qIdx}
+                                  type="button"
+                                  onClick={() => handleQuickReplyClick(qr, msg)}
+                                  className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer shrink-0 whitespace-nowrap flex items-center gap-1 ${
+                                    qr.includes('Pay Online') || qr.includes('Instant UPI')
+                                      ? 'bg-gradient-to-r from-emerald-50 to-blue-50 text-emerald-800 border border-emerald-300 hover:border-emerald-500 font-bold'
+                                      : qr.includes('⭐') || qr.includes('Rate') || qr.includes('Feedback') || qr.includes('Review')
+                                      ? 'bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100 text-amber-900 border border-amber-300 hover:border-amber-500 font-bold shadow-2xs'
+                                      : 'bg-white hover:bg-blue-50 text-slate-700 hover:text-medical-blue border border-slate-200 hover:border-medical-blue/40 shadow-2xs'
+                                  }`}
+                                >
+                                  <span>{qr}</span>
+                                </button>
+                              ))}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const container = document.getElementById(`quick-replies-${msg.id}`);
+                                if (container) container.scrollBy({ left: 180, behavior: 'smooth' });
+                              }}
+                              className="absolute -right-1 z-10 h-7 w-7 rounded-full bg-white/95 hover:bg-white text-slate-700 hover:text-medical-blue shadow-md border border-slate-200 flex items-center justify-center transition-all cursor-pointer active:scale-90 opacity-90 hover:opacity-100"
+                              title="Next Options"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
                       )}
